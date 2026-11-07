@@ -756,3 +756,335 @@
   height: 14px;
   border-width: 2px;
 }
+
+/* ============================================================================
+ * 11. 详情页组件（Sprint 5）
+ * ----------------------------------------------------------------------------
+ * 结构：固定返回按钮 + 可滑动大图 + 信息卡 + 出借人卡
+ * 约束：返回按钮用 position: fixed（悬浮控件允许），详情内容全部走文档流。
+ * ========================================================================== */
+
+/* 悬浮返回按钮：半透明黑底 + 白色箭头 */
+.back-btn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--text-inverse, #fff);
+  background-color: rgba(0, 0, 0, 0.45);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  transition: background-color var(--transition-fast, 0.15s) ease;
+}
+
+.back-btn:hover {
+  background-color: rgba(0, 0, 0, 0.62);
+}
+
+.back-btn:focus-visible {
+  outline: 2px solid var(--bg-card, #fff);
+  outline-offset: 2px;
+}
+
+.back-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* 详情容器 */
+.detail {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-bottom: var(--space-8, 32px);
+}
+
+/* 大图区：横向 scroll-snap，单图时也不会错位 */
+.detail-gallery {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  background-color: var(--border-color-light, #f2f3f5);
+  scrollbar-width: none;
+}
+
+.detail-gallery::-webkit-scrollbar {
+  display: none;
+}
+
+.detail-gallery__slide {
+  flex: 0 0 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.detail-gallery__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 信息卡 */
+.detail-card {
+  margin: var(--space-4, 16px) var(--space-4, 16px) 0;
+  padding: 18px 16px;
+  background-color: var(--bg-card, #fff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.06));
+}
+
+.detail-title {
+  font-size: var(--font-size-xl, 22px);
+  font-weight: var(--font-weight-bold, 600);
+  line-height: 1.45;
+  letter-spacing: 0.2px;
+  color: var(--text-main, #333);
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  margin-top: 14px;
+}
+
+.detail-loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+.detail-loc-icon {
+  flex: none;
+  width: 13px;
+  height: 13px;
+}
+
+/* 冻结信用分要求：分隔线之上单独一行，视觉权重最高 */
+.detail-deposit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
+  margin-top: var(--space-5, 20px);
+  padding-top: var(--space-4, 16px);
+  border-top: 1px solid var(--border-color, #ebeef5);
+}
+
+.detail-deposit__label {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-sub, #888);
+}
+
+.detail-deposit__badge {
+  height: 26px;
+  padding: 0 12px;
+  font-size: var(--font-size-sm, 13px);
+}
+
+/* 出借人 */
+.owner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+
+.owner__avatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-inverse, #fff);
+  background-image: linear-gradient(135deg, #1890ff, #69c0ff);
+  border-radius: 50%;
+}
+
+.owner__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.owner__name {
+  overflow: hidden;
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-main, #333);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.owner__level {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+/* 详情骨架屏 */
+.detail-skeleton__hero {
+  aspect-ratio: 1 / 1;
+  border-radius: 0;
+}
+
+.detail-skeleton__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  padding: var(--space-4, 16px);
+  margin: var(--space-3, 12px) var(--space-4, 16px) 0;
+  background-color: var(--bg-card, #fff);
+  border-radius: var(--radius-lg, 12px);
+}
+
+/* ---------- 详情页：定损表 / 协议提示 / 底部操作栏 ---------- */
+
+/* 卡片小标题 */
+.detail-card__title {
+  margin-bottom: var(--space-3, 12px);
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+/* 定损明细表：只读，两列 */
+.damage-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.damage-table th,
+.damage-table td {
+  padding: 12px 0;
+  font-size: var(--font-size-sm, 13px);
+  text-align: left;
+  border-bottom: 1px solid var(--border-color-light, #f2f3f5);
+}
+
+.damage-table th {
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-regular, 400);
+  color: var(--text-sub, #888);
+}
+
+.damage-table th:last-child,
+.damage-table td:last-child {
+  text-align: right;
+}
+
+.damage-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.damage-table__level {
+  color: var(--text-main, #333);
+}
+
+.damage-table__deduct {
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--danger, #ff4d4f);
+}
+
+/* 协议提示：浅灰小字 */
+.detail-note {
+  margin-top: 14px;
+  font-size: var(--font-size-xs, 12px);
+  line-height: 1.7;
+  color: var(--text-sub, #888);
+}
+
+/* 底部操作栏：固定在视口底部，内容居中且不超出 720px */
+.action-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  padding: 10px var(--space-4, 16px) calc(10px + var(--safe-area-bottom, 0px));
+  background-color: var(--bg-card, #fff);
+  border-top: 1px solid var(--border-color, #ebeef5);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.action-bar__inner {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.action-bar .btn--secondary {
+  flex: 0 0 112px;
+}
+
+.action-bar .btn--primary {
+  flex: 1;
+}
+
+/* 操作栏占位：页面底部预留空间，避免最后一块内容被遮住 */
+.detail {
+  padding-bottom: calc(80px + var(--safe-area-bottom, 0px));
+}
+
+/* ---------- 借用确认弹窗表单 ---------- */
+.borrow-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+/* 冻结提示：警示底色 + 红色数字，最显眼的一行 */
+.borrow-tip {
+  padding: 12px 14px;
+  font-size: var(--font-size-base, 14px);
+  line-height: 1.6;
+  color: var(--text-main, #333);
+  background-color: var(--warning-light, #fffbe6);
+  border: 1px solid rgba(250, 173, 20, 0.35);
+  border-radius: var(--radius-md, 8px);
+}
+
+.borrow-tip__num {
+  font-size: 18px;
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--danger, #ff4d4f);
+}
+
+/* 协议勾选 */
+.borrow-agree {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: flex-start;
+  font-size: var(--font-size-xs, 12px);
+  line-height: 1.6;
+  color: var(--text-sub, #888);
+  cursor: pointer;
+}
+
+.borrow-agree input[type='checkbox'] {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--primary, #1890ff);
+  cursor: pointer;
+}

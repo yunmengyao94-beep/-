@@ -134,6 +134,7 @@ function setFooter(mode) {
 function createCard(item) {
   const card = document.createElement('article');
   card.className = 'card item-card';
+  card.dataset.id = String(item.id);
 
   const media = document.createElement('div');
   media.className = 'item-card__media';
@@ -636,6 +637,18 @@ function bindCardPress() {
   gridEl.addEventListener('touchmove', release, { passive: true });
 }
 
+/** 点击卡片进入详情页（item.html?id=xxx） */
+function bindCardClick() {
+  if (!gridEl) return;
+
+  gridEl.addEventListener('click', (event) => {
+    const target = event.target;
+    const card = target && target.closest ? target.closest('.item-card') : null;
+    if (!card || !card.dataset.id) return;
+    window.location.href = `./item.html?id=${card.dataset.id}`;
+  });
+}
+
 /* ------------------------------------------------------------------ 启动 */
 
 function boot() {
@@ -646,6 +659,7 @@ function boot() {
   bindSearch();
   bindBuildingFilter();
   bindCardPress();
+  bindCardClick();
   setupInfiniteScroll();
   setupPullToRefresh();
   loadFirstPage();

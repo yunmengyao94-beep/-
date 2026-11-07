@@ -13,16 +13,26 @@
  * 防抖：等待 wait 毫秒内无新调用才真正执行
  * @param {Function} fn 目标函数
  * @param {number} [wait=300] 等待毫秒数
+ * @param {{leading?: boolean}} [options] leading=true 时首次调用立即执行（提交按钮防连点用）
  * @returns {Function & {cancel: Function}} 包装后的函数，带 cancel() 可取消待执行调用
  */
-export function debounce(fn, wait = 300) {
+export function debounce(fn, wait = 300, options = {}) {
+  const { leading = false } = options;
   let timer = null;
+  let leadingFired = false;
 
   function debounced(...args) {
     if (timer) clearTimeout(timer);
+
+    if (leading && !leadingFired) {
+      leadingFired = true;
+      fn.apply(this, args);
+    }
+
     timer = setTimeout(() => {
       timer = null;
-      fn.apply(this, args);
+      leadingFired = false;
+      if (!leading) fn.apply(this, args);
     }, wait);
   }
 
@@ -30,6 +40,7 @@ export function debounce(fn, wait = 300) {
     if (timer) {
       clearTimeout(timer);
       timer = null;
+      leadingFired = false;
     }
   };
 
