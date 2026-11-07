@@ -1,0 +1,648 @@
+{
+  "schema_version": "1.1.0",
+  "config_key": "credit_rules",
+  "project": "Project-YXX / 易校圈",
+  "locale": "zh-CN",
+  "effective_from": "2026-11-07T00:00:00+08:00",
+  "meta": {
+    "title_zh": "虚拟信用分计分、等级与权限降级规则",
+    "title_en": "Virtual credit scoring, level and permission-degradation rules",
+    "source_document": "易校圈_Project-YXX_商业级项目计划书_V1.0.0.md",
+    "source_sections": [
+      "5.4.1 分值与等级",
+      "5.4.2 计分规则表",
+      "5.4.3 虚拟押金冻结",
+      "5.4.5 权限降级机制",
+      "5.5.2 仲裁流程与 SLA",
+      "5.5.3 裁决原则",
+      "6.3.1 sys_user",
+      "6.3.4 sys_credit_log",
+      "6.3.6 cfg_credit_rule",
+      "7.2 错误码表"
+    ],
+    "authority": "本文件是计分规则的唯一事实源（single source of truth）；运行时以 cfg_credit_rule 表为准，由发布流水线做双向同步。",
+    "persistence_table": "cfg_credit_rule",
+    "persistence_fields": ["rule_key", "delta", "daily_cap", "enabled"],
+    "change_control": "任何数值变更须走附录 D 变更控制流程，并同步递增 schema_version。",
+    "notes": [
+      "delta 的正负即语义：change_type=add 时 delta>0；change_type=deduct 时 delta<0。",
+      "daily_cap / monthly_cap 的计量单位为「该规则在自然日/自然月内累计可产生的分数绝对值」，与 5.4.2「单日 +3 / 单月 +15」表述一一对应；null 表示不限。",
+      "REGISTER_INIT 不写 sys_credit_log：6.3.4 对账口径为 SUM(delta) == credit_score - 100，故 100 分是核算基线而非流水事件。",
+      "DAMAGE_MODERATE(-30) 标注 extension=true：5.4.2 仅列出「轻微/重度」两档，其数值由 5.4.4 定损表的 L2_中度档 deduct=30 派生，用于打通三档定损与计分的映射。",
+      "未在文档中定义的两处留白（中值/低值物品划分口径、L5 曝光加权系数）以 null + open_question 标注，不在本期擅自定量。"
+    ]
+  },
+  "score_model": {
+    "initial_score": 100,
+    "min_score": 0,
+    "max_score": null,
+    "upper_unbounded": true,
+    "score_field": "sys_user.credit_score",
+    "frozen_field": "sys_user.credit_frozen",
+    "level_field": "sys_user.credit_level",
+    "reconciliation": {
+      "job": "job-fn",
+      "cron": "0 0 2 * * *",
+      "timezone": "Asia/Shanghai",
+      "assertion": "SUM(sys_credit_log.delta) == sys_user.credit_score - 100",
+      "baseline_rules_not_logged": ["REGISTER_INIT"],
+      "on_mismatch": "alert",
+      "source": "6.3.4"
+    }
+  },
+  "change_types": ["freeze", "unfreeze", "add", "deduct"],
+  "levels": [
+    {
+      "code": 5,
+      "level": "L5",
+      "min_score": 120,
+      "max_score": null,
+      "name_zh": "校园信用之星",
+      "name_en": "Campus Credit Star",
+      "privileges": {
+        "browse": true,
+        "publish": true,
+        "accept_task": true,
+        "borrow_low_value": true,
+        "borrow_mid_value": true,
+        "borrow_high_value": true,
+        "publish_deposit_free": true,
+        "exposure_boost": true,
+        "arbitration_priority": true
+      },
+      "restrictions": {
+        "high_value_requires_guarantors": 0,
+        "borrow_frozen": false
+      },
+      "source": "5.4.1"
+    },
+    {
+      "code": 4,
+      "level": "L4",
+      "min_score": 100,
+      "max_score": 119,
+      "name_zh": "良好",
+      "name_en": "Good",
+      "privileges": {
+        "browse": true,
+        "publish": true,
+        "accept_task": true,
+        "borrow_low_value": true,
+        "borrow_mid_value": true,
+        "borrow_high_value": true,
+        "publish_deposit_free": false,
+        "exposure_boost": false,
+        "arbitration_priority": false
+      },
+      "restrictions": {
+        "high_value_requires_guarantors": 0,
+        "borrow_frozen": false
+      },
+      "source": "5.4.1"
+    },
+    {
+      "code": 3,
+      "level": "L3",
+      "min_score": 80,
+      "max_score": 99,
+      "name_zh": "正常",
+      "name_en": "Normal",
+      "privileges": {
+        "browse": true,
+        "publish": true,
+        "accept_task": true,
+        "borrow_low_value": true,
+        "borrow_mid_value": true,
+        "borrow_high_value": true,
+        "publish_deposit_free": false,
+        "exposure_boost": false,
+        "arbitration_priority": false
+      },
+      "restrictions": {
+        "high_value_requires_guarantors": 2,
+        "borrow_frozen": false
+      },
+      "source": "5.4.1"
+    },
+    {
+      "code": 2,
+      "level": "L2",
+      "min_score": 60,
+      "max_score": 79,
+      "name_zh": "观察",
+      "name_en": "Observed",
+      "privileges": {
+        "browse": true,
+        "publish": true,
+        "accept_task": true,
+        "borrow_low_value": true,
+        "borrow_mid_value": false,
+        "borrow_high_value": false,
+        "publish_deposit_free": false,
+        "exposure_boost": false,
+        "arbitration_priority": false
+      },
+      "restrictions": {
+        "high_value_requires_guarantors": 0,
+        "borrow_frozen": false,
+        "forbidden_high_value_categories": ["digital", "wig", "formal_wear"]
+      },
+      "source": "5.4.1 / 5.4.5"
+    },
+    {
+      "code": 1,
+      "level": "L1",
+      "min_score": 40,
+      "max_score": 59,
+      "name_zh": "受限",
+      "name_en": "Restricted",
+      "privileges": {
+        "browse": true,
+        "publish": true,
+        "accept_task": true,
+        "borrow_low_value": false,
+        "borrow_mid_value": false,
+        "borrow_high_value": false,
+        "publish_deposit_free": false,
+        "exposure_boost": false,
+        "arbitration_priority": false
+      },
+      "restrictions": {
+        "high_value_requires_guarantors": 0,
+        "borrow_frozen": true,
+        "recovery": "完成信用修复任务恢复"
+      },
+      "source": "5.4.1"
+    },
+    {
+      "code": 0,
+      "level": "L0",
+      "min_score": 0,
+      "max_score": 39,
+      "name_zh": "冻结",
+      "name_en": "Frozen",
+      "privileges": {
+        "browse": true,
+        "publish": false,
+        "accept_task": false,
+        "borrow_low_value": false,
+        "borrow_mid_value": false,
+        "borrow_high_value": false,
+        "publish_deposit_free": false,
+        "exposure_boost": false,
+        "arbitration_priority": false
+      },
+      "restrictions": {
+        "high_value_requires_guarantors": 0,
+        "borrow_frozen": true,
+        "recovery": "申诉或完成互助任务恢复"
+      },
+      "source": "5.4.1"
+    }
+  ],
+  "value_tiers": {
+    "high": {
+      "flag": "biz_item.is_high_value = 1",
+      "categories": ["digital", "wig", "formal_wear"],
+      "definition_source": "5.4.1 / 5.4.3"
+    },
+    "mid": {
+      "definition": null,
+      "open_question": "文档未给出中值物品的判定口径（建议按 deposit_score 区间定义并经产品确认）"
+    },
+    "low": {
+      "definition": null,
+      "open_question": "文档未给出低值物品的判定口径（建议按 deposit_score 区间定义并经产品确认）"
+    }
+  },
+  "cap_semantics": {
+    "daily_cap": "同一 rule_key 在自然日（Asia/Shanghai）内累计变动分数绝对值上限；null = 不限",
+    "monthly_cap": "同一 rule_key 在自然月内累计变动分数绝对值上限；null = 不限",
+    "lifetime_cap": "同一用户生命周期内可触发次数上限；null = 不限",
+    "counting_unit": "分数绝对值（points），非触发次数",
+    "overflow_behavior": "drop",
+    "overflow_note": "达到上限后本次变动丢弃，不产生 sys_credit_log 记录，接口仍返回 code=200 并在响应 data 中标注 capped=true"
+  },
+  "rules": [
+    {
+      "rule_key": "REGISTER_INIT",
+      "event": "auth.register.success",
+      "name_zh": "初始注册",
+      "direction": "positive",
+      "change_type": "add",
+      "delta_type": "fixed",
+      "delta": 100,
+      "daily_cap": null,
+      "monthly_cap": null,
+      "lifetime_cap": 1,
+      "frequency": "once_per_user",
+      "writes_credit_log": false,
+      "baseline": true,
+      "auto_execute": true,
+      "trigger_channel": "auto",
+      "requires": ["l1_format_pass", "l2_college_mapping_pass", "l4_invite_and_device_pass"],
+      "ref_type": null,
+      "exclusive_group": null,
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2 / 7.3.1"
+    },
+    {
+      "rule_key": "RETURN_ON_TIME",
+      "event": "order.return.confirmed",
+      "name_zh": "按时归还",
+      "direction": "positive",
+      "change_type": "add",
+      "delta_type": "fixed",
+      "delta": 1,
+      "daily_cap": 3,
+      "monthly_cap": null,
+      "lifetime_cap": null,
+      "frequency": "per_order",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": true,
+      "trigger_channel": "auto",
+      "requires": ["return_within_due_at", "post_handover_evidence_present"],
+      "ref_type": "order",
+      "exclusive_group": "OVERDUE_PER_ORDER",
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2"
+    },
+    {
+      "rule_key": "REVIEW_POSITIVE",
+      "event": "review.positive",
+      "name_zh": "获得好评",
+      "direction": "positive",
+      "change_type": "add",
+      "delta_type": "range",
+      "delta": null,
+      "delta_min": 1,
+      "delta_max": 2,
+      "daily_cap": 4,
+      "monthly_cap": null,
+      "lifetime_cap": null,
+      "frequency": "per_order",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": true,
+      "trigger_channel": "auto",
+      "requires": ["mutual_review_completed"],
+      "ref_type": "order",
+      "exclusive_group": null,
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2"
+    },
+    {
+      "rule_key": "TASK_COMPLETE",
+      "event": "task.completed",
+      "name_zh": "完成互助任务",
+      "direction": "positive",
+      "change_type": "add",
+      "delta_type": "fixed",
+      "delta": 2,
+      "daily_cap": 6,
+      "monthly_cap": null,
+      "lifetime_cap": null,
+      "frequency": "per_task",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": false,
+      "trigger_channel": "manual_confirm",
+      "requires": ["task_confirmed_by_both_sides"],
+      "ref_type": "task",
+      "exclusive_group": null,
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2"
+    },
+    {
+      "rule_key": "OVERDUE_LE_24H",
+      "event": "order.overdue",
+      "name_zh": "逾期归还（≤ 24h）",
+      "direction": "negative",
+      "change_type": "deduct",
+      "delta_type": "fixed",
+      "delta": -5,
+      "daily_cap": null,
+      "monthly_cap": null,
+      "lifetime_cap": null,
+      "frequency": "per_order",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": true,
+      "trigger_channel": "auto",
+      "requires": ["overdue_hours_gt_0", "overdue_hours_lte_24"],
+      "condition": { "field": "overdue_hours", "op": "lte", "value": 24 },
+      "ref_type": "order",
+      "exclusive_group": "OVERDUE_PER_ORDER",
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2"
+    },
+    {
+      "rule_key": "OVERDUE_GT_24H",
+      "event": "order.overdue",
+      "name_zh": "逾期归还（> 24h）",
+      "direction": "negative",
+      "change_type": "deduct",
+      "delta_type": "fixed",
+      "delta": -10,
+      "daily_cap": null,
+      "monthly_cap": null,
+      "lifetime_cap": null,
+      "frequency": "per_order",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": true,
+      "trigger_channel": "auto",
+      "requires": ["overdue_hours_gt_24"],
+      "condition": { "field": "overdue_hours", "op": "gt", "value": 24 },
+      "ref_type": "order",
+      "exclusive_group": "OVERDUE_PER_ORDER",
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2"
+    },
+    {
+      "rule_key": "DAMAGE_MINOR",
+      "event": "arbitration.damage_ruled",
+      "name_zh": "物品损坏（轻微）",
+      "direction": "negative",
+      "change_type": "deduct",
+      "delta_type": "fixed",
+      "delta": -10,
+      "daily_cap": null,
+      "monthly_cap": null,
+      "lifetime_cap": null,
+      "frequency": "per_arbitration",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": false,
+      "trigger_channel": "arbitration",
+      "requires": ["arbitration_final_ruling", "snapshot_damage_rules_match"],
+      "ref_type": "arbitration",
+      "exclusive_group": "DAMAGE_PER_ORDER",
+      "damage_severity": "minor",
+      "damage_level_code": "L1",
+      "amount_binding": "order.snapshot.damage_rules.rules[level=L1_*].deduct",
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2 / 5.4.4"
+    },
+    {
+      "rule_key": "DAMAGE_MODERATE",
+      "event": "arbitration.damage_ruled",
+      "name_zh": "物品损坏（中度）",
+      "direction": "negative",
+      "change_type": "deduct",
+      "delta_type": "fixed",
+      "delta": -30,
+      "daily_cap": null,
+      "monthly_cap": null,
+      "lifetime_cap": null,
+      "frequency": "per_arbitration",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": false,
+      "trigger_channel": "arbitration",
+      "requires": ["arbitration_final_ruling", "snapshot_damage_rules_match"],
+      "ref_type": "arbitration",
+      "exclusive_group": "DAMAGE_PER_ORDER",
+      "damage_severity": "moderate",
+      "damage_level_code": "L2",
+      "amount_binding": "order.snapshot.damage_rules.rules[level=L2_*].deduct",
+      "enabled": true,
+      "extension": true,
+      "extension_note": "5.4.2 未单列中度档；本档由 5.4.4 定损表 L2_中度 deduct=30 派生，需产品确认后固化",
+      "source": "5.4.4"
+    },
+    {
+      "rule_key": "DAMAGE_SEVERE",
+      "event": "arbitration.damage_ruled",
+      "name_zh": "物品损坏（重度）",
+      "direction": "negative",
+      "change_type": "deduct",
+      "delta_type": "fixed",
+      "delta": -50,
+      "daily_cap": null,
+      "monthly_cap": null,
+      "lifetime_cap": null,
+      "frequency": "per_arbitration",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": false,
+      "trigger_channel": "arbitration",
+      "requires": ["arbitration_final_ruling", "snapshot_damage_rules_match"],
+      "ref_type": "arbitration",
+      "exclusive_group": "DAMAGE_PER_ORDER",
+      "damage_severity": "severe",
+      "damage_level_code": "L3",
+      "amount_binding": "order.snapshot.damage_rules.rules[level=L3_*].deduct",
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2 / 5.4.4"
+    },
+    {
+      "rule_key": "BREACH_REFUSE_RETURN",
+      "event": "order.breach",
+      "name_zh": "违约（拒不归还）",
+      "direction": "negative",
+      "change_type": "deduct",
+      "delta_type": "at_least",
+      "delta": -30,
+      "delta_floor": -30,
+      "uncapped": true,
+      "daily_cap": null,
+      "monthly_cap": null,
+      "lifetime_cap": null,
+      "frequency": "per_order",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": false,
+      "trigger_channel": "manual_confirm",
+      "requires": ["owner_initiated_claim", "arbitration_final_ruling"],
+      "ref_type": "arbitration",
+      "exclusive_group": null,
+      "escalation": {
+        "offline_handling": true,
+        "account_status": 0,
+        "account_ban": true,
+        "note": "−30 起，上不封顶；移交线下处理并封禁账号"
+      },
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2"
+    },
+    {
+      "rule_key": "INVITEE_SEVERE_BREACH",
+      "event": "invitee.severe_breach",
+      "name_zh": "被邀请人严重违约",
+      "direction": "negative",
+      "change_type": "deduct",
+      "delta_type": "fixed",
+      "delta": -3,
+      "daily_cap": null,
+      "monthly_cap": 6,
+      "lifetime_cap": null,
+      "frequency": "per_invitee_event",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": true,
+      "trigger_channel": "auto",
+      "requires": ["inviter_relation_exists", "invitee_breach_confirmed"],
+      "ref_type": "arbitration",
+      "exclusive_group": null,
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2 / 5.1.3"
+    },
+    {
+      "rule_key": "CREDIT_REPAIR_COMPLETE",
+      "event": "task.credit_repair.completed",
+      "name_zh": "信用修复任务完成",
+      "direction": "positive",
+      "change_type": "add",
+      "delta_type": "fixed",
+      "delta": 5,
+      "daily_cap": null,
+      "monthly_cap": 15,
+      "lifetime_cap": null,
+      "frequency": "per_task",
+      "applies_once_per_ref": true,
+      "writes_credit_log": true,
+      "auto_execute": false,
+      "trigger_channel": "manual_confirm",
+      "requires": ["task_confirmed_by_both_sides"],
+      "eligible_levels": ["L0", "L1"],
+      "ref_type": "task",
+      "exclusive_group": null,
+      "enabled": true,
+      "extension": false,
+      "source": "5.4.2"
+    }
+  ],
+  "overdue_policy": {
+    "bands": [
+      {
+        "band": "LE_24H",
+        "min_hours_exclusive": 0,
+        "max_hours_inclusive": 24,
+        "rule_key": "OVERDUE_LE_24H",
+        "source": "5.4.2"
+      },
+      {
+        "band": "GT_24H",
+        "min_hours_exclusive": 24,
+        "max_hours_inclusive": null,
+        "rule_key": "OVERDUE_GT_24H",
+        "source": "5.4.2"
+      }
+    ],
+    "band_exclusive": true,
+    "consecutive_overdue_threshold": 2,
+    "consecutive_overdue_action": {
+      "observation_list": true,
+      "borrow_ban_days": 30,
+      "error_code": 40302,
+      "http_status": 403,
+      "source": "5.4.5"
+    },
+    "consecutive_counter_reset": "borrow_ban_days 届满后清零"
+  },
+  "deposit": {
+    "enabled": true,
+    "required_for": ["high_value"],
+    "freeze_amount_field": "biz_item.deposit_score",
+    "available_score_formula": "credit_score - credit_frozen - inflight_order_frozen",
+    "frozen_counts_toward_level": true,
+    "unfreeze_on": "order.confirm_no_damage",
+    "unfreeze_timing": "immediate",
+    "paired_logging": {
+      "table": "sys_credit_log",
+      "freeze_change_type": "freeze",
+      "unfreeze_change_type": "unfreeze",
+      "must_be_paired": true,
+      "purpose": "日终对账（6.3.4）"
+    },
+    "insufficient_score_action": {
+      "error_code": 40301,
+      "http_status": 403,
+      "msg_zh": "信用分不足，禁止借用高价值物品"
+    },
+    "source": "5.4.3 / 6.3.4"
+  },
+  "permission_gates": [
+    {
+      "gate_key": "HIGH_VALUE_BORROW_MIN_SCORE",
+      "condition": { "field": "credit_score", "op": "lt", "value": 60 },
+      "action": {
+        "deny": "borrow_high_value",
+        "forbidden_categories": ["digital", "wig", "formal_wear"],
+        "error_code": 40301,
+        "http_status": 403
+      },
+      "source": "5.4.5"
+    },
+    {
+      "gate_key": "BORROW_FROZEN_MIN_SCORE",
+      "condition": { "field": "credit_score", "op": "lt", "value": 40 },
+      "action": {
+        "deny": "borrow_all",
+        "allowed": ["browse", "publish", "accept_task"],
+        "error_code": 40301,
+        "http_status": 403
+      },
+      "source": "5.4.5"
+    },
+    {
+      "gate_key": "CONSECUTIVE_OVERDUE_OBSERVATION",
+      "condition": { "field": "consecutive_overdue_count", "op": "gte", "value": 2 },
+      "action": {
+        "deny": "borrow_all",
+        "observation_list": true,
+        "borrow_ban_days": 30,
+        "error_code": 40302,
+        "http_status": 403
+      },
+      "source": "5.4.5"
+    },
+    {
+      "gate_key": "ARBITRATION_LOSS_COOLDOWN",
+      "condition": { "field": "arbitration_result", "op": "eq", "value": "lost" },
+      "action": {
+        "apply_deduction_immediately": true,
+        "cooling_days": 7,
+        "deny": "borrow_all",
+        "error_code": 40302,
+        "http_status": 403
+      },
+      "source": "5.4.5"
+    }
+  ],
+  "arbitration": {
+    "claim_window_hours": 48,
+    "claim_after_window": "deemed_no_damage",
+    "snapshot_authoritative": true,
+    "arbiter_discretion_on_amount": false,
+    "insufficient_evidence_split_ratio": 0.5,
+    "execution_sla_minutes": 5,
+    "freeze_dispute_score_on_claim": true,
+    "source": "5.5.2 / 5.5.3"
+  },
+  "level_reevaluation": {
+    "trigger": ["credit_score_changed", "daily_job"],
+    "job": "job-fn",
+    "cron": "0 5 2 * * *",
+    "rule": "按 levels 区间重新计算 sys_user.credit_level，冻结分仍计入等级判定",
+    "source": "5.4.3 / 6.3.1"
+  },
+  "error_codes": {
+    "40301": "信用分不足",
+    "40302": "无权限执行该操作",
+    "40001": "参数校验失败",
+    "source": "7.2"
+  }
+}

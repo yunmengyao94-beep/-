@@ -1,0 +1,41 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": true
+  },
+  "extends": ["eslint:recommended"],
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-absolute-position": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "eqeqeq": ["error", "always"],
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "no-console": ["warn", { "allow": ["warn", "error", "info"] }]
+  },
+  "overrides": [
+    {
+      "files": ["server/**/*.js", "scripts/**/*.js", "eslint-rules/**/*.js"],
+      "parserOptions": {
+        "sourceType": "script"
+      }
+    },
+    {
+      "files": ["scripts/**/*.js", "eslint-rules/**/*.js"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["eslint-rules/**/*.js", "scripts/check-no-absolute.js"],
+      "rules": {
+        "no-absolute-position": "off"
+      }
+    }
+  ]
+}

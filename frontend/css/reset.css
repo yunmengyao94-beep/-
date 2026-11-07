@@ -1,0 +1,203 @@
+/* ============================================================================
+ * 易校圈 · CSS Reset
+ * ----------------------------------------------------------------------------
+ * 目标：抹平浏览器默认样式差异，统一盒模型，为业务样式提供干净基线。
+ * 依赖：variables.css（每个 var() 都带兜底值，单文件引入也不会崩）
+ * ========================================================================== */
+
+/* ---------- 1. 统一盒模型 ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ---------- 2. 清除默认外边距与内边距 ---------- */
+html,
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd,
+fieldset,
+legend,
+pre,
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- 3. 基础字体与排版 ---------- */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(
+    --font-family,
+    system-ui,
+    -apple-system,
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif
+  );
+  font-size: var(--font-size-base, 14px);
+  line-height: var(--line-height-base, 1.6);
+  color: var(--text-main, #333);
+  background-color: var(--bg-color, #f5f7fa);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-wrap: break-word;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: var(--font-weight-bold, 600);
+  line-height: var(--line-height-tight, 1.25);
+}
+
+/* ---------- 4. 列表：去项目符号与缩进 ---------- */
+ul,
+ol {
+  list-style: none;
+}
+
+/* ---------- 5. 链接：去下划线、继承文字色 ---------- */
+a {
+  color: inherit;
+  text-decoration: none;
+  background-color: transparent;
+}
+
+a:hover,
+a:active {
+  text-decoration: none;
+  outline: 0;
+}
+
+/* ---------- 6. 媒体元素：块级化，避免基线缝隙与撑破容器 ---------- */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ---------- 7. 表单：继承字体，去掉浏览器默认外观 ---------- */
+input,
+button,
+textarea,
+select {
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+button {
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+textarea {
+  resize: vertical;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type='search'] {
+  -webkit-appearance: textfield;
+  appearance: textfield;
+  outline-offset: -2px;
+}
+
+/* ---------- 8. 表格：合并边框 ---------- */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+}
+
+th,
+td {
+  padding: 0;
+  text-align: left;
+}
+
+/* ---------- 9. 分隔线与代码 ---------- */
+hr {
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background-color: var(--border-color, #ebeef5);
+}
+
+pre,
+code,
+kbd,
+samp {
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  overflow: auto;
+}
+
+blockquote,
+q {
+  quotes: none;
+}
+
+blockquote::before,
+blockquote::after,
+q::before,
+q::after {
+  content: '';
+  content: none;
+}
+
+/* ---------- 10. 隐藏属性优先级最高 ---------- */
+[hidden] {
+  display: none !important;
+}
+
+/* ---------- 11. 无障碍：保留键盘焦点可见 ---------- */
+:focus-visible {
+  outline: 2px solid var(--primary, #1890ff);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}

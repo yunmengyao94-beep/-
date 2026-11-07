@@ -1,0 +1,212 @@
+{
+  "info": {
+    "_postman_id": "9f2a7c41-8b3d-4e6a-9c15-2d7f0b4a6e83",
+    "name": "易校圈 Mock API（Project-YXX）",
+    "description": "Sprint 2 核心接口集合，对接本地 Mock 服务 http://localhost:3000。\n\n使用步骤：\n1. 终端执行 `npm run server` 启动服务（默认 3000 端口，所有接口含 300ms 模拟延迟）\n2. 先跑「02 模拟登录」，脚本会自动把 token 写入集合变量 {{token}}\n3. 其余受保护接口通过 Bearer {{token}} 自动鉴权\n\n响应统一遵循计划书 7.2：code / msg / data / timestamp / trace_id / server_time。\n\n公开接口（无需 Token）：GET /items、GET /items/:id、GET /health、POST /auth/login；其余接口需 Bearer Token。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 健康检查 · GET /health",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('code = 200', () => pm.expect(body.code).to.eql(200));",
+              "pm.test('data = server is running', () => pm.expect(body.data).to.eql('server is running'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "健康探针。无需 Token；按验收要求只返回 code/msg/data 三要素。"
+      },
+      "response": []
+    },
+    {
+      "name": "02 模拟登录 · POST /auth/login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('code = 200', () => pm.expect(body.code).to.eql(200));",
+              "pm.test('返回 JWT', () => pm.expect(body.data.token).to.be.a('string'));",
+              "pm.test('有效期 7 天', () => pm.expect(body.data.expires_in).to.eql(604800));",
+              "if (body.code === 200) { pm.collectionVariables.set('token', body.data.token); }",
+              "pm.test('已写入集合变量 token', () => pm.expect(pm.collectionVariables.get('token')).to.be.a('string'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"student_no\": \"2599080110120\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "任意学号换取 7 天假 JWT（payload 含 user_id: 1）。运行后自动保存 token 到集合变量。"
+      },
+      "response": []
+    },
+    {
+      "name": "03 物品列表 · GET /items",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('code = 200', () => pm.expect(body.code).to.eql(200));",
+              "pm.test('list 为数组', () => pm.expect(body.data.list).to.be.an('array'));",
+              "pm.test('分页字段齐全', () => pm.expect(body.data.pagination).to.have.all.keys('limit', 'has_more', 'next_cursor', 'sort'));",
+              "if (body.data.pagination.next_cursor) { pm.collectionVariables.set('cursor', body.data.pagination.next_cursor); }"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/items?limit=10&cursor={{cursor}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["items"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "10",
+              "description": "每页条数，默认 10，上限 50"
+            },
+            {
+              "key": "cursor",
+              "value": "{{cursor}}",
+              "description": "游标，原样回传上一页的 next_cursor；首页留空"
+            }
+          ]
+        },
+        "description": "物品列表，游标分页（id DESC）。**公开接口**：不带 Token 也可访问（本集合默认附带 Bearer 亦可）。首次请求请把 cursor 变量置空。"
+      },
+      "response": []
+    },
+    {
+      "name": "04 个人信息 · GET /users/me",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('code = 200', () => pm.expect(body.code).to.eql(200));",
+              "pm.test('user_id = 1', () => pm.expect(body.data.user_id).to.eql(1));",
+              "pm.test('学号已脱敏', () => pm.expect(body.data.student_no).to.match(/^\\d{4}\\*{4}\\d{2}$/));",
+              "pm.test('credit 字段齐全', () => pm.expect(body.data.credit).to.have.all.keys('score', 'frozen', 'available', 'level', 'level_code'));",
+              "pm.test('credit_logs 为数组', () => pm.expect(body.data.credit_logs).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "me"]
+        },
+        "description": "个人信息 + 信用摘要 + 全部信用流水（时间倒序）。未带 Token 时返回 40101。"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cursor",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

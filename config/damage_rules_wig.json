@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0.0",
+  "config_key": "damage_rules_wig",
+  "item_category": "wig",
+  "category_name_zh": "假发",
+  "category_name_en": "Wig",
+  "parent_category": "apparel",
+  "is_high_value": true,
+  "deduct_unit": "credit_score",
+  "max_deduct": 50,
+  "agreed_at_publish": true,
+  "rules": [
+    {
+      "level": "L1_轻微",
+      "level_code": "L1",
+      "severity": "minor",
+      "desc": "表面抽丝、局部打结",
+      "desc_en": "Surface fraying or localized tangling",
+      "deduct": 10,
+      "credit_rule_ref": "DAMAGE_MINOR",
+      "repairable": true,
+      "evidence_levels": ["E1", "E2"],
+      "source": "5.4.4"
+    },
+    {
+      "level": "L2_中度",
+      "level_code": "L2",
+      "severity": "moderate",
+      "desc": "大面积纠缠、需专业打理",
+      "desc_en": "Extensive tangling requiring professional grooming",
+      "deduct": 30,
+      "credit_rule_ref": "DAMAGE_MODERATE",
+      "repairable": true,
+      "evidence_levels": ["E1", "E2", "E3"],
+      "source": "5.4.4"
+    },
+    {
+      "level": "L3_重度",
+      "level_code": "L3",
+      "severity": "severe",
+      "desc": "断裂、不可修复",
+      "desc_en": "Breakage; beyond repair",
+      "deduct": 50,
+      "credit_rule_ref": "DAMAGE_SEVERE",
+      "repairable": false,
+      "evidence_levels": ["E1", "E2", "E3"],
+      "source": "5.4.4"
+    }
+  ],
+  "aggregation": {
+    "mode": "single_level_exclusive",
+    "max_levels_per_claim": 1,
+    "pick": "highest_level_only",
+    "cap": 50,
+    "cap_field": "max_deduct"
+  },
+  "agreement": {
+    "display_on_order_page": true,
+    "slider_confirm_required": true,
+    "snapshot_on_order_create": true,
+    "snapshot_field": "biz_order.snapshot",
+    "snapshot_authoritative_in_arbitration": true,
+    "post_publish_edit_forbidden": true,
+    "claim_window_hours": 48,
+    "claim_after_window": "deemed_no_damage",
+    "implicit_consent_on_order": true,
+    "source": "5.4.4 / 5.5.2 / 6.3.3"
+  },
+  "validation": {
+    "enforced_by": "POST /api/v1/items/publish（7.3.3 校验 damage_rules 结构）",
+    "required_fields": ["item_category", "rules", "max_deduct", "agreed_at_publish"],
+    "rule_required_fields": ["level", "desc", "deduct"],
+    "rules_min_items": 1,
+    "levels_unique": true,
+    "levels_sorted_by_deduct_asc": true,
+    "deduct_must_be_positive_int": true,
+    "deduct_lte_max_deduct": true,
+    "max_deduct_equals_max_rule_deduct": true,
+    "agreed_at_publish_must_be_true": true,
+    "level_token_pattern": "^L[0-9]+_[\\u4e00-\\u9fa5]+$",
+    "on_violation": {
+      "error_code": 40001,
+      "http_status": 400
+    },
+    "source": "5.4.4 / 7.3.3 / 7.2"
+  },
+  "meta": {
+    "title_zh": "假发类目强制损坏定损表（发布模板）",
+    "title_en": "Mandatory damage-assessment table template for wigs",
+    "source_document": "易校圈_Project-YXX_商业级项目计划书_V1.0.0.md",
+    "source_sections": [
+      "5.4.2 计分规则表",
+      "5.4.3 虚拟押金冻结",
+      "5.4.4 强制定损表",
+      "5.5.1 证据链设计",
+      "5.5.2 仲裁流程与 SLA",
+      "6.3.3 biz_order",
+      "6.3.5 biz_arbitration",
+      "7.3.3 物品发布"
+    ],
+    "template_usage": "出借者发布 category=wig 的物品时，系统以本文件为默认值预填《损坏赔偿明细表》，出借者可下调各档 deduct 与 max_deduct，但不得高于本模板上限。",
+    "field_naming": "字段名全部为英文；level 的取值保留文档中的 L1_轻微 / L2_中度 / L3_重度 原样，以便 biz_arbitration.claim_level 与订单快照直接对齐，避免大小写或翻译导致的裁决口径漂移。",
+    "cross_refs": {
+      "credit_rules_file": "config/credit_rules.json",
+      "credit_rules_used": ["DAMAGE_MINOR", "DAMAGE_MODERATE", "DAMAGE_SEVERE"]
+    },
+    "notes": [
+      "deduct_unit=credit_score：6.3.5 的 claim_deduct 为“申请扣分（引用定损表）”，故 deduct 即信用分扣减额，与 5.4.2 的 −10 / −50 同量纲。",
+      "本表三档与计分表两档的衔接：L1→DAMAGE_MINOR(-10)、L3→DAMAGE_SEVERE(-50) 与 5.4.2 完全一致；L2 档 30 分在 5.4.2 中无对应行，已由 DAMAGE_MODERATE 承接并标记 extension。",
+      "is_high_value=true 依据 5.4.3 将假发列为高价值物品；该标记驱动 5.4.5 的 40301 门禁与押金冻结。",
+      "parent_category=apparel 依据 6.3.2 的物品类目枚举（服饰/数码/教具/工具/其他）与 7.3.3 请求示例 category=apparel。",
+      "全部 deduct 之和的上界由 max_deduct=50 钳制，避免单次定损超过 5.4.4 示例上限。"
+    ]
+  }
+}

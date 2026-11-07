@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+# 提交前钩子：仅对暂存文件执行 ESLint / Prettier / 样式规范检查
+# 配置来源：package.json 的 lint-staged 字段 + .eslintrc.json + .prettierrc
+if ! command -v lint-staged >/dev/null 2>&1; then
+  echo "[pre-commit] 未找到 lint-staged，请先安装依赖：npm install（或 pnpm install）" >&2
+  exit 1
+fi
+
+lint-staged

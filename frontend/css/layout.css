@@ -1,0 +1,262 @@
+/* ============================================================================
+ * 易校圈 · Layout 工具类（纯 Flexbox）
+ * ----------------------------------------------------------------------------
+ * 硬性约束：本文件禁止出现 position 声明，一切布局靠 flex 与文档流完成；
+ *           需要吸顶/吸底时由业务组件自行使用 sticky，不得在此扩展绝对定位类。
+ * 命名：.flex / .flex-col / .justify-between / .items-center 等，贴近 Tailwind 直觉。
+ * ========================================================================== */
+
+/* ---------- 1. 容器 ---------- */
+.flex {
+  display: flex;
+}
+
+.inline-flex {
+  display: inline-flex;
+}
+
+/* ---------- 2. 方向 ---------- */
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-row-reverse {
+  flex-direction: row-reverse;
+}
+
+.flex-col-reverse {
+  flex-direction: column-reverse;
+}
+
+/* ---------- 3. 换行 ---------- */
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.flex-nowrap {
+  flex-wrap: nowrap;
+}
+
+/* ---------- 4. 主轴对齐 ---------- */
+.justify-start {
+  justify-content: flex-start;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-around {
+  justify-content: space-around;
+}
+
+.justify-evenly {
+  justify-content: space-evenly;
+}
+
+/* ---------- 5. 交叉轴对齐 ---------- */
+.items-start {
+  align-items: flex-start;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.items-end {
+  align-items: flex-end;
+}
+
+.items-stretch {
+  align-items: stretch;
+}
+
+.items-baseline {
+  align-items: baseline;
+}
+
+/* ---------- 6. 多行内容对齐 ---------- */
+.content-start {
+  align-content: flex-start;
+}
+
+.content-center {
+  align-content: center;
+}
+
+.content-between {
+  align-content: space-between;
+}
+
+.content-stretch {
+  align-content: stretch;
+}
+
+/* ---------- 7. 单个子项对齐 ---------- */
+.self-start {
+  align-self: flex-start;
+}
+
+.self-center {
+  align-self: center;
+}
+
+.self-end {
+  align-self: flex-end;
+}
+
+.self-stretch {
+  align-self: stretch;
+}
+
+/* ---------- 8. 伸缩比例（子项） ---------- */
+.flex-1 {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.flex-auto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.flex-none {
+  flex: none;
+}
+
+.flex-initial {
+  flex: 0 1 auto;
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.shrink-0 {
+  flex-shrink: 0;
+}
+
+/* ---------- 9. 间距（基于 --space-* 令牌） ---------- */
+.gap-0 {
+  gap: 0;
+}
+
+.gap-1 {
+  gap: var(--space-1, 4px);
+}
+
+.gap-2 {
+  gap: var(--space-2, 8px);
+}
+
+.gap-3 {
+  gap: var(--space-3, 12px);
+}
+
+.gap-4 {
+  gap: var(--space-4, 16px);
+}
+
+.gap-6 {
+  gap: var(--space-6, 24px);
+}
+
+.gap-x-2 {
+  column-gap: var(--space-2, 8px);
+}
+
+.gap-y-2 {
+  row-gap: var(--space-2, 8px);
+}
+
+/* ---------- 10. 常见组合（少写几个 class 就能成型） ---------- */
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.row-center {
+  display: flex;
+  align-items: center;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.col-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.col-stretch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* ---------- 11. 尺寸辅助 ---------- */
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.min-h-0 {
+  min-height: 0;
+}
+
+.flex-center-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ---------- 12. 溢出与显隐 ---------- */
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-auto {
+  overflow: auto;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---------- 13. 文本截断（列表标题常用） ---------- */
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ellipsis-2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

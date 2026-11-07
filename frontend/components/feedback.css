@@ -1,0 +1,379 @@
+/* ============================================================================
+ * 易校圈 · 交互与反馈组件（Sprint 3 Batch 3）
+ * ----------------------------------------------------------------------------
+ * 组件：Toast 轻提示 / Modal 弹窗 / Skeleton 骨架屏 / Spinner 加载 / EmptyState 空状态
+ * 依赖：variables.css（令牌）、reset.css。
+ * 约束：全程无绝对定位 —— 浮层统一用 position: fixed + flex 居中，
+ *       因此不违背项目「布局禁用绝对定位」的硬性规则。
+ * 层级：遮罩 --z-mask(1100) < 弹窗 --z-modal(1110) < Toast --z-toast(1120)
+ * ========================================================================== */
+
+/* ============================================================================
+ * 1. Toast 轻提示
+ * ----------------------------------------------------------------------------
+ * 结构（由 feedback.js 生成）：
+ *   <div class="toast-container">
+ *     <div class="toast toast--success"><span class="toast__icon">✓</span><span>已保存</span></div>
+ *   </div>
+ * ========================================================================== */
+
+/* 容器：屏幕中上部居中悬浮，多个 Toast 纵向堆叠 */
+.toast-container {
+  position: fixed;
+  top: 12%;
+  left: 50%;
+  z-index: var(--z-toast, 1120);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  max-width: min(80vw, 420px);
+  padding: 10px 16px;
+  font-size: var(--font-size-base, 14px);
+  line-height: 1.4;
+  background-color: rgba(255, 255, 255, 0.98);
+  border-radius: var(--radius-round, 999px);
+  box-shadow: var(--shadow-float, 0 8px 24px rgba(0, 0, 0, 0.12));
+  animation: toast-in var(--transition-base, 0.25s) ease-out;
+}
+
+.toast__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-inverse, #fff);
+  border-radius: 50%;
+}
+
+/* 成功：绿字 + 绿图标 */
+.toast--success {
+  color: var(--success, #52c41a);
+}
+
+.toast--success .toast__icon {
+  background-color: var(--success, #52c41a);
+}
+
+/* 失败：红字 + 红图标 */
+.toast--error {
+  color: var(--danger, #ff4d4f);
+}
+
+.toast--error .toast__icon {
+  background-color: var(--danger, #ff4d4f);
+}
+
+/* 离场：淡出上移，动画结束后由 JS 销毁 DOM */
+.toast.is-leaving {
+  animation: toast-out 0.2s ease-in forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+}
+
+/* ============================================================================
+ * 2. Modal 弹窗
+ * ----------------------------------------------------------------------------
+ * 遮罩全屏半透明，内容用 flex 居中；弹入时 scale 放大。
+ * 关闭：点击遮罩空白处、右上角 ×、Esc 键（由 feedback.js 绑定）。
+ * ========================================================================== */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1110);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6, 24px);
+  background-color: rgba(0, 0, 0, 0.5);
+  animation: mask-in 0.2s ease-out;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  max-height: 80vh;
+  overflow: hidden;
+  background-color: var(--bg-card, #fff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-float, 0 8px 24px rgba(0, 0, 0, 0.12));
+  animation: modal-in 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  padding: var(--space-4, 16px) var(--space-4, 16px) var(--space-2, 8px);
+}
+
+.modal__title {
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.modal__close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-sub, #888);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast, 0.15s) ease,
+    color var(--transition-fast, 0.15s) ease;
+}
+
+.modal__close:hover {
+  color: var(--text-main, #333);
+  background-color: var(--border-color-light, #f2f3f5);
+}
+
+.modal__body {
+  padding: var(--space-2, 8px) var(--space-4, 16px) var(--space-4, 16px);
+  overflow-y: auto;
+  font-size: var(--font-size-base, 14px);
+  line-height: 1.7;
+  color: var(--text-main, #333);
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2, 8px);
+  padding: 0 var(--space-4, 16px) var(--space-4, 16px);
+}
+
+/* 弹窗打开时锁滚动，避免背景跟着滑动 */
+body.modal-open {
+  overflow: hidden;
+}
+
+@keyframes mask-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================================
+ * 3. Skeleton 骨架屏
+ * ----------------------------------------------------------------------------
+ * 呼吸灯 + 微光扫过：背景渐变位移与透明度同步缓动，观感比单纯闪烁更柔和。
+ * ========================================================================== */
+.skeleton {
+  display: block;
+  background-image: linear-gradient(90deg, #f2f3f5 25%, #e6e8eb 37%, #f2f3f5 63%);
+  background-size: 400% 100%;
+  border-radius: var(--radius-sm, 4px);
+  animation: skeleton-loading 1.6s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 100% 50%;
+    opacity: 0.75;
+  }
+
+  50% {
+    background-position: 0 50%;
+    opacity: 1;
+  }
+
+  100% {
+    background-position: 100% 50%;
+    opacity: 0.75;
+  }
+}
+
+/* 圆形头像占位 */
+.skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+/* 文本行占位（圆角矩形） */
+.skeleton-text {
+  width: 100%;
+  height: 14px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.skeleton-text--lg {
+  height: 20px;
+}
+
+.skeleton-text--short {
+  width: 45%;
+}
+
+.skeleton-text--medium {
+  width: 70%;
+}
+
+/* 骨架条目：左头像 + 右三行，列表加载态常用 */
+.skeleton-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3, 12px);
+  padding: var(--space-3, 12px) 0;
+}
+
+.skeleton-item__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  padding-top: 4px;
+}
+
+/* ============================================================================
+ * 4. Spinner 加载动画
+ * ========================================================================== */
+.spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color, #ebeef5);
+  border-top-color: var(--primary, #1890ff);
+  border-radius: 50%;
+  animation: spinner-rotate 0.8s linear infinite;
+}
+
+.spinner--sm {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+.spinner--lg {
+  width: 44px;
+  height: 44px;
+  border-width: 4px;
+}
+
+/* 带说明文字的加载区 */
+.spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-8, 32px) var(--space-4, 16px);
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-sub, #888);
+}
+
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 尊重系统「减少动态效果」偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+
+  .skeleton {
+    animation-duration: 3s;
+  }
+}
+
+/* ============================================================================
+ * 5. EmptyState 空状态
+ * ========================================================================== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3, 12px);
+  padding: var(--space-12, 48px) var(--space-4, 16px);
+  text-align: center;
+}
+
+.empty-state__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  font-size: 34px;
+  line-height: 1;
+  color: #c0c4cc;
+  background-color: var(--border-color-light, #f2f3f5);
+  border-radius: 50%;
+}
+
+.empty-state__text {
+  font-size: var(--font-size-base, 14px);
+  color: var(--text-sub, #888);
+}
+
+.empty-state__desc {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-placeholder, #bfbfbf);
+}
+
+.empty-state__action {
+  margin-top: var(--space-1, 4px);
+}

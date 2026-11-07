@@ -1,0 +1,355 @@
+{
+  "mock_version": "1.0.1",
+  "project": "Project-YXX / 易校圈",
+  "source_document": "易校圈_Project-YXX_商业级项目计划书_V1.0.0.md",
+  "source_sections": [
+    "5.4.1 分值与等级",
+    "5.4.3 虚拟押金冻结",
+    "6.3.1 sys_user",
+    "6.3.2 biz_item",
+    "6.3.4 sys_credit_log",
+    "6.4 索引与性能设计（游标分页）",
+    "6.5 数据安全设计（脱敏展示）",
+    "7.1 接口设计规范",
+    "7.2 统一响应结构与错误码",
+    "7.3.3 / 7.3.4 物品与订单示例",
+    "7.4 接口清单（API-04、API-05、API-12）"
+  ],
+  "base_url": "https://api.yxx.example.com",
+  "envelope": {
+    "spec": "7.2 统一响应结构",
+    "field_order": ["code", "msg", "data", "trace_id", "server_time"],
+    "fields": {
+      "code": "业务码（整数）。200 成功；其余取值见 7.2 错误码表，如 40001/40101/40301/42901",
+      "msg": "提示信息。成功固定为 \"success\"；失败时为可直接展示的中文提示",
+      "data": "业务数据。成功时为对象或数组；失败时为错误上下文（如 40301 返回 current_score/required_score）",
+      "trace_id": "链路追踪 ID，UUID v4 格式，与日志/告警联动",
+      "server_time": "服务端时间，ISO 8601 带时区偏移（7.1 约定示例为 +08:00）"
+    },
+    "error_example": {
+      "code": 40301,
+      "msg": "信用分不足，禁止借用高价值物品",
+      "data": { "current_score": 52, "required_score": 60 },
+      "trace_id": "b7f3c9a1-2d4e-4f6a-8c1d-9e0f2a3b4c5d",
+      "server_time": "2026-11-07T10:00:00+08:00"
+    }
+  },
+  "conventions": {
+    "naming": "字段一律 snake_case，与 6.3 表结构、7.3 请求示例保持一致",
+    "id_type": "BIGINT 统一以 JSON number 返回；对外业务单号用字符串 order_no（如 YXX2026110700017）",
+    "time_format": "ISO 8601 带 +08:00 偏移；DB 内按 6.1 存 UTC，接口层转换后返回",
+    "pagination": {
+      "style": "游标分页（6.4：created_at + id 联合排序，禁止深分页）",
+      "query": ["cursor", "limit"],
+      "limit_max": 50,
+      "sort": "created_at DESC, id DESC",
+      "cursor_format": "base64url(JSON) → {\"created_at\":\"...\",\"id\":...}，无填充字符 =，客户端不得解析其内容",
+      "shape": "data = { list: [...], pagination: { limit, has_more, next_cursor, sort } }",
+      "note": "7.1 仅约定 cursor + limit，未定义外层信封；list/pagination 为本次 mock 约定，接口评审时需固化"
+    },
+    "masking": {
+      "student_no": "按 6.5 脱敏为 2599****20（L4 敏感个人信息）",
+      "real_name": "按 6.5 脱敏为 张*（AES-256 密文，接口不返回明文）",
+      "device_fp": "绝不下发，仅风控内部使用"
+    },
+    "credit_formula": {
+      "available": "credit_score - credit_frozen - in_flight_frozen（5.4.3）",
+      "frozen_scope": "credit_frozen 已含在途订单的冻结分；in_flight_frozen 仅统计尚未落入 frozen 的占用，本 mock 取 0，避免公式重复扣减",
+      "reconciliation": "SUM(sys_credit_log.delta) == credit_score - 100（6.3.4）；冻结/解冻 delta 记 0，否则恒等式必破"
+    },
+    "derived_fields": [
+      "credit.available / credit.next_level / credit.gates（由 5.4.1、5.4.5 推导）",
+      "credit.frozen_items（由 biz_order + sys_credit_log 聚合）",
+      "college_name / major_name（由 5.1.2 学院-专业字典映射）",
+      "item.status_label / category_label / owner_credit_level（展示用派生字段）",
+      "credit_log.change_type_label（change_type 的中文标签）"
+    ],
+    "story": "同一用户 100021（张同学，7号楼）的连贯切片：11-02 借雨伞（冻结 10）→ 11-04 逾期 6h20m 归还（-5，余额 95）→ 11-05 借学士服（冻结 20）→ 11-06 20:41 确认无损解冻并按时归还（+1，余额 96）→ 11-07 09:12 借高值假发（冻结 50）。故 score=96（L3）、frozen=50、available=46；全部流水 delta 之和 -4 与 score-100 对账一致。当前页仅展示最近 3 行，-5 分位于下一页"
+  },
+  "endpoints": [
+    {
+      "api_id": "API-04",
+      "name_zh": "个人信息与信用等级",
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "auth_required": true,
+      "request": {
+        "headers": { "Authorization": "Bearer <JWT>", "Accept": "application/json" },
+        "query": {}
+      },
+      "response": {
+        "code": 200,
+        "msg": "success",
+        "data": {
+          "user_id": 100021,
+          "student_no": "2599****20",
+          "real_name": "张*",
+          "college_code": "0801",
+          "college_name": "计算机科学与技术学院",
+          "major_code": "080901",
+          "major_name": "计算机科学与技术",
+          "building_loc": "7号楼",
+          "credit": {
+            "score": 96,
+            "frozen": 50,
+            "in_flight_frozen": 0,
+            "available": 46,
+            "level": 3,
+            "level_code": "L3",
+            "level_name": "正常",
+            "score_range": { "min": 80, "max": 99 },
+            "next_level": { "level_code": "L4", "level_name": "良好", "min_score": 100, "gap": 4 },
+            "privileges": {
+              "borrow_low_value": true,
+              "borrow_mid_value": true,
+              "borrow_high_value": true,
+              "publish_deposit_free": false,
+              "exposure_boost": false,
+              "arbitration_priority": false
+            },
+            "restrictions": ["高值物品借用需 2 名担保人（当前等级 L3）"],
+            "gates": [
+              {
+                "threshold": 60,
+                "condition": "score < 60",
+                "effect": "禁止借用高值物品（数码/假发/正装）",
+                "error_code": 40301
+              },
+              {
+                "threshold": 40,
+                "condition": "score < 40",
+                "effect": "冻结借用功能，仅保留浏览/发布/接单",
+                "error_code": 40301
+              }
+            ],
+            "frozen_items": [
+              {
+                "order_id": 300021,
+                "item_id": 200036,
+                "title": "黑长直假发（60cm，可造型）",
+                "amount": 50,
+                "order_state": 1,
+                "frozen_at": "2026-11-07T09:12:00+08:00",
+                "unfreeze_rule": "归还且确认无损后立即解冻（5.4.3）"
+              }
+            ]
+          },
+          "invite": {
+            "invite_code": "YXX3P7Q9",
+            "invited_by": 100007,
+            "quota_used": 3,
+            "quota_total": 5
+          },
+          "webauthn": {
+            "credential_count": 2,
+            "max_credentials": 2,
+            "last_login_at": "2026-11-07T09:08:00+08:00",
+            "fallback_only": false
+          },
+          "status": 1,
+          "created_at": "2026-09-01T08:30:00+08:00"
+        },
+        "trace_id": "b7f3c9a1-2d4e-4f6a-8c1d-9e0f2a3b4c5d",
+        "server_time": "2026-11-07T10:00:00+08:00"
+      }
+    },
+    {
+      "api_id": "API-05",
+      "name_zh": "物品列表（游标分页）",
+      "method": "GET",
+      "path": "/api/v1/items",
+      "auth_required": true,
+      "request": {
+        "headers": { "Authorization": "Bearer <JWT>", "Accept": "application/json" },
+        "query": {
+          "building_loc": "7号楼",
+          "limit": 20,
+          "cursor": null
+        }
+      },
+      "response": {
+        "code": 200,
+        "msg": "success",
+        "data": {
+          "list": [
+            {
+              "id": 200036,
+              "owner_id": 100052,
+              "owner_credit_level": 5,
+              "title": "黑长直假发（60cm，可造型）",
+              "category": "apparel",
+              "category_label": "服饰",
+              "image_hash": "788baf8338263fdf5325addb8ee4d77630afa08bfcea4941c820cf6bc8403e40",
+              "image_list": [
+                "788baf8338263fdf5325addb8ee4d77630afa08bfcea4941c820cf6bc8403e40",
+                "de12019f92a9e66f726df4e13593239a8358f7b6a83cd2729832cb76a67727cf",
+                "dc831ab7ac0e82c6d921138a3e0193870676c785b44f245ecefb54d0c75355d3"
+              ],
+              "deposit_score": 50,
+              "damage_rules": {
+                "item_category": "wig",
+                "rules": [
+                  { "level": "L1_轻微", "desc": "表面抽丝、局部打结", "deduct": 10 },
+                  { "level": "L2_中度", "desc": "大面积纠缠、需专业打理", "deduct": 30 },
+                  { "level": "L3_重度", "desc": "断裂、不可修复", "deduct": 50 }
+                ],
+                "max_deduct": 50,
+                "agreed_at_publish": true
+              },
+              "building_loc": "7号楼",
+              "is_high_value": 1,
+              "status": 1,
+              "status_label": "已借出",
+              "expire_at": "2026-12-06T23:59:59+08:00",
+              "created_at": "2026-11-06T21:05:00+08:00"
+            },
+            {
+              "id": 200033,
+              "owner_id": 100088,
+              "owner_credit_level": 4,
+              "title": "学士服（L码，含学士帽+垂布）",
+              "category": "apparel",
+              "category_label": "服饰",
+              "image_hash": "0666ed83787aea33e71160567377a5607064da642f9e35e7ac70cfbf16c4ae65",
+              "image_list": [
+                "0666ed83787aea33e71160567377a5607064da642f9e35e7ac70cfbf16c4ae65",
+                "7e5e18dd64998490cf4672a8fed41f32fc5c3cdc4efdccb64796c1c16e7f6e4e",
+                "f03acae2d0f4efc5d188ec27fd324c94e6142936b5800063837e7a77deeb0e45"
+              ],
+              "deposit_score": 20,
+              "damage_rules": {
+                "item_category": "gown",
+                "rules": [
+                  { "level": "L1_轻微", "desc": "褶皱或轻微污渍", "deduct": 5 },
+                  { "level": "L2_中度", "desc": "明显污渍、垂布或学士帽缺失", "deduct": 15 }
+                ],
+                "max_deduct": 20,
+                "agreed_at_publish": true
+              },
+              "building_loc": "7号楼",
+              "is_high_value": 0,
+              "status": 0,
+              "status_label": "待借",
+              "expire_at": "2026-12-31T23:59:59+08:00",
+              "created_at": "2026-11-04T09:20:00+08:00"
+            },
+            {
+              "id": 200040,
+              "owner_id": 100077,
+              "owner_credit_level": 4,
+              "title": "雨伞（长柄自动，8骨抗风）",
+              "category": "other",
+              "category_label": "其他",
+              "image_hash": "c1784b155a9456af63b3412105d563e18c65512a333c5545c1716fb52605c184",
+              "image_list": [
+                "1a62b15c6fae2d4ef3151767ff0b619939e6a97de9362c24ddf025d223989a7a",
+                "c1784b155a9456af63b3412105d563e18c65512a333c5545c1716fb52605c184",
+                "98c700e3aaff192ae6742d0b732901f3a2cfe809f32c85b784487e282bfdf3eb"
+              ],
+              "deposit_score": 10,
+              "damage_rules": {
+                "item_category": "umbrella",
+                "rules": [
+                  { "level": "L1_轻微", "desc": "伞面污渍或手柄磨损", "deduct": 3 },
+                  { "level": "L2_中度", "desc": "伞骨折弯、开合不畅", "deduct": 8 }
+                ],
+                "max_deduct": 10,
+                "agreed_at_publish": true
+              },
+              "building_loc": "7号楼",
+              "is_high_value": 0,
+              "status": 0,
+              "status_label": "待借",
+              "expire_at": null,
+              "created_at": "2026-11-02T16:45:00+08:00"
+            }
+          ],
+          "pagination": {
+            "limit": 20,
+            "has_more": true,
+            "next_cursor": "eyJjcmVhdGVkX2F0IjoiMjAyNi0xMS0wMlQxNjo0NTowMCswODowMCIsImlkIjoyMDAwNDB9",
+            "sort": "created_at DESC, id DESC"
+          }
+        },
+        "trace_id": "4c1e8a72-6b93-4d5f-a0e7-3f8c2d1b6a94",
+        "server_time": "2026-11-07T10:00:03+08:00"
+      }
+    },
+    {
+      "api_id": "API-12",
+      "name_zh": "信用流水",
+      "method": "GET",
+      "path": "/api/v1/credit/logs",
+      "auth_required": true,
+      "request": {
+        "headers": { "Authorization": "Bearer <JWT>", "Accept": "application/json" },
+        "query": { "limit": 20, "cursor": null }
+      },
+      "response": {
+        "code": 200,
+        "msg": "success",
+        "data": {
+          "list": [
+            {
+              "id": 900213,
+              "user_id": 100021,
+              "change_type": "freeze",
+              "change_type_label": "冻结",
+              "delta": 0,
+              "balance_after": 96,
+              "frozen_after": 50,
+              "ref_type": "order",
+              "ref_id": 300021,
+              "reason": "借用高值物品「黑长直假发（60cm，可造型）」冻结信用分 50",
+              "created_at": "2026-11-07T09:12:00+08:00"
+            },
+            {
+              "id": 900212,
+              "user_id": 100021,
+              "change_type": "add",
+              "change_type_label": "加分",
+              "delta": 1,
+              "balance_after": 96,
+              "frozen_after": 0,
+              "ref_type": "order",
+              "ref_id": 300017,
+              "reason": "按时归还「学士服（L码，含学士帽+垂布）」（+1，计入单日 +3 上限）",
+              "created_at": "2026-11-06T20:41:00+08:00"
+            },
+            {
+              "id": 900211,
+              "user_id": 100021,
+              "change_type": "unfreeze",
+              "change_type_label": "解冻",
+              "delta": 0,
+              "balance_after": 95,
+              "frozen_after": 0,
+              "ref_type": "order",
+              "ref_id": 300017,
+              "reason": "归还「学士服（L码，含学士帽+垂布）」经出借者确认无损，解冻信用分 20",
+              "created_at": "2026-11-06T20:41:00+08:00"
+            }
+          ],
+          "pagination": {
+            "limit": 20,
+            "has_more": true,
+            "next_cursor": "eyJjcmVhdGVkX2F0IjoiMjAyNi0xMS0wNlQyMDo0MTowMCswODowMCIsImlkIjo5MDAyMTF9",
+            "sort": "created_at DESC, id DESC"
+          },
+          "reconciliation": {
+            "scope": "all_ledger_rows",
+            "baseline": 100,
+            "delta_sum_all": -4,
+            "page_delta_sum": 1,
+            "balance": 96,
+            "is_consistent": true,
+            "assertion": "SUM(delta) == credit_score - 100（6.3.4）",
+            "checked_at": "2026-11-07T10:00:07+08:00"
+          }
+        },
+        "trace_id": "9d2f5b81-3c47-4e6a-b9d0-72a4c8e1f356",
+        "server_time": "2026-11-07T10:00:07+08:00"
+      }
+    }
+  ]
+}

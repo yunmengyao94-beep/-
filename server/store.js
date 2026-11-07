@@ -1,0 +1,123 @@
+'use strict';
+
+/**
+ * 内存数据仓
+ * ---------------------------------------------------------------
+ * 以 server/mock_db.json 为初始数据（require 后即进程内单例），
+ * 借用等写操作只改内存，不回写文件——重启即复位，便于反复演示。
+ * 真实实现中这些函数对应 repository / service 层与数据库事务。
+ */
+
+const db = require('./mock_db.json');
+
+/** 订单号自增起点：首次借用返回 30001（与接口约定一致） */
+const ORDER_ID_SEED = 30001;
+let orderSeq = ORDER_ID_SEED;
+
+if (!Array.isArray(db.orders)) db.orders = [];
+
+/**
+ * 按 id 查用户
+ * @param {number|string} id
+ * @returns {object|null}
+ */
+function findUser(id) {
+  return db.users.find((u) => u.id === Number(id)) || null;
+}
+
+/**
+ * 按 id 查物品
+ * @param {number|string} id
+ * @returns {object|null}
+ */
+function findItem(id) {
+  return db.items.find((i) => i.id === Number(id)) || null;
+}
+
+/**
+ * 可用信用分 = 信用分 − 冻结分（5.4.3）；余额不足时夹紧到 0
+ * @param {object} user
+ * @returns {number}
+ */
+function availableOf(user) {
+  return Math.max(0, user.credit_score - user.credit_frozen);
+}
+
+/** 分配订单 id */
+function nextOrderId() {
+  const id = orderSeq;
+  orderSeq += 1;
+  return id;
+}
+
+/**
+ * 生成业务单号：YXX + yyyymmdd + 4 位当日流水（对齐 7.3.4 示例 YXX2026110700017）
+ * @param {number} orderId
+ * @returns {string}
+ */
+function buildOrderNo(orderId) {
+  const d = new Date(Date.now() + 8 * 3600 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  const ymd = `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
+  return `YXX${ymd}${String(orderId - ORDER_ID_SEED + 1).padStart(4, '0')}`;
+}
+
+/**
+ * 落库订单（内存）
+ * @param {object} order
+ * @returns {object}
+ */
+function addOrder(order) {
+  db.orders.push(order);
+  return order;
+}
+
+/**
+ * 追加信用流水（6.3.4 字段）；冻结/解冻的 delta 必须为 0，否则日终对账恒等式失效
+ * @param {object} entry
+ * @returns {object}
+ */
+function appendCreditLog(entry) {
+  const nextId = db.credit_logs.reduce((max, l) => Math.max(max, l.id), 0) + 1;
+  const row = {
+    id: nextId,
+    user_id: entry.user_id,
+    change_type: entry.change_type,
+    delta: entry.delta,
+    balance_after: entry.balance_after,
+    frozen_after: entry.frozen_after,
+    ref_type: entry.ref_type || null,
+    ref_id: entry.ref_id || null,
+    reason: entry.reason || null,
+    created_at: entry.created_at,
+  };
+  db.credit_logs.push(row);
+  return row;
+}
+
+/**
+ * 按用户取流水（时间倒序，6.4 的 idx_user_time）
+ * @param {number} userId
+ * @returns {object[]}
+ */
+function listCreditLogs(userId) {
+  return db.credit_logs
+    .filter((l) => l.user_id === Number(userId))
+    .slice()
+    .sort((a, b) =>
+      a.created_at === b.created_at ? b.id - a.id : a.created_at < b.created_at ? 1 : -1
+    );
+}
+
+module.exports = {
+  db,
+  ORDER_ID_SEED,
+  findUser,
+  findItem,
+  availableOf,
+  nextOrderId,
+  buildOrderNo,
+  addOrder,
+  appendCreditLog,
+  listCreditLogs,
+};

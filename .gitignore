@@ -1,0 +1,50 @@
+# ---------- 依赖 ----------
+node_modules/
+.pnpm-store/
+jspm_packages/
+
+# ---------- 构建产物 ----------
+dist/
+build/
+out/
+*.local
+
+# ---------- 环境变量（严禁入库） ----------
+.env
+.env.*
+!.env.example
+
+# ---------- 日志 ----------
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---------- 缓存 ----------
+.cache/
+.eslintcache
+.stylelintcache
+coverage/
+*.tsbuildinfo
+
+# ---------- 编辑器 / 操作系统 ----------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 本地数据库/调试 ----------
+*.sqlite
+*.sqlite3
+*.db
+tmp/
+temp/
+
+# ---------- 端侧 AI 资源（体积大，按 frontend/assets/ai/README.md 分发） ----------
+*.traineddata
+*.traineddata.gz
+frontend/assets/ai/*.min.js

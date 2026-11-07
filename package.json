@@ -1,0 +1,44 @@
+{
+  "name": "yxx-campus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "易校圈（Project-YXX）—— 校园信用互助与资源共享平台",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "main": "server/app.js",
+  "workspaces": [
+    "server"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "node server/app.js",
+    "server": "node server/app.js",
+    "lint": "eslint --rulesdir ./eslint-rules .",
+    "lint:fix": "eslint --rulesdir ./eslint-rules . --fix",
+    "check:no-absolute": "node scripts/check-no-absolute.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --rulesdir ./eslint-rules --fix",
+      "prettier --write"
+    ],
+    "*.{css,html}": [
+      "node scripts/check-no-absolute.js",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "eslint": "8.57.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10"
+  }
+}

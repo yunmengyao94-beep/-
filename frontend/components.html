@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>易校圈 · UI Kit（Sprint 3）</title>
+
+    <!-- 样式加载顺序：令牌 → 重置 → 布局工具类 → 基础组件 → 反馈组件 -->
+    <link rel="stylesheet" href="./css/variables.css" />
+    <link rel="stylesheet" href="./css/reset.css" />
+    <link rel="stylesheet" href="./css/layout.css" />
+    <link rel="stylesheet" href="./components/base.css" />
+    <link rel="stylesheet" href="./components/feedback.css" />
+
+    <style>
+      /* ===== 仅用于 UI Kit 文档页的排版，不属于组件库本身 ===== */
+      html {
+        scroll-behavior: smooth;
+      }
+
+      .doc-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-6, 24px);
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: var(--space-5, 20px) var(--space-4, 16px) 0;
+      }
+
+      /* 侧边目录：桌面端 sticky 跟随滚动 */
+      .doc-sidebar {
+        display: none;
+      }
+
+      .doc-toc {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .doc-toc__link {
+        padding: 6px 10px;
+        border-radius: var(--radius-sm, 4px);
+        font-size: 13px;
+        color: var(--text-sub, #888);
+        transition:
+          background-color 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .doc-toc__link:hover,
+      .doc-toc__link.is-active {
+        color: var(--primary, #1890ff);
+        background-color: rgba(24, 144, 255, 0.08);
+      }
+
+      @media (min-width: 960px) {
+        .doc-layout {
+          grid-template-columns: 180px minmax(0, 1fr);
+          gap: 40px;
+          padding: 32px 32px 0;
+        }
+
+        .doc-sidebar {
+          display: block;
+          align-self: start;
+          position: sticky;
+          top: 66px;
+        }
+      }
+
+      /* 章节 */
+      .doc-section {
+        margin-bottom: 48px;
+        scroll-margin-top: 70px;
+      }
+
+      .doc-section__head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 6px;
+      }
+
+      .doc-section__index {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-placeholder, #bfbfbf);
+      }
+
+      .doc-section__title {
+        font-size: 20px;
+        font-weight: var(--font-weight-bold, 600);
+        color: var(--text-main, #333);
+      }
+
+      .doc-section__desc {
+        margin-bottom: 16px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--text-sub, #888);
+      }
+
+      /* 组件展示块 */
+      .doc-block {
+        padding: 20px;
+        background-color: var(--bg-card, #fff);
+        border: 1px solid var(--border-color, #ebeef5);
+        border-radius: var(--radius-lg, 12px);
+      }
+
+      .doc-block + .doc-block {
+        margin-top: 16px;
+      }
+
+      .doc-block__title {
+        margin-bottom: 14px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-sub, #888);
+      }
+
+      .doc-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .doc-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* 令牌色卡 */
+      .doc-swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+      }
+
+      .doc-swatch {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px;
+        border: 1px solid var(--border-color, #ebeef5);
+        border-radius: var(--radius-md, 8px);
+      }
+
+      .doc-swatch__chip {
+        height: 44px;
+        border: 1px solid rgba(0, 0, 0, 0.04);
+        border-radius: var(--radius-sm, 4px);
+      }
+
+      .doc-swatch__name {
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 12px;
+        color: var(--text-main, #333);
+      }
+
+      .doc-swatch__value {
+        font-size: 11px;
+        color: var(--text-sub, #888);
+      }
+
+      /* 圆角 / 阴影样张 */
+      .doc-specs {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+      }
+
+      .doc-spec {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        padding: 12px;
+        font-size: 11px;
+        color: var(--text-sub, #888);
+        background-color: var(--bg-color, #f5f7fa);
+        border-radius: var(--radius-md, 8px);
+      }
+
+      .doc-spec__box {
+        width: 100%;
+        height: 56px;
+        background-color: var(--bg-card, #fff);
+        border: 1px solid var(--border-color, #ebeef5);
+      }
+
+      /* 滚动验证区 */
+      .doc-scroller {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 200px;
+        padding: 12px;
+        overflow-y: auto;
+        background-color: var(--bg-color, #f5f7fa);
+        border-radius: var(--radius-md, 8px);
+      }
+
+      .doc-footer {
+        padding: 20px 0 8px;
+        margin-top: 8px;
+        font-size: 12px;
+        line-height: 1.8;
+        color: var(--text-sub, #888);
+        border-top: 1px solid var(--border-color, #ebeef5);
+      }
+
+      .doc-footer code {
+        font-size: 11px;
+        color: var(--text-main, #333);
+      }
+    </style>
+  </head>
+
+  <body class="page-with-tabbar" style="background-color: var(--bg-color)">
+    <!-- ==================== 顶部导航（sticky 吸顶） ==================== -->
+    <header class="navbar">
+      <div class="flex items-center gap-2">
+        <span class="navbar__title">易校圈 UI Kit</span>
+        <span class="badge badge--outline">v0.3.0</span>
+      </div>
+      <div class="navbar__actions">
+        <button class="navbar__action" type="button">组件规范</button>
+        <button class="navbar__action" type="button">反馈</button>
+      </div>
+    </header>
+
+    <div class="doc-layout">
+      <!-- ==================== 侧边目录 ==================== -->
+      <aside class="doc-sidebar">
+        <nav class="doc-toc" aria-label="目录">
+          <a class="doc-toc__link" href="#tokens">01 · 设计令牌</a>
+          <a class="doc-toc__link" href="#basic">02 · 基础组件</a>
+          <a class="doc-toc__link" href="#form">03 · 表单区</a>
+          <a class="doc-toc__link" href="#data">04 · 数据展示</a>
+          <a class="doc-toc__link" href="#feedback">05 · 弹窗与反馈</a>
+          <a class="doc-toc__link" href="#nav">06 · 导航与布局</a>
+        </nav>
+      </aside>
+
+      <main class="doc-main">
+        <!-- ==================== 01 设计令牌 ==================== -->
+        <section class="doc-section" id="tokens">
+          <div class="doc-section__head">
+            <span class="doc-section__index">01</span>
+            <h2 class="doc-section__title">设计令牌</h2>
+          </div>
+          <p class="doc-section__desc">
+            全部来自 <code>css/variables.css</code>。组件只引用变量，不写死色值，便于统一换肤。
+          </p>
+
+          <div class="doc-block">
+            <div class="doc-block__title">颜色</div>
+            <div class="doc-swatches">
+              <div class="doc-swatch">
+                <span class="doc-swatch__chip" style="background-color: var(--primary)"></span>
+                <span class="doc-swatch__name">--primary</span>
+                <span class="doc-swatch__value">#1890ff 科技蓝</span>
+              </div>
+              <div class="doc-swatch">
+                <span class="doc-swatch__chip" style="background-color: var(--success)"></span>
+                <span class="doc-swatch__name">--success</span>
+                <span class="doc-swatch__value">#52c41a</span>
+              </div>
+              <div class="doc-swatch">
+                <span class="doc-swatch__chip" style="background-color: var(--warning)"></span>
+                <span class="doc-swatch__name">--warning</span>
+                <span class="doc-swatch__value">#faad14</span>
+              </div>
+              <div class="doc-swatch">
+                <span class="doc-swatch__chip" style="background-color: var(--danger)"></span>
+                <span class="doc-swatch__name">--danger</span>
+                <span class="doc-swatch__value">#ff4d4f</span>
+              </div>
+              <div class="doc-swatch">
+                <span class="doc-swatch__chip" style="background-color: var(--text-main)"></span>
+                <span class="doc-swatch__name">--text-main</span>
+                <span class="doc-swatch__value">#333</span>
+              </div>
+              <div class="doc-swatch">
+                <span class="doc-swatch__chip" style="background-color: var(--text-sub)"></span>
+                <span class="doc-swatch__name">--text-sub</span>
+                <span class="doc-swatch__value">#888</span>
+              </div>
+              <div class="doc-swatch">
+                <span class="doc-swatch__chip" style="background-color: var(--bg-color)"></span>
+                <span class="doc-swatch__name">--bg-color</span>
+                <span class="doc-swatch__value">#f5f7fa</span>
+              </div>
+              <div class="doc-swatch">
+                <span class="doc-swatch__chip" style="background-color: var(--border-color)"></span>
+                <span class="doc-swatch__name">--border-color</span>
+                <span class="doc-swatch__value">#ebeef5</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="doc-block">
+            <div class="doc-block__title">圆角与阴影</div>
+            <div class="doc-specs">
+              <div class="doc-spec">
+                <div class="doc-spec__box" style="border-radius: var(--radius-sm)"></div>
+                <span>--radius-sm 4px</span>
+              </div>
+              <div class="doc-spec">
+                <div class="doc-spec__box" style="border-radius: var(--radius-md)"></div>
+                <span>--radius-md 8px</span>
+              </div>
+              <div class="doc-spec">
+                <div class="doc-spec__box" style="border-radius: var(--radius-lg)"></div>
+                <span>--radius-lg 12px</span>
+              </div>
+              <div class="doc-spec">
+                <div
+                  class="doc-spec__box"
+                  style="border-radius: var(--radius-md); box-shadow: var(--shadow-card)"
+                ></div>
+                <span>--shadow-card</span>
+              </div>
+              <div class="doc-spec">
+                <div
+                  class="doc-spec__box"
+                  style="border-radius: var(--radius-md); box-shadow: var(--shadow-float)"
+                ></div>
+                <span>--shadow-float</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 02 基础组件 ==================== -->
+        <section class="doc-section" id="basic">
+          <div class="doc-section__head">
+            <span class="doc-section__index">02</span>
+            <h2 class="doc-section__title">基础组件</h2>
+          </div>
+          <p class="doc-section__desc">按钮与徽章。<code>components/base.css</code></p>
+
+          <div class="doc-block">
+            <div class="doc-block__title">按钮 .btn</div>
+            <div class="doc-row">
+              <button class="btn btn--primary" type="button">立即借用</button>
+              <button class="btn btn--secondary" type="button">查看详情</button>
+              <button class="btn btn--danger" type="button">取消订单</button>
+              <button class="btn btn--primary" type="button" disabled>已借出</button>
+            </div>
+            <div class="doc-row" style="margin-top: 12px">
+              <button class="btn btn--primary btn--sm" type="button">小号</button>
+              <button class="btn btn--secondary btn--sm" type="button">小号次要</button>
+              <button class="btn btn--primary btn--lg" type="button">大号主按钮</button>
+            </div>
+            <div style="margin-top: 12px">
+              <button class="btn btn--primary btn--block" type="button">
+                整行按钮 .btn--block
+              </button>
+            </div>
+          </div>
+
+          <div class="doc-block">
+            <div class="doc-block__title">徽章 .badge（信用分 / 状态）</div>
+            <div class="doc-row">
+              <span class="badge badge--success"
+                ><span class="badge__value">96</span> 分 · 良好</span
+              >
+              <span class="badge badge--warning"
+                ><span class="badge__value">72</span> 分 · 观察</span
+              >
+              <span class="badge badge--danger"
+                ><span class="badge__value">45</span> 分 · 受限</span
+              >
+              <span class="badge badge--info"
+                ><span class="badge__value">118</span> 分 · 信用之星</span
+              >
+              <span class="badge badge--outline">待交接</span>
+              <span class="badge badge--neutral">已取消</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 03 表单区 ==================== -->
+        <section class="doc-section" id="form">
+          <div class="doc-section__head">
+            <span class="doc-section__index">03</span>
+            <h2 class="doc-section__title">表单区</h2>
+          </div>
+          <p class="doc-section__desc">
+            输入框聚焦时边框转蓝并带 2px 光晕；下拉框用 ul/li + fixed 浮层实现。
+          </p>
+
+          <div class="doc-block">
+            <div class="doc-block__title">输入框 .input-group</div>
+            <div class="doc-stack">
+              <div class="input-group">
+                <label class="input-group__label input-group__label--required" for="field-no"
+                  >学号</label
+                >
+                <input
+                  class="input-group__control"
+                  id="field-no"
+                  type="text"
+                  placeholder="请输入 13 位学号"
+                  value="2599080110120"
+                />
+                <span class="input-group__hint"
+                  >仅用于同校身份校验，前台展示会脱敏为 2599****20</span
+                >
+              </div>
+
+              <div class="input-group has-error">
+                <label class="input-group__label" for="field-title">物品名称</label>
+                <input
+                  class="input-group__control"
+                  id="field-title"
+                  type="text"
+                  placeholder="例如：学士服（L码）"
+                />
+                <span class="input-group__hint">物品名称不能为空（错误态示例）</span>
+              </div>
+
+              <div class="input-group">
+                <label class="input-group__label" for="field-desc">补充说明</label>
+                <textarea
+                  class="input-group__control input-group__control--textarea"
+                  id="field-desc"
+                  placeholder="可填写尺寸、配件、注意事项等"
+                ></textarea>
+                <span class="input-group__hint">支持换行，最长 200 字</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="doc-block">
+            <div class="doc-block__title">自定义下拉 .custom-select</div>
+            <div class="doc-stack">
+              <div class="custom-select" data-custom-select>
+                <label class="input-group__label" id="label-category">物品类目</label>
+                <button
+                  class="custom-select__control"
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                  aria-labelledby="label-category"
+                >
+                  <span class="custom-select__value is-placeholder">全部类目</span>
+                  <span class="custom-select__arrow" aria-hidden="true"></span>
+                </button>
+                <ul class="custom-select__panel" role="listbox" aria-labelledby="label-category">
+                  <li class="custom-select__option is-selected" role="option" data-value="">
+                    全部类目
+                  </li>
+                  <li class="custom-select__option" role="option" data-value="apparel">服饰</li>
+                  <li class="custom-select__option" role="option" data-value="digital">数码</li>
+                  <li class="custom-select__option" role="option" data-value="tool">工具</li>
+                  <li class="custom-select__option" role="option" data-value="other">其他</li>
+                </ul>
+                <input type="hidden" name="category" value="" />
+              </div>
+
+              <div class="custom-select" data-custom-select>
+                <label class="input-group__label" id="label-sort">排序方式</label>
+                <button
+                  class="custom-select__control"
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                  aria-labelledby="label-sort"
+                >
+                  <span class="custom-select__value is-placeholder">请选择排序</span>
+                  <span class="custom-select__arrow" aria-hidden="true"></span>
+                </button>
+                <ul class="custom-select__panel" role="listbox" aria-labelledby="label-sort">
+                  <li class="custom-select__option" role="option" data-value="latest">最新发布</li>
+                  <li class="custom-select__option" role="option" data-value="deposit_asc">
+                    押金从低到高
+                  </li>
+                  <li class="custom-select__option" role="option" data-value="credit_desc">
+                    出借人信用优先
+                  </li>
+                </ul>
+                <input type="hidden" name="sort" value="" />
+              </div>
+
+              <p class="doc-section__desc" id="select-output" style="margin: 0">尚未选择</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 04 数据展示 ==================== -->
+        <section class="doc-section" id="data">
+          <div class="doc-section__head">
+            <span class="doc-section__index">04</span>
+            <h2 class="doc-section__title">数据展示</h2>
+          </div>
+          <p class="doc-section__desc">
+            卡片、骨架屏与空状态，覆盖「有数据 / 加载中 / 无数据」三种态。
+          </p>
+
+          <div class="doc-block">
+            <div class="doc-block__title">卡片 .card</div>
+            <div class="doc-stack">
+              <article class="card">
+                <div class="card__header">
+                  <span class="card__title">学士服（L码，含学士帽）</span>
+                  <span class="badge badge--success"
+                    ><span class="badge__value">100</span> 信用分</span
+                  >
+                </div>
+                <div class="card__body">
+                  7号楼 · 押金分 20 · 定损上限 20 分<br />
+                  毕业季短期出租，交接时需拍摄一镜到底验货视频。
+                </div>
+                <div class="card__footer">
+                  <button class="btn btn--secondary btn--sm" type="button">收藏</button>
+                  <button class="btn btn--primary btn--sm" type="button">立即借用</button>
+                </div>
+              </article>
+
+              <article class="card card--static">
+                <div class="card__header">
+                  <span class="card__title">静态卡片（.card--static）</span>
+                  <span class="badge badge--neutral">不可点</span>
+                </div>
+                <div class="card__body">纯信息展示，悬停不上浮，避免"看起来可点"的误导。</div>
+              </article>
+            </div>
+          </div>
+
+          <div class="doc-block">
+            <div class="doc-block__title">骨架屏 .skeleton（呼吸 + 微光扫过）</div>
+            <div class="skeleton-item">
+              <div class="skeleton skeleton-avatar"></div>
+              <div class="skeleton-item__body">
+                <div class="skeleton skeleton-text skeleton-text--lg skeleton-text--medium"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text skeleton-text--short"></div>
+              </div>
+            </div>
+            <div class="skeleton-item">
+              <div class="skeleton skeleton-avatar"></div>
+              <div class="skeleton-item__body">
+                <div class="skeleton skeleton-text skeleton-text--lg skeleton-text--short"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text skeleton-text--medium"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="doc-block">
+            <div class="doc-block__title">空状态 .empty-state</div>
+            <div class="empty-state">
+              <div class="empty-state__icon" aria-hidden="true">📭</div>
+              <p class="empty-state__text">暂无数据</p>
+              <p class="empty-state__desc">换个楼栋或类目试试，或先发布一件物品</p>
+              <button class="btn btn--primary btn--sm empty-state__action" type="button">
+                去发布
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 05 弹窗与反馈 ==================== -->
+        <section class="doc-section" id="feedback">
+          <div class="doc-section__head">
+            <span class="doc-section__index">05</span>
+            <h2 class="doc-section__title">弹窗与反馈</h2>
+          </div>
+          <p class="doc-section__desc">
+            Toast 3 秒自动销毁；Modal 支持点遮罩、右上角 ×、Esc 三种关闭方式。<code
+              >components/feedback.js</code
+            >
+          </p>
+
+          <div class="doc-block">
+            <div class="doc-block__title">轻提示 Toast</div>
+            <div class="doc-row">
+              <button class="btn btn--primary" type="button" id="btn-toast-success">
+                成功提示
+              </button>
+              <button class="btn btn--danger" type="button" id="btn-toast-error">错误提示</button>
+            </div>
+          </div>
+
+          <div class="doc-block">
+            <div class="doc-block__title">弹窗 Modal</div>
+            <div class="doc-row">
+              <button class="btn btn--secondary" type="button" id="btn-modal">打开弹窗</button>
+              <button class="btn btn--secondary" type="button" id="btn-modal-html">
+                带内容的弹窗
+              </button>
+            </div>
+          </div>
+
+          <div class="doc-block">
+            <div class="doc-block__title">加载 Loading .spinner</div>
+            <div class="doc-row">
+              <button class="btn btn--primary btn--sm" type="button" id="btn-loading">
+                切换加载中
+              </button>
+              <span class="spinner spinner--sm"></span>
+              <span class="doc-section__desc" style="margin: 0">小号 Spinner</span>
+            </div>
+            <div id="loading-demo" class="spinner-wrap hidden">
+              <span class="spinner"></span>
+              <span>正在加载物品列表…</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== 06 导航与布局 ==================== -->
+        <section class="doc-section" id="nav">
+          <div class="doc-section__head">
+            <span class="doc-section__index">06</span>
+            <h2 class="doc-section__title">导航与布局</h2>
+          </div>
+          <p class="doc-section__desc">
+            顶部导航 <code>position: sticky; top: 0</code>，底部标签栏
+            <code>position: fixed; bottom: 0</code>； 页面容器用
+            <code>.page-with-tabbar</code> 预留底部空间，滚动时不会被遮挡。
+          </p>
+
+          <div class="doc-block">
+            <div class="doc-block__title">滚动验证：向下滚动本区块，顶部导航保持吸顶</div>
+            <div class="doc-scroller">
+              <div class="card card--static">
+                <div class="card__body">填充内容 1 · 滚动时观察顶部导航是否始终可见</div>
+              </div>
+              <div class="card card--static"><div class="card__body">填充内容 2</div></div>
+              <div class="card card--static"><div class="card__body">填充内容 3</div></div>
+              <div class="card card--static"><div class="card__body">填充内容 4</div></div>
+              <div class="card card--static"><div class="card__body">填充内容 5</div></div>
+            </div>
+          </div>
+        </section>
+
+        <footer class="doc-footer">
+          易校圈 UI Kit · Sprint 3 交付<br />
+          样式：<code>css/variables.css</code> → <code>css/reset.css</code> →
+          <code>css/layout.css</code> → <code>components/base.css</code> →
+          <code>components/feedback.css</code><br />
+          脚本：<code>components/custom-select.js</code> · <code>components/feedback.js</code>（原生
+          ES Module）
+        </footer>
+      </main>
+    </div>
+
+    <!-- ==================== 底部标签栏（fixed 吸底） ==================== -->
+    <nav class="tabbar" aria-label="主导航">
+      <button class="tabbar__item is-active" type="button">
+        <span class="tabbar__icon" aria-hidden="true">🏠</span>
+        <span>首页</span>
+      </button>
+      <button class="tabbar__item" type="button">
+        <span class="tabbar__icon" aria-hidden="true">📦</span>
+        <span>物品</span>
+      </button>
+      <button class="tabbar__item" type="button">
+        <span class="tabbar__icon" aria-hidden="true">📋</span>
+        <span>订单</span>
+      </button>
+      <button class="tabbar__item" type="button">
+        <span class="tabbar__icon" aria-hidden="true">👤</span>
+        <span>我的</span>
+      </button>
+    </nav>
+
+    <script type="module">
+      import { initCustomSelect } from './components/custom-select.js';
+      import { showToast, openModal } from './components/feedback.js';
+
+      // ---------- 自定义下拉 ----------
+      const selectCount = initCustomSelect();
+      const output = document.getElementById('select-output');
+      document.querySelectorAll('[data-custom-select]').forEach((root) => {
+        root.addEventListener('change', (event) => {
+          const name = root.querySelector('input[type="hidden"]').name;
+          output.textContent = `字段 ${name} 选择：${event.detail.label}（value = ${event.detail.value || '空'}）`;
+        });
+      });
+
+      // ---------- Toast ----------
+      document.getElementById('btn-toast-success').addEventListener('click', () => {
+        showToast('借还记录已提交，等待出借者确认', 'success');
+      });
+      document.getElementById('btn-toast-error').addEventListener('click', () => {
+        showToast('信用分不足，禁止借用高价值物品', 'error');
+      });
+
+      // ---------- Modal ----------
+      document.getElementById('btn-modal').addEventListener('click', () => {
+        openModal(
+          '取消订单',
+          '<p>确定要取消本次借用吗？取消后将立即释放已冻结的 20 信用分。</p>' +
+            '<p style="margin-top:8px;color:#888;font-size:13px">取消后可重新发起借用申请。</p>'
+        );
+      });
+      document.getElementById('btn-modal-html').addEventListener('click', () => {
+        openModal(
+          '借用须知',
+          '<ul style="padding-left:18px;list-style:disc;line-height:1.9">' +
+            '<li>交接时需拍摄一镜到底的验货视频，双方各自留存 Hash。</li>' +
+            '<li>归还后 48 小时内未发起定损，视为默认无损。</li>' +
+            '<li>仲裁以订单快照中的定损规则为准，仲裁员不得自由裁量金额。</li>' +
+            '</ul>' +
+            '<p style="margin-top:8px">借用即视为同意本单的定损规则快照。</p>'
+        );
+      });
+
+      // ---------- Loading ----------
+      const loadingDemo = document.getElementById('loading-demo');
+      document.getElementById('btn-loading').addEventListener('click', () => {
+        loadingDemo.classList.toggle('hidden');
+      });
+
+      // ---------- 标签栏切换 ----------
+      const tabs = document.querySelectorAll('.tabbar__item');
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          tabs.forEach((item) => item.classList.remove('is-active'));
+          tab.classList.add('is-active');
+        });
+      });
+
+      // ---------- 目录高亮：滚动时标记当前章节 ----------
+      const tocLinks = Array.from(document.querySelectorAll('.doc-toc__link'));
+      const sections = tocLinks
+        .map((link) => document.querySelector(link.getAttribute('href')))
+        .filter(Boolean);
+
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              tocLinks.forEach((link) => {
+                link.classList.toggle(
+                  'is-active',
+                  link.getAttribute('href') === '#' + entry.target.id
+                );
+              });
+            });
+          },
+          { rootMargin: '-70px 0px -70% 0px', threshold: 0 }
+        );
+        sections.forEach((section) => observer.observe(section));
+      }
+
+      console.info(`[ui-kit] 已初始化 ${selectCount} 个自定义下拉框`);
+    </script>
+  </body>
+</html>

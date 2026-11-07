@@ -1,0 +1,499 @@
+/* ============================================================================
+ * 易校圈 · 基础展示与表单组件（Sprint 3 Batch 2）
+ * ----------------------------------------------------------------------------
+ * 依赖：variables.css（令牌）、reset.css。每个 var() 都带兜底值。
+ * 约束：不使用绝对定位。吸顶用 sticky，吸底用 fixed，下拉浮层用 fixed + JS 定位，
+ *       均符合「悬浮层可用固定定位、布局禁用绝对定位」的约定。
+ * 命名：BEM —— .btn / .btn--primary / .btn__icon 的形态。
+ * ========================================================================== */
+
+/* ============================================================================
+ * 1. 按钮 .btn
+ * ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+  height: 40px;
+  padding: 0 var(--space-4, 16px);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md, 8px);
+  font-family: inherit;
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast, 0.15s) ease,
+    background-color var(--transition-fast, 0.15s) ease,
+    border-color var(--transition-fast, 0.15s) ease,
+    opacity var(--transition-fast, 0.15s) ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 点击微缩放：按下时收紧，松开回弹 */
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 主按钮：蓝底白字 */
+.btn--primary {
+  color: var(--text-inverse, #fff);
+  background-color: var(--primary, #1890ff);
+}
+
+.btn--primary:hover {
+  background-color: var(--primary-hover, #40a9ff);
+}
+
+.btn--primary:active {
+  background-color: var(--primary-active, #096dd9);
+}
+
+/* 次要按钮：白底蓝边 */
+.btn--secondary {
+  color: var(--primary, #1890ff);
+  background-color: var(--bg-card, #fff);
+  border-color: var(--primary, #1890ff);
+}
+
+.btn--secondary:hover {
+  background-color: var(--primary-light, #e6f7ff);
+}
+
+/* 危险按钮：红底白字 */
+.btn--danger {
+  color: var(--text-inverse, #fff);
+  background-color: var(--danger, #ff4d4f);
+}
+
+.btn--danger:hover {
+  background-color: #ff7875;
+}
+
+/* 禁用态：灰底灰字、不可点击 */
+.btn:disabled,
+.btn.is-disabled {
+  color: var(--text-sub, #888);
+  background-color: #f0f0f0;
+  border-color: #f0f0f0;
+  cursor: not-allowed;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.btn:disabled:active,
+.btn.is-disabled:active {
+  transform: none;
+}
+
+/* 尺寸与布局修饰 */
+.btn--sm {
+  height: 32px;
+  padding: 0 var(--space-3, 12px);
+  font-size: var(--font-size-sm, 13px);
+}
+
+.btn--lg {
+  height: 46px;
+  padding: 0 var(--space-6, 24px);
+  font-size: var(--font-size-md, 16px);
+}
+
+.btn--block {
+  display: flex;
+  width: 100%;
+}
+
+/* ============================================================================
+ * 2. 输入框 .input-group（内含 input / textarea）
+ * ========================================================================== */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+.input-group__label {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-main, #333);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.input-group__label--required::after {
+  content: '*';
+  margin-left: 2px;
+  color: var(--danger, #ff4d4f);
+}
+
+.input-group__control {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px var(--space-3, 12px);
+  color: var(--text-main, #333);
+  background-color: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #ebeef5);
+  border-radius: var(--radius-md, 8px);
+  font-family: inherit;
+  font-size: var(--font-size-base, 14px);
+  line-height: 1.4;
+  transition:
+    border-color var(--transition-fast, 0.15s) ease,
+    box-shadow var(--transition-fast, 0.15s) ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input-group__control::placeholder {
+  color: var(--text-placeholder, #bfbfbf);
+}
+
+/* 聚焦：边框变蓝 + 2px 光晕 */
+.input-group__control:focus {
+  border-color: var(--primary, #1890ff);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  outline: none;
+}
+
+.input-group__control--textarea {
+  min-height: 96px;
+  padding: var(--space-3, 12px);
+  resize: vertical;
+}
+
+.input-group__hint {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+/* 校验失败：边框转红，光晕同步 */
+.input-group.has-error .input-group__control {
+  border-color: var(--danger, #ff4d4f);
+}
+
+.input-group.has-error .input-group__control:focus {
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+.input-group.has-error .input-group__hint {
+  color: var(--danger, #ff4d4f);
+}
+
+.input-group__control:disabled {
+  color: var(--text-sub, #888);
+  background-color: #fafafa;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+ * 3. 卡片 .card
+ * ========================================================================== */
+.card {
+  padding: var(--space-4, 16px);
+  background-color: var(--bg-card, #fff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.06));
+  transition:
+    transform var(--transition-base, 0.25s) ease,
+    box-shadow var(--transition-base, 0.25s) ease;
+}
+
+/* 轻微上浮：仅在支持 hover 的设备启用，避免移动端粘滞 */
+@media (hover: hover) {
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-float, 0 8px 24px rgba(0, 0, 0, 0.12));
+  }
+}
+
+.card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
+  margin-bottom: var(--space-3, 12px);
+}
+
+.card__title {
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.card__body {
+  font-size: var(--font-size-base, 14px);
+  color: var(--text-main, #333);
+  line-height: 1.6;
+}
+
+.card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2, 8px);
+  margin-top: var(--space-4, 16px);
+}
+
+/* 无 hover 上浮的静态卡片 */
+.card--static:hover {
+  transform: none;
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.06));
+}
+
+/* ============================================================================
+ * 4. 徽章 .badge（信用分胶囊标签）
+ * ========================================================================== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: var(--radius-round, 999px);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-medium, 500);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* 高分：绿底白字（L4/L5，>= 80 分） */
+.badge--success {
+  color: var(--text-inverse, #fff);
+  background-color: var(--success, #52c41a);
+}
+
+/* 中分：橙底白字（L2/L3，60 ~ 79 分） */
+.badge--warning {
+  color: var(--text-inverse, #fff);
+  background-color: var(--warning, #faad14);
+}
+
+/* 低分：红底白字（L0/L1，< 60 分） */
+.badge--danger {
+  color: var(--text-inverse, #fff);
+  background-color: var(--danger, #ff4d4f);
+}
+
+.badge--info {
+  color: var(--text-inverse, #fff);
+  background-color: var(--primary, #1890ff);
+}
+
+.badge--neutral {
+  color: var(--text-sub, #888);
+  background-color: #f0f0f0;
+}
+
+/* 描边款：用于列表角标，不抢视觉 */
+.badge--outline {
+  color: var(--primary, #1890ff);
+  background-color: var(--primary-light, #e6f7ff);
+  border: 1px solid rgba(24, 144, 255, 0.32);
+}
+
+.badge__value {
+  font-weight: var(--font-weight-bold, 600);
+}
+
+/* ============================================================================
+ * 5. 顶部导航栏 .navbar（sticky 吸顶）
+ * ========================================================================== */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 50px;
+  padding: 0 var(--space-4, 16px);
+  background-color: var(--bg-card, #fff);
+  border-bottom: 1px solid var(--border-color, #ebeef5);
+}
+
+.navbar__title {
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.navbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+
+.navbar__action {
+  padding: 0;
+  color: var(--primary, #1890ff);
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: var(--font-size-sm, 13px);
+  cursor: pointer;
+}
+
+/* ============================================================================
+ * 6. 底部标签栏 .tabbar（fixed 吸底）
+ * ========================================================================== */
+.tabbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  height: 60px;
+  padding-bottom: var(--safe-area-bottom, 0px);
+  background-color: var(--bg-card, #fff);
+  border-top: 1px solid var(--border-color, #ebeef5);
+}
+
+.tabbar__item {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--text-sub, #888);
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color var(--transition-fast, 0.15s) ease;
+}
+
+.tabbar__icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.tabbar__item.is-active {
+  color: var(--primary, #1890ff);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+/* 固定底栏会遮挡内容，页面容器需预留等高内边距 */
+.page-with-tabbar {
+  padding-bottom: calc(60px + var(--space-4, 16px) + var(--safe-area-bottom, 0px));
+}
+
+/* ============================================================================
+ * 7. 自定义下拉框 .custom-select
+ * ----------------------------------------------------------------------------
+ * 原生 <select> 的替代：button 触发器 + ul/li 浮层。
+ * 浮层用 position: fixed（悬浮层允许），坐标由 custom-select.js 依据触发器
+ * getBoundingClientRect() 计算，因此不依赖任何绝对定位。
+ * ========================================================================== */
+.custom-select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+.custom-select__control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-3, 12px);
+  color: var(--text-main, #333);
+  background-color: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #ebeef5);
+  border-radius: var(--radius-md, 8px);
+  font-family: inherit;
+  font-size: var(--font-size-base, 14px);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast, 0.15s) ease,
+    box-shadow var(--transition-fast, 0.15s) ease;
+}
+
+.custom-select__control:focus-visible {
+  border-color: var(--primary, #1890ff);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  outline: none;
+}
+
+.custom-select__value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.custom-select__value.is-placeholder {
+  color: var(--text-placeholder, #bfbfbf);
+}
+
+/* 下拉箭头：两条边框旋转 45°，展开时翻转 */
+.custom-select__arrow {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-sub, #888);
+  border-bottom: 2px solid var(--text-sub, #888);
+  transform: rotate(45deg);
+  transition: transform var(--transition-fast, 0.15s) ease;
+}
+
+.custom-select.is-open .custom-select__arrow {
+  transform: rotate(-135deg);
+}
+
+/* 浮层：默认隐藏，展开时显示 */
+.custom-select__panel {
+  position: fixed;
+  z-index: var(--z-modal, 1110);
+  display: none;
+  max-height: 240px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  background-color: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #ebeef5);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: var(--shadow-float, 0 8px 24px rgba(0, 0, 0, 0.12));
+}
+
+.custom-select.is-open .custom-select__panel {
+  display: block;
+}
+
+.custom-select__option {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-base, 14px);
+  color: var(--text-main, #333);
+  cursor: pointer;
+}
+
+.custom-select__option:hover {
+  background-color: var(--primary-light, #e6f7ff);
+}
+
+.custom-select__option.is-selected {
+  color: var(--primary, #1890ff);
+  font-weight: var(--font-weight-bold, 600);
+  background-color: var(--primary-light, #e6f7ff);
+}
+
+.custom-select__option.is-selected::after {
+  content: '✓';
+  float: right;
+}

@@ -1,0 +1,195 @@
+'use strict';
+
+/**
+ * 易校圈 · Mock 后端（Express）
+ * ---------------------------------------------------------------
+ * Sprint 1：CORS / JSON 解析 / Morgan / 健康检查 / 假 JWT / 鉴权中间件
+ * Sprint 2：mock_db 数据集、通用响应封装、核心业务路由（items / orders / users）、
+ *           全局 300ms 网络延迟模拟
+ *
+ * 契约依据：7.1（协议/鉴权/时间/分页）、7.2（统一响应与错误码）、7.3.1（登录）、
+ *          7.3.2（expires_in）、7.3.4（借用申请）、7.4（接口清单）
+ *
+ * 目录：server/routes/*（业务路由）、server/middlewares/auth.js（鉴权网关）、
+ *      server/utils/*（响应/分页/脱敏）、server/store.js（数据仓）
+ * 启动：node server/app.js    （默认 http://localhost:3000）
+ */
+
+const crypto = require('crypto');
+const path = require('path');
+const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+const jwt = require('jsonwebtoken');
+
+const { ok, fail } = require('./utils/http');
+const { maskStudentNo, maskName } = require('./utils/mask');
+const auth = require('./middlewares/auth');
+const { findUser } = require('./store');
+const itemsRouter = require('./routes/items');
+const ordersRouter = require('./routes/orders');
+const usersRouter = require('./routes/users');
+const db = require('./mock_db.json');
+
+const app = express();
+
+/* ---------------------------------------------------------------- 基础配置 */
+
+const PORT = Number(process.env.PORT) || 3000;
+/** 生产必须注入 JWT_SECRET，此处仅为本地 Mock 的兜底值 */
+const JWT_SECRET = process.env.JWT_SECRET || 'yxx-dev-secret-change-me';
+/** 7.3.2：token 有效期 604800 秒 = 7 天 */
+const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
+/** mock_db.users 中唯一的模拟用户（张同学） */
+const MOCK_USER_ID = 1;
+/** 白名单：无需 Token 的公开路由（字符串=全方法公开；对象=仅指定方法公开） */
+const PUBLIC_ROUTES = [
+  '/api/v1/health',
+  '/api/v1/auth/login',
+  // 校园 App 允许未登录浏览：列表与详情只放行 GET，发布/编辑仍需 Token
+  { path: '/api/v1/items', methods: ['GET'] },
+  { path: '/api/v1/items/:id', methods: ['GET'] },
+];
+
+/** 模拟网络延迟（毫秒）。MOCK_DELAY_MS=0 可关闭，便于压测 */
+const DELAY_MS = process.env.MOCK_DELAY_MS === undefined ? 300 : Number(process.env.MOCK_DELAY_MS);
+
+/* -------------------------------------------------------------- 全局中间件 */
+
+app.disable('x-powered-by');
+app.set('trust proxy', true);
+
+// 1) CORS：Mock 阶段允许所有源（不携带 Cookie，origin: '*' 安全）
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
+    exposedHeaders: ['X-Trace-Id'],
+    maxAge: 86400,
+  })
+);
+
+// 2) 请求体解析（限制 1MB，防止大包打爆进程）
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+
+// 3) 访问日志
+app.use(morgan('dev'));
+
+// 4) 链路追踪：每请求一个 trace_id，贯穿响应与日志（7.2）
+app.use((req, res, next) => {
+  req.traceId = crypto.randomUUID();
+  res.set('X-Trace-Id', req.traceId);
+  next();
+});
+
+// 5) 静态资源：直接预览 frontend 下的页面与样式
+//    （原生 ES Module 在 file:// 下会被 CORS 拦截，故统一走 HTTP 预览）
+//    放在延迟中间件之前，避免每个 CSS/JS 都被拖 300ms
+app.use(express.static(path.join(__dirname, '..', 'frontend'), { extensions: ['html'] }));
+
+// 6) 网络延迟模拟：所有接口统一延时，贴近真实移动网络体验
+app.use((req, res, next) => {
+  if (!Number.isFinite(DELAY_MS) || DELAY_MS <= 0) return next();
+  return setTimeout(next, DELAY_MS);
+});
+
+/* ------------------------------------------------------------- 公开路由 */
+
+/**
+ * 健康探针（验收要求只返回三要素，不附加 trace_id / server_time，
+ * 避免探活流量污染业务链路日志）。
+ */
+app.get('/api/v1/health', (req, res) => {
+  res.json({ code: 200, msg: 'success', data: 'server is running' });
+});
+
+/**
+ * 模拟登录：POST /api/v1/auth/login
+ * 请求：{ "student_no": "任意学号" }
+ * 逻辑（对齐 7.3.1）：校验入参 → 定位模拟用户 → 签发 7 天假 JWT（含 user_id: 1）
+ */
+app.post('/api/v1/auth/login', (req, res) => {
+  const raw = req.body && req.body.student_no;
+  const studentNo = typeof raw === 'string' ? raw.trim() : '';
+
+  if (!studentNo || studentNo.length > 32) {
+    return fail(req, res, 400, 40001, '参数校验失败：student_no 必填，1–32 位字符串', {
+      field: 'student_no',
+    });
+  }
+
+  const user = findUser(MOCK_USER_ID);
+  if (!user) {
+    return fail(req, res, 500, 50001, '模拟数据缺失：未找到 user_id=1 的用户');
+  }
+
+  const token = jwt.sign(
+    {
+      user_id: user.id, // 需求指定：JWT 内容包含 user_id: 1
+      sub: String(user.id),
+      student_no: studentNo,
+      role: 'student',
+      role_level: 'L' + user.credit_level,
+      iss: 'yxx-mock',
+    },
+    JWT_SECRET,
+    { expiresIn: TOKEN_TTL_SECONDS }
+  );
+
+  return ok(req, res, {
+    token,
+    token_type: 'Bearer',
+    expires_in: TOKEN_TTL_SECONDS,
+    user: {
+      user_id: user.id,
+      student_no: maskStudentNo(user.student_no),
+      real_name: maskName(user.real_name),
+      college_code: user.college_code,
+      building_loc: user.building_loc,
+      credit_score: user.credit_score,
+      credit_available: user.credit_available,
+      credit_level: user.credit_level,
+    },
+  });
+});
+
+/* ------------------------------------------------------------- 鉴权中间件 */
+
+// 统一网关：白名单（/health、/login）放行，其余校验 Bearer Token
+app.use(auth({ secret: JWT_SECRET, publicPaths: PUBLIC_ROUTES }));
+
+/* ------------------------------------------------------------- 业务路由 */
+
+app.use('/api/v1/items', itemsRouter);
+app.use('/api/v1/orders', ordersRouter);
+app.use('/api/v1/users', usersRouter);
+
+/* --------------------------------------------------------- 兜底与错误处理 */
+
+app.use((req, res) => {
+  return fail(req, res, 404, 40401, '资源不存在', { path: req.path });
+});
+
+// 统一错误处理（必须是 4 个参数，Express 才识别为错误中间件）
+app.use((err, req, res, _next) => {
+  if (err && (err.type === 'entity.parse.failed' || err instanceof SyntaxError)) {
+    return fail(req, res, 400, 40001, '请求体不是合法 JSON');
+  }
+  console.error('[yxx-mock] unhandled error:', err);
+  return fail(req, res, 500, 50001, '服务端内部错误');
+});
+
+/* ------------------------------------------------------------------ 启动 */
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.info(`[yxx-mock] 服务已启动：http://localhost:${PORT}（延迟 ${DELAY_MS}ms）`);
+    console.info(
+      `[yxx-mock] 数据规模：users=${db.users.length} items=${db.items.length} credit_logs=${db.credit_logs.length}`
+    );
+  });
+}
+
+module.exports = app;
