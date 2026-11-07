@@ -1088,3 +1088,402 @@
   accent-color: var(--primary, #1890ff);
   cursor: pointer;
 }
+
+/* ============================================================================
+ * 12. 发布页组件：图片上传 / 缩略图 / 开关
+ * ----------------------------------------------------------------------------
+ * 约束：缩略图右上角的删除按钮用「Grid 同格叠放」实现（grid-area: 1 / 1 +
+ *       justify-self/align-self），全程不使用绝对定位。
+ * ========================================================================== */
+
+/* 上传区：虚线边框 + 居中提示 */
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-6, 24px) var(--space-4, 16px);
+  text-align: center;
+  background-color: #fafbfc;
+  border: 1px dashed var(--border-color-strong, #c9cdd4);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast, 0.15s) ease,
+    background-color var(--transition-fast, 0.15s) ease;
+}
+
+.upload-area:hover,
+.upload-area.is-dragover {
+  background-color: var(--primary-light, #e6f7ff);
+  border-color: var(--primary, #1890ff);
+}
+
+.upload-area__icon {
+  font-size: 28px;
+  line-height: 1;
+  color: var(--text-placeholder, #bfbfbf);
+}
+
+.upload-area__title {
+  font-size: var(--font-size-base, 14px);
+  color: var(--text-main, #333);
+}
+
+.upload-area__hint {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+/* 真正的 file input 隐藏但仍可被程序触发 */
+.upload-area__input {
+  display: none;
+}
+
+/* 缩略图网格 */
+.upload-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: var(--space-2, 8px);
+  margin-top: var(--space-3, 12px);
+}
+
+.upload-thumbs:empty {
+  display: none;
+}
+
+/* 单张缩略图：图片与删除按钮共用一个网格单元 */
+.upload-thumb {
+  display: grid;
+  grid-template: 1fr / 1fr;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background-color: var(--border-color-light, #f2f3f5);
+  border: 1px solid var(--border-color, #ebeef5);
+  border-radius: var(--radius-sm, 4px);
+}
+
+.upload-thumb__img {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-thumb__remove {
+  display: flex;
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: end;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 4px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-inverse, #fff);
+  background-color: rgba(0, 0, 0, 0.55);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color var(--transition-fast, 0.15s) ease;
+}
+
+.upload-thumb__remove:hover {
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+/* 开关（Toggle）：input 缩为 0 宽高，视觉全部由 track 承担 */
+.switch {
+  display: inline-flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.switch__input {
+  width: 0;
+  height: 0;
+  margin: 0;
+  opacity: 0;
+}
+
+.switch__track {
+  display: flex;
+  flex: none;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  padding: 2px;
+  background-color: #d9d9d9;
+  border-radius: var(--radius-round, 999px);
+  transition: background-color var(--transition-fast, 0.15s) ease;
+}
+
+.switch__track::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform var(--transition-fast, 0.15s) ease;
+}
+
+.switch__input:checked + .switch__track {
+  background-color: var(--primary, #1890ff);
+}
+
+.switch__input:checked + .switch__track::after {
+  transform: translateX(20px);
+}
+
+.switch__input:focus-visible + .switch__track {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.switch__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.switch__label {
+  font-size: var(--font-size-base, 14px);
+  color: var(--text-main, #333);
+}
+
+.switch__hint {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+/* 导航栏返回按钮（发布页用） */
+.navbar__back {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  align-items: center;
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-main, #333);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.navbar__back svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 导航栏右侧占位，保证标题视觉居中 */
+.navbar__spacer {
+  flex: none;
+  width: 44px;
+}
+
+.navbar__title--center {
+  flex: 1;
+  text-align: center;
+}
+
+/* ============================================================================
+ * 13. 动态定损表编辑器（发布页）
+ * ========================================================================== */
+.damage-editor {
+  padding-top: var(--space-4, 16px);
+  border-top: 1px solid var(--border-color, #ebeef5);
+}
+
+.damage-editor__head {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3, 12px);
+}
+
+.damage-editor__title {
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+/* 窄屏时表格可横向滚动，避免输入框被压扁 */
+.damage-editor__scroll {
+  overflow-x: auto;
+}
+
+.damage-editor__table {
+  min-width: 480px;
+}
+
+.damage-row__cell {
+  padding: 6px 4px 6px 0;
+  vertical-align: middle;
+}
+
+.damage-row__cell:last-child {
+  padding-right: 0;
+  text-align: right;
+}
+
+/* 行内输入框：比表单主体更紧凑 */
+.damage-row__input {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  font-size: var(--font-size-sm, 13px);
+}
+
+.damage-row__input--num {
+  width: 72px;
+}
+
+.damage-row__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-sub, #888);
+  background-color: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast, 0.15s) ease,
+    background-color var(--transition-fast, 0.15s) ease;
+}
+
+.damage-row__remove:hover {
+  color: var(--danger, #ff4d4f);
+  background-color: var(--danger-light, #fff1f0);
+}
+
+/* 缩略图改造：图片 + 删除按钮在 media 内叠放，下方跟体积对比文案 */
+.upload-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.upload-thumb__media {
+  display: grid;
+  grid-template: 1fr / 1fr;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background-color: var(--border-color-light, #f2f3f5);
+  border: 1px solid var(--border-color, #ebeef5);
+  border-radius: var(--radius-sm, 4px);
+}
+
+.upload-thumb__meta {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-sub, #888);
+  text-align: center;
+  overflow-wrap: break-word;
+}
+
+.upload-thumb__size {
+  color: var(--success, #52c41a);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+/* ============================================================================
+ * 14. 表单校验态与底部提交栏（发布页）
+ * ========================================================================== */
+
+/* 字段级错误提示 */
+.field-error {
+  margin-top: -4px;
+  font-size: var(--font-size-xs, 12px);
+  line-height: 1.5;
+  color: var(--danger, #ff4d4f);
+}
+
+/* 下拉框错误态：边框转红 */
+.custom-select.has-error .custom-select__control {
+  border-color: var(--danger, #ff4d4f);
+}
+
+.custom-select.has-error .custom-select__control:focus-visible {
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+/* 底部固定提交栏占位：避免最后一项被遮挡 */
+.page--with-action-bar {
+  padding-bottom: calc(80px + var(--safe-area-bottom, 0px));
+}
+
+/* ============================================================================
+ * 15. 发布页移动端适配（键盘弹出保护 / 定损表紧凑化）
+ * ========================================================================== */
+
+/* 键盘弹出时隐藏底部提交栏，避免被 visual viewport 顶起后遮挡表单 */
+body.keyboard-open .action-bar {
+  display: none;
+}
+
+/* 上传区 hover 更醒目：边框变蓝 + 淡淡的主色光晕 */
+.upload-area:hover {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.08);
+}
+
+.upload-area.is-dragover {
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.16);
+}
+
+/* 窄屏定损表：改为固定列宽，输入框随列收缩，避免横向拥挤 */
+@media (max-width: 640px) {
+  .damage-editor__scroll {
+    overflow-x: visible;
+  }
+
+  .damage-editor__table {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .damage-editor__table th,
+  .damage-editor__table td {
+    padding: 8px 4px 8px 0;
+    font-size: var(--font-size-xs, 12px);
+  }
+
+  .damage-editor__table th:nth-child(3),
+  .damage-editor__table td:nth-child(3) {
+    width: 62px;
+  }
+
+  .damage-editor__table th:last-child,
+  .damage-editor__table td:last-child {
+    width: 30px;
+  }
+
+  .damage-row__input {
+    min-height: 32px;
+    padding: 6px;
+    font-size: var(--font-size-sm, 13px);
+  }
+
+  .damage-row__input--num {
+    width: 100%;
+  }
+
+  .damage-row__remove {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+  }
+}

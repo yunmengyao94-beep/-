@@ -313,3 +313,8 @@
   font-size: var(--font-size-xs, 12px);
   color: var(--text-sub, #888);
 }
+
+/* 窄版页面容器：表单/详情类页面用，避免输入框在 PC 端过宽 */
+.page--narrow {
+  max-width: 640px;
+}

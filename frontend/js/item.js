@@ -5,8 +5,9 @@
  * 依赖：utils/request.js、utils/constants.js、components/feedback.js
  */
 
-import { request, getToken, setToken } from '../utils/request.js';
+import { request } from '../utils/request.js';
 import { debounce } from '../utils/utils.js';
+import { ensureToken } from '../utils/auth.js';
 import { categoryLabel } from '../utils/constants.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
 
@@ -57,8 +58,6 @@ let submitting = false;
 
 const USER_STORAGE_KEY = 'yxx_user';
 const ORDER_STORAGE_KEY = 'yxx_orders';
-/** Mock 登录用的学号（与 mock_db 里的张同学一致） */
-const MOCK_STUDENT_NO = '2599080110120';
 /** 默认借用时长：3 天 */
 const DEFAULT_LOAN_DAYS = 3;
 
@@ -209,35 +208,6 @@ function hasPendingOrder(itemId) {
   return readOrders().some(
     (order) => String(order.item_id) === String(itemId) && order.state === 0
   );
-}
-
-/**
- * 确保有可用 Token：详情页是公开页，进入借用流程时才用 mock 学号换取 JWT，
- * 之后由 utils/request.js 自动带上 Authorization 头。
- */
-let tokenPromise = null;
-function ensureToken() {
-  const existing = getToken();
-  if (existing) return Promise.resolve(existing);
-
-  if (!tokenPromise) {
-    tokenPromise = request('/auth/login', {
-      method: 'POST',
-      body: { student_no: MOCK_STUDENT_NO },
-    })
-      .then((data) => {
-        const token = data && data.token;
-        if (token) setToken(token);
-        tokenPromise = null;
-        return token;
-      })
-      .catch((error) => {
-        tokenPromise = null;
-        throw error;
-      });
-  }
-
-  return tokenPromise;
 }
 
 /** 默认归还日期：今天 + 3 天，格式 YYYY-MM-DD */
