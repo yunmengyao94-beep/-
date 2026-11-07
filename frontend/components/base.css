@@ -2545,3 +2545,38 @@ body.guide-open {
   flex-direction: column;
   gap: var(--space-2, 8px);
 }
+
+/* 搜索历史条（首页搜索框下方） */
+.search-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  background-color: var(--bg-card, #fff);
+  border-bottom: 1px solid var(--border-color-light, #f2f3f5);
+}
+
+.search-history__item {
+  padding: 4px 10px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+  background-color: var(--bg-color, #f5f7fa);
+  border: 0;
+  border-radius: var(--radius-round, 999px);
+  cursor: pointer;
+}
+
+.search-history__item:active {
+  opacity: 0.7;
+}
+
+.search-history__clear {
+  margin-left: auto;
+  padding: 4px 6px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-placeholder, #bfbfbf);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}

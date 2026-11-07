@@ -12,6 +12,7 @@ import { debounce } from '../utils/utils.js';
 import { categoryLabel } from '../utils/constants.js';
 import { resolveItemImage, DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
 import { getItemCover } from '../utils/item-images.js';
+import { getHistory, pushHistory, clearHistory } from '../utils/search-history.js';
 import { startGuide, hasSeenGuide, markGuideSeen } from '../components/onboarding.js';
 import { initCustomSelect } from '../components/custom-select.js';
 import { showToast } from '../components/feedback.js';
@@ -574,6 +575,51 @@ function setBuildingValue(value) {
 /* ------------------------------------------------------------------ 交互 */
 
 /** 搜索：300ms 防抖 → 本地过滤 → 同步 URL */
+
+/* ------------------------------------------------------------ 搜索历史 */
+
+const historyEl = document.getElementById('search-history');
+
+/** 渲染历史条（无历史则隐藏） */
+function renderSearchHistory() {
+  if (!historyEl) return;
+
+  historyEl.textContent = '';
+  const list = getHistory();
+
+  if (list.length === 0) {
+    historyEl.classList.add('hidden');
+    return;
+  }
+
+  list.slice(0, 8).forEach((keyword) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'search-history__item';
+    chip.textContent = keyword;
+    chip.addEventListener('click', () => {
+      const input = document.getElementById('search-input');
+      if (input) input.value = keyword;
+      activeKeyword = keyword;
+      applyFilters();
+      syncUrlState();
+    });
+    historyEl.appendChild(chip);
+  });
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'search-history__clear';
+  clearBtn.textContent = '清空历史';
+  clearBtn.addEventListener('click', () => {
+    clearHistory();
+    renderSearchHistory();
+  });
+  historyEl.appendChild(clearBtn);
+
+  historyEl.classList.remove('hidden');
+}
+
 function bindSearch() {
   const input = document.getElementById('search-input');
   const form = document.getElementById('search-form');
@@ -581,10 +627,13 @@ function bindSearch() {
 
   const runSearch = debounce(() => {
     activeKeyword = input.value;
+    if (activeKeyword.trim()) pushHistory(activeKeyword.trim());
     applyFilters();
     syncUrlState();
+    renderSearchHistory();
   }, SEARCH_DEBOUNCE_MS);
 
+  input.addEventListener('focus', renderSearchHistory);
   input.addEventListener('input', runSearch);
   input.addEventListener('search', runSearch);
 
@@ -593,8 +642,10 @@ function bindSearch() {
       event.preventDefault();
       runSearch.cancel();
       activeKeyword = input.value;
+      if (activeKeyword.trim()) pushHistory(activeKeyword.trim());
       applyFilters();
       syncUrlState();
+      renderSearchHistory();
     });
   }
 }
@@ -717,6 +768,7 @@ function boot() {
   // 回填的楼栋值需要在初始化之后再写一次，避免被默认文案覆盖
   if (activeBuilding) setBuildingValue(activeBuilding);
   bindSearch();
+  renderSearchHistory();
   bindBuildingFilter();
   bindCardPress();
   bindCardClick();

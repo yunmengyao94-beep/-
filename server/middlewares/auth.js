@@ -24,6 +24,7 @@
 
 const jwt = require('jsonwebtoken');
 const { fail } = require('../utils/http');
+const { isRevoked } = require('../services/token-blacklist');
 
 /** Bearer 方案匹配（大小写不敏感，允许中间多个空格） */
 const BEARER = /^Bearer\s+(\S+)$/i;
@@ -99,7 +100,15 @@ function createAuth(options = {}) {
     }
 
     try {
-      req.user = jwt.verify(matched[1], secret);
+      const token = matched[1];
+
+      // 已登出的 token（黑名单）立即失效
+      if (isRevoked(token)) {
+        return fail(req, res, 401, 40101, AUTH_FAIL_MSG);
+      }
+
+      req.user = jwt.verify(token, secret);
+      req.token = token;
       return next();
     } catch {
       // 过期 / 签名不符 / 结构非法，统一按「未登录或Token失效」处理，避免暴露玄机

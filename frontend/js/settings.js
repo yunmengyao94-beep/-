@@ -7,7 +7,7 @@
  */
 
 import { showToast, openModal, closeModal } from '../components/feedback.js';
-import { clearToken } from '../utils/request.js';
+import { clearToken, request } from '../utils/request.js';
 import { listAccounts, removeAccount } from '../utils/accounts.js';
 import { resetGuide } from '../components/onboarding.js';
 import { clearItemImages } from '../utils/item-images.js';
@@ -153,6 +153,13 @@ function switchToAccount(studentNo) {
 /* ------------------------------------------------------------ 退出登录 */
 
 async function logout() {
+  // 先让服务端把当前 Token 拉黑（失败不影响本地退出）
+  try {
+    await request('/auth/logout', { method: 'POST' });
+  } catch {
+    // 忽略：可能已过期
+  }
+
   clearToken();
   try {
     localStorage.removeItem(USER_KEY);

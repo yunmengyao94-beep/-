@@ -112,15 +112,17 @@ app.get('/api/v1/health', (req, res) => {
   res.json({ code: 200, msg: 'success', data: 'server is running' });
 });
 
-// 登录 / 注册：见 server/routes/auth.js（密码 scrypt 校验，JWT 含真实 user_id）
-app.use('/api/v1/auth', createAuthRouter({ secret: JWT_SECRET, ttlSeconds: TOKEN_TTL_SECONDS }));
-
 /* ------------------------------------------------------------- 鉴权中间件 */
 
-// 统一网关：白名单（/health、/login）放行，其余校验 Bearer Token
+// 统一网关：白名单（/health、/login、/register）放行，其余校验 Bearer Token
+// 注意：auth 路由必须挂在网关「之后」——这样 /auth/logout 才能拿到 req.user / req.token，
+//       而 /auth/login、/auth/register 已在白名单里，不受影响。
 app.use(auth({ secret: JWT_SECRET, publicPaths: PUBLIC_ROUTES }));
 
 /* ------------------------------------------------------------- 业务路由 */
+
+// 登录 / 注册 / 退出登录：见 server/routes/auth.js（密码 scrypt 校验，JWT 含真实 user_id）
+app.use('/api/v1/auth', createAuthRouter({ secret: JWT_SECRET, ttlSeconds: TOKEN_TTL_SECONDS }));
 
 app.use('/api/v1/items', itemsRouter);
 app.use('/api/v1/orders', ordersRouter);

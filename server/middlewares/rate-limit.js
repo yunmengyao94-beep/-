@@ -36,6 +36,7 @@ function createRateLimit(options = {}) {
   const windowMs = Number(options.windowMs) || 60 * 1000;
   const max = Number(options.max) || 10;
   const keyPrefix = options.keyPrefix || 'default';
+  const keyGenerator = typeof options.keyGenerator === 'function' ? options.keyGenerator : null;
   const message = options.message || '操作过于频繁，请稍后再试';
 
   return function rateLimit(req, res, next) {
@@ -44,7 +45,8 @@ function createRateLimit(options = {}) {
 
     const device = String(req.get('X-Device-Id') || '').slice(0, 64);
     const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
-    const key = `${keyPrefix}:${ip}:${device}`;
+    const custom = keyGenerator ? keyGenerator(req) : '';
+    const key = `${keyPrefix}:${ip}:${device}${custom ? ':' + custom : ''}`;
 
     let bucket = buckets.get(key);
     if (!bucket || now > bucket.resetAt) {

@@ -15,6 +15,7 @@ const jwt = require('jsonwebtoken');
 
 const { ok, fail } = require('../utils/http');
 const { createRateLimit } = require('../middlewares/rate-limit');
+const { revoke } = require('../services/token-blacklist');
 const {
   findAccountByStudentNo,
   verifyPassword,
@@ -115,55 +116,77 @@ function createAuthRouter(options) {
    * POST /api/v1/auth/register
    * 请求：{ student_no, password, name, college, building, room }
    */
-  router.post('/register', (req, res) => {
-    const body = req.body || {};
+  router.post(
+    '/register',
+    createRateLimit({ windowMs: 60 * 1000, max: 1, keyPrefix: 'register' }),
+    (req, res) => {
+      const body = req.body || {};
 
-    const studentNo = typeof body.student_no === 'string' ? body.student_no.trim() : '';
-    const password = typeof body.password === 'string' ? body.password : '';
-    const name = typeof body.name === 'string' ? body.name.trim() : '';
-    const college = typeof body.college === 'string' ? body.college.trim() : '';
-    const building = typeof body.building === 'string' ? body.building.trim() : '';
-    const room = typeof body.room === 'string' ? body.room.trim() : '';
+      const studentNo = typeof body.student_no === 'string' ? body.student_no.trim() : '';
+      const password = typeof body.password === 'string' ? body.password : '';
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      const college = typeof body.college === 'string' ? body.college.trim() : '';
+      const building = typeof body.building === 'string' ? body.building.trim() : '';
+      const room = typeof body.room === 'string' ? body.room.trim() : '';
 
-    if (!STUDENT_NO_PATTERN.test(studentNo)) {
-      return fail(req, res, 400, 40001, '参数校验失败：学号需为 13 位数字且以 25/24 开头', {
-        field: 'student_no',
+      if (!STUDENT_NO_PATTERN.test(studentNo)) {
+        return fail(req, res, 400, 40001, '参数校验失败：学号需为 13 位数字且以 25/24 开头', {
+          field: 'student_no',
+        });
+      }
+      if (password.length < 6) {
+        return fail(req, res, 400, 40001, '参数校验失败：密码至少 6 位', { field: 'password' });
+      }
+      if (name.length < 2) {
+        return fail(req, res, 400, 40001, '参数校验失败：姓名至少 2 个字符', { field: 'name' });
+      }
+      if (!college) {
+        return fail(req, res, 400, 40001, '参数校验失败：学院必填', { field: 'college' });
+      }
+      if (!building) {
+        return fail(req, res, 400, 40001, '参数校验失败：楼栋必填', { field: 'building' });
+      }
+      if (!ROOM_PATTERN.test(room)) {
+        return fail(req, res, 400, 40001, '参数校验失败：房间号需为 3 位数字', { field: 'room' });
+      }
+
+      const result = createAccount({
+        student_no: studentNo,
+        password,
+        name,
+        college,
+        building,
+        room,
+      });
+
+      if (!result.ok) {
+        return fail(req, res, 409, 40902, '该学号已注册，请直接登录', { field: 'student_no' });
+      }
+
+      return ok(req, res, {
+        user_id: result.user.id,
+        student_no: studentNo,
+        name,
       });
     }
-    if (password.length < 6) {
-      return fail(req, res, 400, 40001, '参数校验失败：密码至少 6 位', { field: 'password' });
-    }
-    if (name.length < 2) {
-      return fail(req, res, 400, 40001, '参数校验失败：姓名至少 2 个字符', { field: 'name' });
-    }
-    if (!college) {
-      return fail(req, res, 400, 40001, '参数校验失败：学院必填', { field: 'college' });
-    }
-    if (!building) {
-      return fail(req, res, 400, 40001, '参数校验失败：楼栋必填', { field: 'building' });
-    }
-    if (!ROOM_PATTERN.test(room)) {
-      return fail(req, res, 400, 40001, '参数校验失败：房间号需为 3 位数字', { field: 'room' });
+  );
+
+  /**
+   * POST /api/v1/auth/logout
+   * 把当前 Token 加入黑名单（需带 Authorization: Bearer <token>）
+   */
+  router.post('/logout', (req, res) => {
+    const token = req.token;
+    const payload = req.user || {};
+
+    if (!token) {
+      return fail(req, res, 401, 40101, '未登录或Token失效');
     }
 
-    const result = createAccount({
-      student_no: studentNo,
-      password,
-      name,
-      college,
-      building,
-      room,
-    });
+    const ttl = payload.exp ? payload.exp - Math.floor(Date.now() / 1000) : 0;
+    revoke(token, ttl);
 
-    if (!result.ok) {
-      return fail(req, res, 409, 40902, '该学号已注册，请直接登录', { field: 'student_no' });
-    }
-
-    return ok(req, res, {
-      user_id: result.user.id,
-      student_no: studentNo,
-      name,
-    });
+    return ok(req, res, { logged_out: true });
   });
 
   return router;

@@ -201,6 +201,26 @@ import { showToast } from '../components/feedback.js';
     });
   }
 
+  /* ------------------------------------------------ 5. 多标签页状态同步 */
+
+  /**
+   * 同一个 localStorage 在多个 Tab 间共享：
+   * 任一 Tab 退出登录（删除 yxx_token）时，其余 Tab 立即跳回登录页，
+   * 避免"Tab A 已退出、Tab B 还在用旧 Token 发东西"的错乱。
+   */
+  function setupCrossTabSync() {
+    window.addEventListener('storage', (event) => {
+      if (event.key !== 'yxx_token') return;
+
+      const path = window.location.pathname || '';
+      if (path.endsWith('login.html') || path.endsWith('register.html')) return;
+
+      if (!event.newValue) {
+        window.location.replace('./login.html');
+      }
+    });
+  }
+
   /* ------------------------------------------------------------- 启动 */
 
   applyStoredTheme();
@@ -208,4 +228,5 @@ import { showToast } from '../components/feedback.js';
   setupNetworkBanner();
   setupImageFallback();
   setupLiveReload();
+  setupCrossTabSync();
 })();

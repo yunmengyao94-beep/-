@@ -50,6 +50,9 @@ if (db.accounts.length === 0 && seedData.accounts.length > 0) {
 
 /** 订单号自增起点：首次借用返回 30001（与接口约定一致） */
 const ORDER_ID_SEED = 30001;
+/** 落盘临时文件自增序号（同一毫秒内多次写也不会撞名） */
+let writeSeq = 0;
+
 let orderSeq = Math.max(
   ORDER_ID_SEED,
   db.orders.reduce((max, order) => Math.max(max, Number(order.id) || 0), 0) + 1
@@ -57,9 +60,22 @@ let orderSeq = Math.max(
 
 /** 落盘：先写临时文件再 rename，避免半截 JSON */
 function persistDb() {
-  const tmp = `${DB_FILE}.tmp`;
+  // 唯一临时文件名：避免并发写互相覆盖同一个 .tmp
+  const tmp = `${DB_FILE}.${process.pid}.${Date.now()}.${++writeSeq}.tmp`;
+
   try {
-    fs.writeFileSync(tmp, JSON.stringify(db, null, 2), 'utf8');
+    const json = JSON.stringify(db, null, 2);
+    const fd = fs.openSync(tmp, 'w');
+
+    try {
+      fs.writeFileSync(fd, json, 'utf8');
+      // 落盘到磁盘，避免断电丢失
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+
+    // rename 在同一分区上是原子操作：要么旧文件，要么新文件
     fs.renameSync(tmp, DB_FILE);
     return true;
   } catch (error) {
