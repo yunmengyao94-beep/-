@@ -11,6 +11,7 @@ import { request } from '../utils/request.js';
 import { debounce } from '../utils/utils.js';
 import { categoryLabel } from '../utils/constants.js';
 import { resolveItemImage, DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
+import { getItemCover } from '../utils/item-images.js';
 import { startGuide, hasSeenGuide, markGuideSeen } from '../components/onboarding.js';
 import { initCustomSelect } from '../components/custom-select.js';
 import { showToast } from '../components/feedback.js';
@@ -97,7 +98,7 @@ function toCardModel(item) {
     ownerCredit: Number.isFinite(item.owner_credit)
       ? item.owner_credit
       : 80 + (Number(item.owner_id || 0) % 21),
-    image: resolveItemImage(item),
+    image: getItemCover(item.id) || resolveItemImage(item),
   };
 }
 

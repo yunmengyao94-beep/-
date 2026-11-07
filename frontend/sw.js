@@ -45,7 +45,6 @@ const SHELL_PAGES = [
   './item.html',
   './profile.html',
   './publish.html',
-  './components.html',
 ];
 
 /** 核心样式 */
@@ -77,6 +76,7 @@ const SHELL_SCRIPTS = [
   './utils/accounts.js',
   './utils/accounts-db.js',
   './utils/agreement.js',
+  './utils/item-images.js',
   './utils/item-image.js',
   './components/onboarding.js',
   './components/custom-select.js',
@@ -86,6 +86,7 @@ const SHELL_SCRIPTS = [
 /** 图标与 manifest */
 const SHELL_ASSETS = [
   './manifest.json',
+  './favicon.ico',
   './assets/icons/logo-192.png',
   './assets/icons/logo-512.png',
   './assets/icons/item-umbrella.png',

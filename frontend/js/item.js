@@ -10,6 +10,7 @@ import { debounce } from '../utils/utils.js';
 import { ensureToken } from '../utils/auth.js';
 import { categoryLabel } from '../utils/constants.js';
 import { resolveItemImage, DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
+import { getItemImages } from '../utils/item-images.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
 
 /* ------------------------------------------------------------------ 常量 */
@@ -480,7 +481,9 @@ function renderDetail(item) {
   if (!rootEl) return;
   rootEl.textContent = '';
 
-  const image = resolveItemImage(item);
+  // 本地发布的图片优先；没有则回退到关键词插画
+  const localImages = getItemImages(item.id);
+  const images = localImages.length > 0 ? localImages : [resolveItemImage(item)];
   const owner = resolveOwner(item);
   const levelName = LEVEL_NAME[owner.level] || '良好';
 
@@ -488,25 +491,28 @@ function renderDetail(item) {
   const gallery = document.createElement('div');
   gallery.className = 'detail-gallery';
 
-  const slide = document.createElement('div');
-  slide.className = 'detail-gallery__slide';
+  images.forEach((src) => {
+    const slide = document.createElement('div');
+    slide.className = 'detail-gallery__slide';
 
-  const img = document.createElement('img');
-  img.className = 'detail-gallery__img';
-  img.src = image;
-  img.alt = item.title;
-  img.decoding = 'async';
-  img.addEventListener(
-    'error',
-    () => {
-      if (img.dataset.fallback === '1') return;
-      img.dataset.fallback = '1';
-      img.src = DEFAULT_ITEM_IMAGE;
-    },
-    { once: true }
-  );
-  slide.appendChild(img);
-  gallery.appendChild(slide);
+    const img = document.createElement('img');
+    img.className = 'detail-gallery__img';
+    img.src = src;
+    img.alt = item.title;
+    img.decoding = 'async';
+    img.addEventListener(
+      'error',
+      () => {
+        if (img.dataset.fallback === '1') return;
+        img.dataset.fallback = '1';
+        img.src = DEFAULT_ITEM_IMAGE;
+      },
+      { once: true }
+    );
+
+    slide.appendChild(img);
+    gallery.appendChild(slide);
+  });
 
   /* ---- 信息卡 ---- */
   const infoCard = document.createElement('section');

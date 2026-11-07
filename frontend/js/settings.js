@@ -10,6 +10,7 @@ import { showToast, openModal, closeModal } from '../components/feedback.js';
 import { clearToken } from '../utils/request.js';
 import { listAccounts, removeAccount } from '../utils/accounts.js';
 import { resetGuide } from '../components/onboarding.js';
+import { clearItemImages } from '../utils/item-images.js';
 
 const TOKEN_KEY = 'yxx_token';
 const USER_KEY = 'yxx_user';
@@ -234,6 +235,9 @@ async function clearAllCaches() {
     }
     keys.forEach((key) => localStorage.removeItem(key));
     removedEntries = keys.length;
+
+    // 本地物品图片（发布时缓存的 Base64）也一并清掉
+    clearItemImages();
   } catch {
     removedEntries = 0;
   }

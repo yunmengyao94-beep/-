@@ -11,6 +11,7 @@ import { initCustomSelect } from '../components/custom-select.js';
 import { showToast } from '../components/feedback.js';
 import { ensureToken } from '../utils/auth.js';
 import { request } from '../utils/request.js';
+import { saveItemImages } from '../utils/item-images.js';
 
 /* ------------------------------------------------------------------ 常量 */
 
@@ -482,10 +483,18 @@ async function handleSubmit() {
 
     const payload = buildPayload(values);
     // 与「最短 Loading 时长」并行：接口快也不闪一下，慢则按实际等待
-    await Promise.all([
+    const [created] = await Promise.all([
       request('/items/publish', { method: 'POST', body: payload }),
       new Promise((resolve) => setTimeout(resolve, SUBMIT_MIN_MS)),
     ]);
+
+    // 图片不上传服务器：按 item_id 存在本地，列表/详情渲染时读取
+    if (created && created.item_id) {
+      saveItemImages(
+        created.item_id,
+        selectedImages.map((image) => image.dataUrl)
+      );
+    }
 
     submitted = true;
     showToast('发布成功，正在返回首页', 'success');
