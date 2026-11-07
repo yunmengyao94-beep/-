@@ -299,9 +299,14 @@ function showState({ icon, text, desc, actionText, onAction }) {
 }
 
 /** 空状态 */
-function showEmpty(message = '暂无物品', desc = '换个楼栋或关键词试试') {
+function showEmpty(
+  message = '暂无物品，快去发布吧',
+  desc = '点击底部「发布」，让同学来借你的闲置',
+  actionText = '',
+  onAction = null
+) {
   updateCount(0);
-  showState({ icon: '📭', text: message, desc });
+  showState({ icon: '📭', text: message, desc, actionText, onAction });
 }
 
 /** 错误态（含重试按钮） */
@@ -339,8 +344,8 @@ function applyFilters() {
 
   if (visible.length === 0) {
     showEmpty(
-      '暂无物品',
-      activeKeyword || activeBuilding ? '换个楼栋或关键词试试' : '稍后再来看看'
+      '暂无匹配的物品',
+      activeKeyword || activeBuilding ? '换个楼栋或关键词试试' : '快去发布第一件物品吧'
     );
     return;
   }
@@ -377,7 +382,9 @@ async function loadFirstPage({ withSkeleton = true } = {}) {
     if (gridEl) gridEl.removeAttribute('aria-busy');
 
     if (allItems.length === 0) {
-      showEmpty('暂无物品', '当前还没有人发布物品');
+      showEmpty('暂无物品，快去发布吧', '点击底部「发布」，让同学来借你的闲置', '发布物品', () => {
+        window.location.href = './publish.html';
+      });
       return;
     }
 

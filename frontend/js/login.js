@@ -1,13 +1,18 @@
 /**
  * 登录页
  * ---------------------------------------------------------------------------
- * 流程：校验 → POST /auth/login → 写入 yxx_token / yxx_user → 跳回来源页或首页
- * Mock：服务端只校验学号格式，密码不校验（真实实现需 bcrypt 比对）
+ * 去 Mock 化后的流程：
+ *   1. 学号格式校验：13 位、25 / 24 开头
+ *   2. 本地账号库比对学号 + 密码（utils/accounts-db.js）
+ *   3. 校验通过后向服务端换取 JWT（服务端只负责签发 Token）
+ *   4. 写入 yxx_token / yxx_user → 跳回来源页或首页
+ * 失败统一提示「学号或密码错误」，不区分"账号不存在 / 密码错"，避免撞库探测。
  */
 
 import { request, setToken } from '../utils/request.js';
 import { showToast } from '../components/feedback.js';
 import { upsertAccount } from '../utils/accounts.js';
+import { ensureAccountDB, verifyCredentials, isValidStudentNo } from '../utils/accounts-db.js';
 
 /** 与 utils/request.js 中的 TOKEN_KEY 保持一致 */
 const TOKEN_KEY = 'yxx_token';
@@ -29,20 +34,18 @@ function readRedirect() {
   const raw = params.get('redirect') || '';
   if (!raw) return DEFAULT_REDIRECT;
 
-  // 只接受同站相对路径
   if (/^https?:\/\//i.test(raw) || raw.startsWith('//')) return DEFAULT_REDIRECT;
   return raw.startsWith('/') || raw.startsWith('.') ? raw : `./${raw}`;
 }
 
-/** 显示/清除字段错误 */
 function setError(node, message) {
   if (!node) return;
   node.textContent = message || '';
   node.classList.toggle('hidden', !message);
 }
 
-/** 表单校验 */
-function validate() {
+/** 仅做「必填 + 格式」的前置校验，凭据校验交给账号库 */
+function validateFormat() {
   const studentNo = studentNoInput ? studentNoInput.value.trim() : '';
   const password = passwordInput ? passwordInput.value : '';
 
@@ -51,8 +54,8 @@ function validate() {
   if (!studentNo) {
     setError(errStudentNo, '请输入学号');
     ok = false;
-  } else if (!/^\d{6,20}$/.test(studentNo)) {
-    setError(errStudentNo, '学号应为 6–20 位数字');
+  } else if (!isValidStudentNo(studentNo)) {
+    setError(errStudentNo, '学号需为 13 位数字，且以 25 或 24 开头');
     ok = false;
   } else {
     setError(errStudentNo, '');
@@ -71,16 +74,22 @@ function validate() {
   return ok ? { studentNo, password } : null;
 }
 
-/** 提交登录 */
 async function handleLogin(event) {
   if (event) event.preventDefault();
   if (submitting) return;
 
-  const values = validate();
-  if (!values) {
-    showToast('请检查学号与密码', 'error');
+  const values = validateFormat();
+  if (!values) return;
+
+  // 账号库比对
+  const result = verifyCredentials(values.studentNo, values.password);
+  if (!result.ok) {
+    showToast('学号或密码错误', 'error');
+    setError(errPassword, '学号或密码错误');
     return;
   }
+
+  const account = result.account;
 
   submitting = true;
   if (submitBtn) {
@@ -91,48 +100,42 @@ async function handleLogin(event) {
   try {
     const data = await request('/auth/login', {
       method: 'POST',
-      body: { student_no: values.studentNo, password: values.password },
+      body: { student_no: account.studentNo, password: values.password },
     });
 
     const token = data && data.token;
-    const user = (data && data.user) || {};
-
-    if (!token) throw new Error('未返回 Token');
+    if (!token) throw new Error('登录服务异常，请稍后重试');
 
     setToken(token);
 
+    const user = {
+      user_id: (data.user && data.user.user_id) || null,
+      student_no: account.studentNo,
+      nickname: account.name,
+      real_name: account.name,
+      college_code: account.college,
+      building_loc: account.building,
+      room_no: account.room,
+    };
+
     try {
-      localStorage.setItem(
-        USER_KEY,
-        JSON.stringify({
-          user_id: user.user_id,
-          student_no: user.student_no,
-          real_name: user.real_name,
-          nickname: user.real_name || '',
-          college_code: user.college_code,
-          building_loc: user.building_loc,
-          credit_score: user.credit_score,
-          credit_available: user.credit_available,
-          credit_level: user.credit_level,
-        })
-      );
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
     } catch {
-      // 存储失败不影响登录（守卫会因缺少 token 再次跳回登录页）
+      // 存储失败不影响本次登录（守卫会因缺少 token 再次跳回登录页）
     }
 
-    // 记录到多账号列表（Mock 演示用）
     upsertAccount({
-      student_no: user.student_no || values.studentNo,
-      nickname: user.real_name || '',
-      real_name: user.real_name || '',
+      student_no: account.studentNo,
+      nickname: account.name,
+      real_name: account.name,
       user_id: user.user_id,
       token,
     });
 
-    showToast('登录成功，正在进入…', 'success');
+    showToast(`欢迎回来，${account.name}`, 'success');
     window.location.href = readRedirect();
   } catch (error) {
-    const message = (error && error.message) || '登录失败';
+    const message = (error && error.message) || '登录失败，请稍后重试';
     showToast(`登录失败：${message}`, 'error');
     submitting = false;
     if (submitBtn) {
@@ -143,7 +146,8 @@ async function handleLogin(event) {
 }
 
 function init() {
-  // 已登录直接进首页，避免重复登录
+  ensureAccountDB();
+
   try {
     if (localStorage.getItem(TOKEN_KEY)) {
       window.location.replace(readRedirect());
@@ -153,7 +157,6 @@ function init() {
     // 忽略
   }
 
-  // 注册页回跳时可带学号，自动填充
   try {
     const preset = new URLSearchParams(window.location.search).get('student_no');
     if (preset && studentNoInput) studentNoInput.value = preset;

@@ -110,6 +110,21 @@
           </div>
 
           <div class="input-group">
+            <label class="input-group__label input-group__label--required" for="reg-room"
+              >宿舍号</label
+            >
+            <input
+              class="input-group__control"
+              id="reg-room"
+              name="room"
+              type="text"
+              maxlength="8"
+              placeholder="例如：502"
+            />
+            <p class="field-error hidden" id="err-reg-room"></p>
+          </div>
+
+          <div class="input-group">
             <label class="input-group__label input-group__label--required" for="reg-password"
               >密码</label
             >
@@ -132,8 +147,10 @@
             <p class="auth-link">已有账号？<a href="./login.html">返回登录</a></p>
           </div>
         </form>
-
-        <p class="auth-foot">Mock 环境：注册信息仅本地模拟，不会写入服务器</p>
+        <p class="auth-foot">
+          注册即表示同意
+          <a href="./agreement.html" style="color: var(--primary)">《用户协议与隐私政策》</a>
+        </p>
       </section>
     </main>
 

@@ -1,20 +1,24 @@
 /**
  * 注册页
  * ---------------------------------------------------------------------------
- * Mock 阶段没有注册接口：
- *   1. 本地校验全部字段
- *   2. 弹出成功提示
- *   3. 约 0.9s 后带学号回到登录页（登录页自动填充学号）
- * 真实实现应调用 POST /api/v1/auth/register，并把密码做 bcrypt 后入库。
+ * 去 Mock 化后：注册写入本地账号库（utils/accounts-db.js），
+ * 之后即可用该学号 + 密码在登录页登录。
  */
 
 import { showToast } from '../components/feedback.js';
+import {
+  ensureAccountDB,
+  addAccount,
+  findAccount,
+  isValidStudentNo,
+} from '../utils/accounts-db.js';
 
 const form = document.getElementById('register-form');
 const studentNoInput = document.getElementById('reg-student-no');
 const nameInput = document.getElementById('reg-name');
 const collegeInput = document.getElementById('reg-college');
 const buildingSelect = document.getElementById('reg-building');
+const roomInput = document.getElementById('reg-room');
 const passwordInput = document.getElementById('reg-password');
 const submitBtn = document.getElementById('register-btn');
 
@@ -23,19 +27,18 @@ const ERROR_NODES = {
   name: document.getElementById('err-reg-name'),
   college: document.getElementById('err-reg-college'),
   building: document.getElementById('err-reg-building'),
+  room: document.getElementById('err-reg-room'),
   password: document.getElementById('err-reg-password'),
 };
 
 const REDIRECT_DELAY = 900;
 
-/** 显示/清除字段错误 */
 function setError(node, message) {
   if (!node) return;
   node.textContent = message || '';
   node.classList.toggle('hidden', !message);
 }
 
-/** 清空所有字段错误 */
 function clearErrors() {
   Object.values(ERROR_NODES).forEach((node) => setError(node, ''));
 }
@@ -46,12 +49,15 @@ function validate() {
   const name = nameInput ? nameInput.value.trim() : '';
   const college = collegeInput ? collegeInput.value.trim() : '';
   const building = buildingSelect ? buildingSelect.value : '';
+  const room = roomInput ? roomInput.value.trim() : '';
   const password = passwordInput ? passwordInput.value : '';
 
   const errors = {};
 
   if (!studentNo) errors.studentNo = '请输入学号';
-  else if (!/^\d{6,20}$/.test(studentNo)) errors.studentNo = '学号应为 6–20 位数字';
+  else if (!isValidStudentNo(studentNo))
+    errors.studentNo = '学号需为 13 位数字，且以 25 或 24 开头';
+  else if (findAccount(studentNo)) errors.studentNo = '该学号已注册，请直接登录';
 
   if (!name) errors.name = '请输入姓名';
   else if (name.length < 2) errors.name = '姓名至少 2 个字符';
@@ -60,6 +66,8 @@ function validate() {
 
   if (!building) errors.building = '请选择楼栋';
 
+  if (!room) errors.room = '请输入宿舍号';
+
   if (!password) errors.password = '请输入密码';
   else if (password.length < 6) errors.password = '密码至少 6 位';
 
@@ -67,10 +75,9 @@ function validate() {
 
   if (Object.keys(errors).length > 0) return null;
 
-  return { studentNo, name, college, building, password };
+  return { studentNo, name, college, building, room, password };
 }
 
-/** 提交注册（纯前端模拟） */
 function handleRegister(event) {
   if (event) event.preventDefault();
 
@@ -87,9 +94,21 @@ function handleRegister(event) {
     submitBtn.textContent = '注册中...';
   }
 
-  // 模拟一次网络往返
+  ensureAccountDB();
+
   setTimeout(() => {
-    showToast('注册成功，正在返回登录页', 'success');
+    const result = addAccount(values);
+
+    if (!result.ok) {
+      showToast('该学号已注册，请直接登录', 'error');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '注册';
+      }
+      return;
+    }
+
+    showToast('注册成功，请使用新账号登录', 'success');
     setTimeout(() => {
       window.location.href = `./login.html?student_no=${encodeURIComponent(values.studentNo)}`;
     }, REDIRECT_DELAY);
@@ -97,6 +116,7 @@ function handleRegister(event) {
 }
 
 function init() {
+  ensureAccountDB();
   if (form) form.addEventListener('submit', handleRegister);
 }
 

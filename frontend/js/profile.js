@@ -74,15 +74,6 @@ let previewToken = 0;
 
 /* ------------------------------------------------------------------ 工具 */
 
-/** 学号掩码：已是掩码则原样返回，否则统一为 前4位****后2位 */
-function maskStudentNo(studentNo) {
-  const value = String(studentNo || '').trim();
-  if (!value) return '——';
-  if (value.includes('*')) return value;
-  if (value.length <= 6) return `${value.slice(0, 1)}****`;
-  return `${value.slice(0, 4)}****${value.slice(-2)}`;
-}
-
 /** 分数 → 等级对象 */
 function levelOf(score) {
   const value = Number(score) || 0;
@@ -92,15 +83,23 @@ function levelOf(score) {
   return hit || LEVELS[0];
 }
 
-/** 读取本地昵称（服务端只下发脱敏真名，没有昵称字段） */
-function localNickname() {
+/** 读取当前登录账号（姓名 / 学号 / 学院 / 楼栋 / 宿舍） */
+function readAccount() {
   try {
     const raw = localStorage.getItem(USER_STORAGE_KEY);
-    if (!raw) return '';
+    if (!raw) return null;
     const user = JSON.parse(raw);
-    return user && user.nickname ? String(user.nickname) : '';
+    if (!user) return null;
+
+    return {
+      name: user.nickname || user.real_name || '',
+      studentNo: user.student_no || '',
+      college: user.college_code || '',
+      building: user.building_loc || '',
+      room: user.room_no || '',
+    };
   } catch {
-    return '';
+    return null;
   }
 }
 
@@ -165,14 +164,21 @@ function renderProfile(data) {
     },
   };
 
-  const nickname = localNickname() || user.real_name || '同学';
+  // 账号信息一律取自当前登录账号（本地账号库 → 登录时写入 yxx_user）
+  const account = readAccount();
+  const nickname = (account && account.name) || user.real_name || '同学';
+  const studentNo = (account && account.studentNo) || user.student_no || '';
+  const college = (account && account.college) || user.college_code || '';
+  const building = (account && account.building) || user.building_loc || '';
+  const room = (account && account.room) || '';
 
   if (els.avatar) els.avatar.textContent = nickname.slice(0, 1);
   if (els.name) els.name.textContent = nickname;
-  if (els.no) els.no.textContent = maskStudentNo(user.student_no);
-  if (els.college)
-    els.college.textContent = user.college_code ? `学院 ${user.college_code}` : '未填写学院';
-  if (els.building) els.building.textContent = user.building_loc || '未填写楼栋';
+  if (els.no) els.no.textContent = studentNo || '——';
+  if (els.college) els.college.textContent = college ? `学院 ${college}` : '未填写学院';
+  if (els.building) {
+    els.building.textContent = building ? `${building}${room ? ` ${room}` : ''}` : '未填写楼栋';
+  }
 
   if (els.available) els.available.textContent = String(credit.available ?? 0);
   if (els.frozen) els.frozen.textContent = String(credit.frozen ?? 0);

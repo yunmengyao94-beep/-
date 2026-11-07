@@ -1,19 +1,14 @@
 /**
- * 会话工具：按需用 mock 学号换取 JWT
+ * 会话工具（去 Mock 化）
  * ---------------------------------------------------------------------------
- * 详情页、发布页都需要「进入写操作时才登录」的行为：
- *   - 浏览类接口是公开的，页面不能强制登录
- *   - 写接口（下单 / 发布）需要 Token，此时才用 mock 学号换一次 JWT
- * 换取结果由 utils/request.js 自动注入到后续请求头。
+ * 现在登录必须走 login.html 的账号校验；本模块只负责「取当前 Token」：
+ *   · 有 Token → 直接返回
+ *   · 无 Token → 抛 40101，由页面 catch 或路由守卫跳登录页
+ *
+ * 不再做任何「用固定学号自动换 Token」的兜底，避免绕过登录校验。
  */
 
-import { getToken, setToken, request } from './request.js';
-
-/** Mock 登录学号（与 server/mock_db.json 中张同学一致） */
-export const MOCK_STUDENT_NO = '2599080110120';
-
-/** 并发去重：多个请求同时要 Token 时只换一次 */
-let tokenPromise = null;
+import { getToken, RequestError } from './request.js';
 
 /**
  * 确保存在可用 Token
@@ -23,24 +18,7 @@ export function ensureToken() {
   const existing = getToken();
   if (existing) return Promise.resolve(existing);
 
-  if (!tokenPromise) {
-    tokenPromise = request('/auth/login', {
-      method: 'POST',
-      body: { student_no: MOCK_STUDENT_NO },
-    })
-      .then((data) => {
-        const token = data && data.token;
-        if (token) setToken(token);
-        tokenPromise = null;
-        return token;
-      })
-      .catch((error) => {
-        tokenPromise = null;
-        throw error;
-      });
-  }
-
-  return tokenPromise;
+  return Promise.reject(new RequestError('登录已过期，请重新登录', 40101));
 }
 
-export default { ensureToken, MOCK_STUDENT_NO };
+export default { ensureToken };
