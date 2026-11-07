@@ -12,6 +12,7 @@ import {
   findAccount,
   isValidStudentNo,
 } from '../utils/accounts-db.js';
+import { bindAgreementLinks, bindTermsGate } from '../utils/agreement.js';
 
 const form = document.getElementById('register-form');
 const studentNoInput = document.getElementById('reg-student-no');
@@ -32,6 +33,9 @@ const ERROR_NODES = {
 };
 
 const REDIRECT_DELAY = 900;
+
+/** 是否已勾选同意条款 */
+let isAgreed = () => false;
 
 function setError(node, message) {
   if (!node) return;
@@ -66,7 +70,8 @@ function validate() {
 
   if (!building) errors.building = '请选择楼栋';
 
-  if (!room) errors.room = '请输入宿舍号';
+  if (!room) errors.room = '请输入房间号';
+  else if (!/^\d{3}$/.test(room)) errors.room = '房间号需为 3 位数字，例如 501';
 
   if (!password) errors.password = '请输入密码';
   else if (password.length < 6) errors.password = '密码至少 6 位';
@@ -80,6 +85,11 @@ function validate() {
 
 function handleRegister(event) {
   if (event) event.preventDefault();
+
+  if (!isAgreed()) {
+    showToast('请先阅读并同意《用户协议》和《隐私政策》', 'error');
+    return;
+  }
 
   clearErrors();
   const values = validate();
@@ -117,6 +127,10 @@ function handleRegister(event) {
 
 function init() {
   ensureAccountDB();
+
+  isAgreed = bindTermsGate(document.getElementById('agree-terms'), submitBtn);
+  bindAgreementLinks();
+
   if (form) form.addEventListener('submit', handleRegister);
 }
 

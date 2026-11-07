@@ -2373,3 +2373,37 @@ body.keyboard-open .action-bar {
   font-size: var(--font-size-xs, 12px);
   color: var(--text-placeholder, #bfbfbf);
 }
+
+/* 同意条款勾选行（登录 / 注册页） */
+.agree-row {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: flex-start;
+  margin: var(--space-2, 8px) 0 0;
+  font-size: var(--font-size-xs, 12px);
+  line-height: 1.7;
+  color: var(--text-sub, #888);
+  cursor: pointer;
+}
+
+.agree-row__input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--primary, #1890ff);
+  cursor: pointer;
+}
+
+.agree-row__text {
+  flex: 1;
+}
+
+.agree-row__text a {
+  color: var(--primary, #1890ff);
+  text-decoration: none;
+}
+
+.agree-row__text a:active {
+  opacity: 0.7;
+}

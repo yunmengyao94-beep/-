@@ -13,6 +13,7 @@ import { request, setToken } from '../utils/request.js';
 import { showToast } from '../components/feedback.js';
 import { upsertAccount } from '../utils/accounts.js';
 import { ensureAccountDB, verifyCredentials, isValidStudentNo } from '../utils/accounts-db.js';
+import { bindAgreementLinks, bindTermsGate } from '../utils/agreement.js';
 
 /** 与 utils/request.js 中的 TOKEN_KEY 保持一致 */
 const TOKEN_KEY = 'yxx_token';
@@ -27,6 +28,8 @@ const errStudentNo = document.getElementById('err-student-no');
 const errPassword = document.getElementById('err-password');
 
 let submitting = false;
+/** 是否已勾选同意条款（由 utils/agreement.js 的勾选门维护） */
+let isAgreed = () => false;
 
 /** 从 query 中取回跳地址（只允许站内相对路径，防开放重定向） */
 function readRedirect() {
@@ -77,6 +80,11 @@ function validateFormat() {
 async function handleLogin(event) {
   if (event) event.preventDefault();
   if (submitting) return;
+
+  if (!isAgreed()) {
+    showToast('请先阅读并同意《用户协议》和《隐私政策》', 'error');
+    return;
+  }
 
   const values = validateFormat();
   if (!values) return;
@@ -139,7 +147,7 @@ async function handleLogin(event) {
     showToast(`登录失败：${message}`, 'error');
     submitting = false;
     if (submitBtn) {
-      submitBtn.disabled = false;
+      submitBtn.disabled = !isAgreed();
       submitBtn.textContent = '登录';
     }
   }
@@ -163,6 +171,10 @@ function init() {
   } catch {
     // 忽略
   }
+
+  // 协议勾选门 + 协议弹窗
+  isAgreed = bindTermsGate(document.getElementById('agree-terms'), submitBtn);
+  bindAgreementLinks();
 
   if (form) form.addEventListener('submit', handleLogin);
 }

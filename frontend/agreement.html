@@ -62,8 +62,16 @@
 
         <h2 class="doc-section-title">三、端侧 AI 识别与隐私</h2>
         <p class="doc-p">
-          芝麻信用截图识别<strong>完全在你的设备浏览器内完成</strong>，图片不会上传至服务器。
-          识别引擎（Tesseract.js）与中文语言包随应用打包在本地，可离线运行。
+          芝麻信用截图识别<strong>完全在你的设备浏览器内完成</strong>：图片不离开设备、
+          不上传服务器、不写入相册或任何云端存储。识别引擎（Tesseract.js）与中文语言包
+          随应用打包在本地 <code>assets/ai/</code>，断网也可运行；识别结束后立即释放识别线程。
+        </p>
+
+        <h2 class="doc-section-title">四、我们不收集什么</h2>
+        <p class="doc-p">
+          本应用<strong>不读取通讯录、短信、通话记录、相册全量照片与精确位置</strong>，
+          不申请后台定位权限，不接入第三方广告、统计或推送 SDK。
+          你在「发布物品」时选择的图片仅用于生成压缩预览，识别与预览都在本地完成。
         </p>
 
         <h2 class="doc-section-title">四、我们收集的信息</h2>
