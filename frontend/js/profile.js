@@ -10,6 +10,7 @@ import { request } from '../utils/request.js';
 import { ensureToken } from '../utils/auth.js';
 import { formatTime } from '../utils/format.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
+import { isValidRoom } from '../utils/accounts-db.js';
 
 /* ------------------------------------------------------------------ 常量 */
 
@@ -56,6 +57,7 @@ const els = {
   aiProgress: document.getElementById('ai-progress'),
   aiProgressText: document.getElementById('ai-progress-text'),
   aiProgressBar: document.getElementById('ai-progress-bar'),
+  editBtn: document.getElementById('edit-profile'),
 };
 
 /** 流水首屏渲染条数 */
@@ -326,6 +328,127 @@ function renderLogs(logs) {
   appendLogs(LOG_PAGE_SIZE);
 }
 
+/* --------------------------------------------------------- 编辑个人资料 */
+
+/** HTML 属性转义（只用于 value="..." 场景） */
+function escapeAttr(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/** 打开资料编辑弹窗（转专业 / 换宿舍） */
+function openProfileEditor() {
+  const account = readAccount() || {};
+  const buildings = Array.from({ length: 11 }, (_, i) => `第${i + 1}公寓`);
+  const options = buildings
+    .map(
+      (name) =>
+        `<option value="${name}"${name === account.building ? ' selected' : ''}>${name}</option>`
+    )
+    .join('');
+
+  const html = [
+    '<div class="profile-form">',
+    '<label class="input-group__label" for="edit-college">学院代码</label>',
+    `<input class="input-group__control" id="edit-college" maxlength="10" placeholder="如 0801" value="${escapeAttr(account.college)}" />`,
+    '<label class="input-group__label" for="edit-building">所在公寓</label>',
+    `<select class="input-group__control" id="edit-building"><option value="">请选择公寓</option>${options}</select>`,
+    '<label class="input-group__label" for="edit-room">房间号</label>',
+    `<input class="input-group__control" id="edit-room" maxlength="3" inputmode="numeric" placeholder="3 位数字，如 502" value="${escapeAttr(account.room)}" />`,
+    '<p class="field-error hidden" id="edit-error"></p>',
+    '<div class="ai-modal__actions">',
+    '<button class="btn btn--secondary" id="edit-cancel" type="button">取消</button>',
+    '<button class="btn btn--primary" id="edit-save" type="button">保存</button>',
+    '</div>',
+    '</div>',
+  ].join('');
+
+  const mask = openModal('编辑资料', html);
+  if (!mask) return;
+
+  const collegeInput = mask.querySelector('#edit-college');
+  const buildingSelect = mask.querySelector('#edit-building');
+  const roomInput = mask.querySelector('#edit-room');
+  const errorNode = mask.querySelector('#edit-error');
+  const cancelBtn = mask.querySelector('#edit-cancel');
+  const saveBtn = mask.querySelector('#edit-save');
+
+  const setError = (message) => {
+    if (!errorNode) return;
+    errorNode.textContent = message || '';
+    errorNode.classList.toggle('hidden', !message);
+  };
+
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+      const college = collegeInput ? collegeInput.value.trim() : '';
+      const building = buildingSelect ? buildingSelect.value : '';
+      const room = roomInput ? roomInput.value.trim() : '';
+
+      if (!college) return setError('请填写学院代码');
+      if (!building) return setError('请选择所在公寓');
+      if (!isValidRoom(room)) return setError('房间号需为 3 位数字');
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = '保存中...';
+
+      // 1) 先落本地（离线也能生效）
+      persistProfile({ college, building, room });
+
+      // 2) 再同步服务端（失败不阻塞本地生效）
+      let synced = true;
+      try {
+        await request('/users/me', {
+          method: 'PATCH',
+          body: { college_code: college, building_loc: building, room_no: room },
+        });
+      } catch {
+        synced = false;
+      }
+
+      closeModal();
+      renderAccountInfo();
+      showToast(synced ? '资料已更新' : '资料已保存到本机（网络异常，稍后自动同步）', 'success');
+    });
+  }
+}
+
+/** 写入本地账号信息 */
+function persistProfile({ college, building, room }) {
+  try {
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    const user = raw ? JSON.parse(raw) : {};
+    user.college_code = college;
+    user.building_loc = building;
+    user.room_no = room;
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  } catch {
+    // 存储不可用时忽略（页面仍会即时更新）
+  }
+}
+
+/** 即时刷新用户信息区 */
+function renderAccountInfo() {
+  const account = readAccount() || {};
+  const nickname = account.name || '同学';
+
+  if (els.avatar) els.avatar.textContent = nickname.slice(0, 1);
+  if (els.name) els.name.textContent = nickname;
+  if (els.no) els.no.textContent = account.studentNo || '——';
+  if (els.college)
+    els.college.textContent = account.college ? `学院 ${account.college}` : '未填写学院';
+  if (els.building) {
+    els.building.textContent = account.building
+      ? `${account.building}${account.room ? ` ${account.room}` : ''}`
+      : '未填写楼栋';
+  }
+}
+
 /* ------------------------------------------------------------------ 加载 */
 
 async function loadProfile() {
@@ -348,6 +471,11 @@ function init() {
     els.logMore.addEventListener('click', () => appendLogs(allLogs.length - renderedLogs));
   }
   bindAiCertification();
+
+  if (els.editBtn) {
+    els.editBtn.addEventListener('click', openProfileEditor);
+  }
+
   loadProfile();
 }
 

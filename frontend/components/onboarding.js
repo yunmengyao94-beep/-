@@ -4,37 +4,69 @@
  * 3 步引导：高亮「发布」→ 高亮「我的」→ 居中「开始体验」
  * 高亮方式：聚光元素透明 + 超大 box-shadow 压暗四周（不使用 absolute 定位）
  *
- * 状态：localStorage.hasSeenGuide = '1' 表示已看过
+ * 状态持久化：
+ *   · 主键 yxx_guide_seen = '1'（带命名空间，避免与业务缓存混淆）
+ *   · 兼容旧键 hasSeenGuide（老版本写入过）
+ *   · 同时维护内存标记：隐私模式 / 配额满导致写库失败时，本次会话也不会重复弹
+ *   · 只有「手动在设置里点重新查看」才会清除
  */
 
-const GUIDE_KEY = 'hasSeenGuide';
+const GUIDE_KEY = 'yxx_guide_seen';
+const LEGACY_GUIDE_KEY = 'hasSeenGuide';
 
-/** 是否已看过引导 */
+/** 内存兜底（写库失败时保证本次会话不再重复弹） */
+let memorySeen = null;
+
+/** 是否已看过引导（存储优先，内存兜底） */
 export function hasSeenGuide() {
   try {
-    return localStorage.getItem(GUIDE_KEY) === '1';
+    if (localStorage.getItem(GUIDE_KEY) === '1') {
+      memorySeen = true;
+      return true;
+    }
+
+    // 旧版本键位迁移：读到 hasSeenGuide = '1' 就顺手写入新键
+    if (localStorage.getItem(LEGACY_GUIDE_KEY) === '1') {
+      memorySeen = true;
+      try {
+        localStorage.setItem(GUIDE_KEY, '1');
+      } catch {
+        // 迁移失败不影响本次判断
+      }
+      return true;
+    }
   } catch {
-    return false;
+    // localStorage 不可用（隐私模式）：退化为内存标记
   }
+
+  return memorySeen === true;
 }
 
-/** 标记已看过 */
+/** 标记已看过（点击「开始体验」时调用） */
 export function markGuideSeen() {
+  memorySeen = true;
+
   try {
     localStorage.setItem(GUIDE_KEY, '1');
   } catch {
-    // 忽略
+    // 隐私模式下写不进去，靠内存标记保证本次会话不重复
   }
 }
 
-/** 重置（设置页「重新查看」用） */
+/** 重置（仅设置页「重新查看新手引导」调用） */
 export function resetGuide() {
+  memorySeen = false;
+
   try {
     localStorage.removeItem(GUIDE_KEY);
+    localStorage.removeItem(LEGACY_GUIDE_KEY);
   } catch {
     // 忽略
   }
 }
+
+/** 当前是否有引导正在展示（避免重复挂载） */
+let activeGuide = null;
 
 /**
  * 启动引导
@@ -43,6 +75,12 @@ export function resetGuide() {
 export function startGuide(options = {}) {
   const steps = Array.isArray(options.steps) ? options.steps.filter(Boolean) : [];
   if (steps.length === 0 || typeof document === 'undefined') return null;
+
+  // 已有引导在展示：先关掉旧的，避免叠两层遮罩
+  if (activeGuide) {
+    activeGuide.close();
+    activeGuide = null;
+  }
 
   const root = document.createElement('div');
   root.className = 'guide';
@@ -72,6 +110,7 @@ export function startGuide(options = {}) {
     window.removeEventListener('resize', onResize);
     if (root.parentNode) root.remove();
 
+    activeGuide = null;
     if (typeof options.onDone === 'function') options.onDone();
   }
 
@@ -168,23 +207,25 @@ export function startGuide(options = {}) {
   }
 
   /** 视口变化时重新定位 */
-  const onResize = () => {
+  function onResize() {
     const step = steps[index];
     if (!step) return;
     placeSpot(step.target);
     placeTooltip(step);
-  };
+  }
 
   window.addEventListener('resize', onResize);
 
   render();
 
-  return {
+  activeGuide = {
     close: finish,
     get currentStep() {
       return index;
     },
   };
+
+  return activeGuide;
 }
 
 export default { startGuide, hasSeenGuide, markGuideSeen, resetGuide };

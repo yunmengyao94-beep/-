@@ -2506,3 +2506,42 @@ body.keyboard-open .action-bar {
 body.guide-open {
   overflow: hidden;
 }
+
+/* 个人资料编辑按钮（用户信息区） */
+.profile-name-row {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.16);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color var(--transition-fast, 0.15s) ease;
+}
+
+.profile-edit:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.profile-edit svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 资料编辑弹窗 */
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}

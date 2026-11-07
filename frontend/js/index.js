@@ -680,6 +680,19 @@ function buildGuideSteps() {
   ];
 }
 
+/** 看完后把 URL 上的 ?guide=1 去掉，避免刷新又弹一次 */
+function cleanGuideQuery() {
+  try {
+    if (!window.history || typeof window.history.replaceState !== 'function') return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('guide')) return;
+    url.searchParams.delete('guide');
+    window.history.replaceState(null, '', url.pathname + (url.search ? url.search : '') + url.hash);
+  } catch {
+    // 忽略
+  }
+}
+
 /** 首次登录后自动触发（?guide=1 可强制重看） */
 function maybeStartGuide() {
   const params = new URLSearchParams(window.location.search || '');
@@ -688,7 +701,13 @@ function maybeStartGuide() {
   if (!forced && hasSeenGuide()) return;
 
   window.setTimeout(() => {
-    startGuide({ steps: buildGuideSteps(), onDone: markGuideSeen });
+    startGuide({
+      steps: buildGuideSteps(),
+      onDone: () => {
+        markGuideSeen();
+        cleanGuideQuery();
+      },
+    });
   }, 500);
 }
 
