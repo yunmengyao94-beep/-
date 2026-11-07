@@ -32,6 +32,10 @@ const usersRouter = require('./routes/users');
 const notificationsRouter = require('./routes/notifications');
 const { createLiveReload } = require('./live-reload');
 
+/** 热刷新仅开发环境开启（生产/演示关闭，避免暴露文件监听通道） */
+const LIVE_RELOAD_ENABLED =
+  process.env.NODE_ENV !== 'production' && process.env.YXX_LIVE_RELOAD !== '0';
+
 const app = express();
 
 /* ---------------------------------------------------------------- 基础配置 */
@@ -49,6 +53,8 @@ const PUBLIC_ROUTES = [
   // 校园 App 允许未登录浏览：列表与详情只放行 GET，发布/编辑仍需 Token
   { path: '/api/v1/items', methods: ['GET'] },
   { path: '/api/v1/items/:id', methods: ['GET'] },
+  // 缩略图要能被 <img src> 直接引用（浏览器不会带 Authorization）
+  { path: '/api/v1/items/:id/thumb', methods: ['GET'] },
 ];
 
 /** 模拟网络延迟（毫秒）。NET_DELAY_MS=0 可关闭，便于压测 */
@@ -306,7 +312,7 @@ if (require.main === module) {
       );
       console.info(`[yxx] 首页：${url}/index.html | 热刷新：已开启（改文件后浏览器自动刷新）`);
 
-      liveReload.start();
+      if (LIVE_RELOAD_ENABLED) liveReload.start();
       if (SHOULD_OPEN) openBrowser(`${url}/index.html`);
     })
     .catch((error) => {

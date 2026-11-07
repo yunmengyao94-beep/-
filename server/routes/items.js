@@ -13,6 +13,12 @@ const { maskName } = require('../utils/mask');
 const { createRateLimit } = require('../middlewares/rate-limit');
 const { checkSensitive } = require('../utils/sensitive');
 
+/** 单条定损上限（分） */
+const MAX_DEDUCT = 100;
+
+/** 缩略图最大长度（约 90KB base64，512px WebP 通常在 20–60KB） */
+const MAX_IMAGE_CHARS = 120 * 1000;
+
 const router = express.Router();
 
 /** 补充出借人信息（昵称脱敏 + 信用等级），避免前端写死兜底 */
@@ -20,8 +26,12 @@ function withOwner(item) {
   if (!item) return item;
   const owner = findUser(item.owner_id);
 
+  // 不把 base64 塞进列表响应：只暴露 has_thumb，图片走 /items/:id/thumb
+  const { image_thumb: imageThumb, ...rest } = item;
+
   return {
-    ...item,
+    ...rest,
+    has_thumb: Boolean(imageThumb),
     owner: {
       id: item.owner_id,
       nickname: owner ? maskName(owner.real_name) : '同学',
@@ -115,6 +125,31 @@ function validatePublish(req, res, next) {
     });
   }
 
+  // 缩略图校验（格式 + 体积）
+  const imageData = typeof body.image_data === 'string' ? body.image_data.trim() : '';
+  if (imageData) {
+    if (!/^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(imageData)) {
+      return fail(req, res, 400, 40001, '参数校验失败：image_data 必须是 WebP/JPEG/PNG 的 base64', {
+        field: 'image_data',
+      });
+    }
+    if (imageData.length > MAX_IMAGE_CHARS) {
+      return fail(req, res, 400, 40001, '图片过大，请压缩后再试', { field: 'image_data' });
+    }
+  }
+
+  // 定损规则校验：每条扣分必须是 0–100 的整数
+  const rules =
+    body.damage_rules && Array.isArray(body.damage_rules.rules) ? body.damage_rules.rules : [];
+  for (const rule of rules) {
+    const deduct = Number(rule && rule.deduct);
+    if (!Number.isInteger(deduct) || deduct < 0 || deduct > MAX_DEDUCT) {
+      return fail(req, res, 400, 40001, `参数校验失败：定损扣分需为 0–${MAX_DEDUCT} 的整数`, {
+        field: 'damage_rules',
+      });
+    }
+  }
+
   return next();
 }
 
@@ -132,6 +167,26 @@ router.post(
     const title = typeof body.title === 'string' ? body.title.trim() : '';
     const category = typeof body.category === 'string' ? body.category.trim() : '';
     const deposit = Number(body.deposit_score);
+
+    // 服务端缩略图（可选）：解决「换设备/清缓存后图片丢失」
+    const imageData = typeof body.image_data === 'string' ? body.image_data.trim() : '';
+    if (imageData) {
+      if (!/^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(imageData)) {
+        return fail(
+          req,
+          res,
+          400,
+          40001,
+          '参数校验失败：image_data 必须是 WebP/JPEG/PNG 的 base64',
+          {
+            field: 'image_data',
+          }
+        );
+      }
+      if (imageData.length > MAX_IMAGE_CHARS) {
+        return fail(req, res, 400, 40001, '图片过大，请压缩后再试', { field: 'image_data' });
+      }
+    }
 
     const isHighValue = body.is_high_value === true || body.is_high_value === 1 ? 1 : 0;
     const damageRules =
@@ -161,6 +216,7 @@ router.post(
       title,
       category,
       image_hash: typeof body.image_hash === 'string' ? body.image_hash : '',
+      image_thumb: imageData,
       image_list: Array.isArray(body.image_list) ? body.image_list : [],
       deposit_score: deposit,
       damage_rules: damageRules,
@@ -212,6 +268,28 @@ router.delete('/:id', (req, res) => {
   persistDb();
 
   return ok(req, res, { item_id: id, deleted: true });
+});
+
+/**
+ * GET /api/v1/items/:id/thumb
+ * 返回物品缩略图（二进制），解决本地图片无法跨设备的问题
+ */
+router.get('/:id/thumb', (req, res) => {
+  const id = Number(req.params.id);
+  const item = Number.isInteger(id) ? findItem(id) : null;
+
+  if (!item || !item.image_thumb) {
+    return fail(req, res, 404, 40401, '资源不存在');
+  }
+
+  const matched = /^data:(image\/[a-z+]+);base64,(.+)$/.exec(item.image_thumb);
+  if (!matched) {
+    return fail(req, res, 404, 40401, '资源不存在');
+  }
+
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.type(matched[1]);
+  return res.send(Buffer.from(matched[2], 'base64'));
 });
 
 /**

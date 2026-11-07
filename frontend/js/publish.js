@@ -125,7 +125,14 @@ async function loadImage(file) {
   }
 }
 
-/** 是否为 HEIC / HEIF（iOS 默认拍照格式，浏览器普遍无法解码） */
+/**
+ * 是否为 HEIC / HEIF（iOS 默认拍照格式）
+ *
+ * 【降级方案】浏览器没有原生 HEIC 解码能力，纯前端无法转码：
+ *   · 首选：iOS 通过 <input type="file"> 选择照片时，系统通常自动转成 JPEG（无需处理）
+ *   · 兜底：<img> 失败 → createImageBitmap 再试 → 仍失败给出明确文案，引导转 JPG/截图
+ *   · 彻底解决需服务端引入 sharp / libheif 做转码（本地演示版不引入原生依赖）
+ */
 function isHeicFile(file) {
   const name = String((file && file.name) || '');
   const type = String((file && file.type) || '');
@@ -551,6 +558,8 @@ function buildPayload(values) {
     title: values.title,
     category: values.category,
     image_hash: '',
+    // 首图缩略图随发布一起上传，换设备也能看到图
+    image_data: selectedImages.length > 0 ? selectedImages[0].dataUrl : '',
     image_count: selectedImages.length,
     deposit_score: values.deposit,
     damage_rules: values.damageRules,

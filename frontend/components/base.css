@@ -2694,3 +2694,45 @@ body.guide-open {
   font-size: var(--font-size-xs, 12px);
   color: var(--text-sub, #888);
 }
+
+/* ============================================================================
+ * 25. 全局发布按钮（FAB）
+ * ========================================================================== */
+
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--tabbar-height, 56px) + 16px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary, #1890ff), var(--primary-dark, #096dd9));
+  border-radius: 50%;
+  box-shadow: 0 8px 20px rgba(24, 144, 255, 0.42);
+  transition:
+    transform var(--transition-fast, 0.15s) ease,
+    box-shadow var(--transition-fast, 0.15s) ease;
+}
+
+.fab:active {
+  transform: scale(0.92);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.36);
+}
+
+.fab svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* 小屏（iPhone SE 等）略微上移，避免压住 tabbar 文案 */
+@media (max-width: 360px) {
+  .fab {
+    right: 12px;
+    width: 52px;
+    height: 52px;
+  }
+}

@@ -1,5 +1,5 @@
 import { showToast } from '../components/feedback.js';
-import { request, getToken } from '../utils/request.js';
+import { request, getToken, setToken } from '../utils/request.js';
 
 /**
  * 应用公共入口
@@ -246,6 +246,40 @@ import { request, getToken } from '../utils/request.js';
     }
   }
 
+  /* ------------------------------------------------ 7. Token 静默续期 */
+
+  /** 解析 JWT payload（只读，不校验签名） */
+  function decodeJwtPayload(token) {
+    try {
+      const part = String(token).split('.')[1];
+      if (!part) return null;
+      const base64 = part.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+      return JSON.parse(atob(padded));
+    } catch {
+      return null;
+    }
+  }
+
+  /** 剩余有效期不足 24 小时就静默换新 Token */
+  async function refreshTokenIfNeeded() {
+    const token = getToken();
+    if (!token) return;
+
+    const payload = decodeJwtPayload(token);
+    if (!payload || !payload.exp) return;
+
+    const remainMs = payload.exp * 1000 - Date.now();
+    if (remainMs > 24 * 3600 * 1000) return;
+
+    try {
+      const data = await request('/auth/refresh', { method: 'POST' });
+      if (data && data.token) setToken(data.token);
+    } catch {
+      // 续期失败不打断使用：等真正过期时 401 再走登录
+    }
+  }
+
   /* ------------------------------------------------------------- 启动 */
 
   applyStoredTheme();
@@ -255,4 +289,5 @@ import { request, getToken } from '../utils/request.js';
   setupLiveReload();
   setupCrossTabSync();
   refreshUnreadBadge();
+  refreshTokenIfNeeded();
 })();

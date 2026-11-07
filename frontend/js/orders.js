@@ -6,7 +6,7 @@
  *       两个动作都走 PATCH /api/v1/orders/:id/state，成功后本地即时更新
  */
 
-import { request } from '../utils/request.js';
+import { request, apiUrl } from '../utils/request.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
 import { formatTime } from '../utils/format.js';
 import { resolveItemImage } from '../utils/item-image.js';
@@ -90,6 +90,7 @@ function createOrderCard(order) {
   const img = document.createElement('img');
   img.src =
     getItemCover(order.item && order.item.id) ||
+    (order.item && order.item.has_thumb ? apiUrl(`/items/${order.item.id}/thumb`) : '') ||
     resolveItemImage({ title, image: order.item && order.item.image });
   img.alt = title;
   img.loading = 'lazy';
@@ -259,14 +260,22 @@ function renderLoading() {
 /* ------------------------------------------------------------------ 加载 */
 
 async function loadOrders() {
-  if (state.loading) return;
+  // 加载中又有新请求（快速切 tab）：排队一次，等本次结束再跑，避免请求被丢弃
+  if (state.loading) {
+    state.queued = true;
+    return;
+  }
+
   state.loading = true;
+  const seq = (state.reqSeq = (state.reqSeq || 0) + 1);
 
   renderLoading();
 
   try {
     await ensureToken();
     const data = await request(`/orders/mine?direction=${state.direction}&state=${state.status}`);
+    if (seq !== state.reqSeq) return; // 过期响应，丢弃
+
     state.orders = (data && data.list) || [];
     renderCurrent();
   } catch (error) {
@@ -277,6 +286,11 @@ async function loadOrders() {
     showToast(`加载订单失败：${error.message}`, 'error');
   } finally {
     state.loading = false;
+
+    if (state.queued) {
+      state.queued = false;
+      loadOrders();
+    }
   }
 }
 

@@ -15,6 +15,8 @@ const STORAGE_KEY = 'yxx_item_images';
 const MAX_ITEMS = 30;
 const MAX_IMAGES_PER_ITEM = 9;
 const MAX_TOTAL_CHARS = 2.5 * 1024 * 1024; // localStorage 通常 5MB，留一半余量
+/** 访问时间戳的刷新间隔：1 小时内不重复写库 */
+const TOUCH_INTERVAL = 60 * 60 * 1000;
 
 /** 读取全部记录 { [itemId]: { urls: string[], at: number } } */
 function readAll() {
@@ -91,13 +93,32 @@ export function saveItemImages(itemId, urls) {
 }
 
 /**
+ * 记录一次访问时间（LRU 淘汰依据），写库有节流
+ * @param {string} id
+ */
+function touchItem(id) {
+  const map = readAll();
+  const record = map[id];
+  if (!record || (record.readAt && Date.now() - record.readAt < TOUCH_INTERVAL)) return;
+
+  record.readAt = Date.now();
+  record.at = Date.now(); // 兼容旧记录
+  writeAll(map);
+}
+
+/**
  * 读取某件物品的全部本地图片
  * @param {number|string} itemId
  * @returns {string[]}
  */
 export function getItemImages(itemId) {
-  const record = readAll()[String(itemId || '')];
-  return record && Array.isArray(record.urls) ? record.urls.filter(Boolean) : [];
+  const id = String(itemId || '');
+  const record = readAll()[id];
+  if (!record) return [];
+
+  touchItem(id);
+
+  return Array.isArray(record.urls) ? record.urls.filter(Boolean) : [];
 }
 
 /**

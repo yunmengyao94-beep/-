@@ -7,7 +7,7 @@
  * URL：keyword / building 通过 history.replaceState 同步，刷新后可还原
  */
 
-import { request } from '../utils/request.js';
+import { request, apiUrl } from '../utils/request.js';
 import { debounce } from '../utils/utils.js';
 import { categoryLabel } from '../utils/constants.js';
 import { resolveItemImage, DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
@@ -99,7 +99,10 @@ function toCardModel(item) {
     ownerCredit: Number.isFinite(item.owner_credit)
       ? item.owner_credit
       : 80 + (Number(item.owner_id || 0) % 21),
-    image: getItemCover(item.id) || resolveItemImage(item),
+    image:
+      getItemCover(item.id) ||
+      (item.has_thumb ? apiUrl(`/items/${item.id}/thumb`) : '') ||
+      resolveItemImage(item),
   };
 }
 
@@ -708,7 +711,8 @@ function bindCardClick() {
 
 /** 引导步骤：高亮底部「发布」「我的」，最后居中收尾 */
 function buildGuideSteps() {
-  const publishTab = document.querySelector('.tabbar__item[href="./publish.html"]');
+  // 发布入口已改为右下角 FAB（tabbar 不再有「发布」）
+  const publishTab = document.getElementById('fab-publish');
   const profileTab = document.querySelector('.tabbar__item[href="./profile.html"]');
 
   return [

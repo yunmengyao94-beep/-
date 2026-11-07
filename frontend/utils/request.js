@@ -134,6 +134,16 @@ function getDeviceId() {
   }
 }
 
+/**
+ * 拼接接口绝对地址（用于 img src 等非 fetch 场景）
+ * @param {string} path 以 / 开头的接口路径，如 /items/1/thumb
+ * @returns {string}
+ */
+export function apiUrl(path) {
+  const clean = String(path || '');
+  return `${BASE_URL}${clean.startsWith('/') ? clean : '/' + clean}`;
+}
+
 /** 读取本地 Token */
 export function getToken() {
   try {

@@ -5,7 +5,7 @@
  * 依赖：utils/request.js、utils/constants.js、components/feedback.js
  */
 
-import { request } from '../utils/request.js';
+import { request, apiUrl } from '../utils/request.js';
 import { debounce } from '../utils/utils.js';
 import { ensureToken } from '../utils/auth.js';
 import { categoryLabel } from '../utils/constants.js';
@@ -483,7 +483,10 @@ function renderDetail(item) {
 
   // 本地发布的图片优先；没有则回退到关键词插画
   const localImages = getItemImages(item.id);
-  const images = localImages.length > 0 ? localImages : [resolveItemImage(item)];
+  const images =
+    localImages.length > 0
+      ? localImages
+      : [item.has_thumb ? apiUrl(`/items/${item.id}/thumb`) : resolveItemImage(item)];
   const owner = resolveOwner(item);
   const levelName = LEVEL_NAME[owner.level] || '良好';
 

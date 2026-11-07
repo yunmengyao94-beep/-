@@ -67,7 +67,9 @@ function toDto(order, viewerId) {
     item: {
       id: order.item_id,
       title: snapshot.title || (item ? item.title : `物品 #${order.item_id}`),
-      image: null, // 数据只有 image_hash，没有真实图片地址
+      image: null,
+      // 有服务端缩略图时前端拼 /items/:id/thumb，跨设备也能显示
+      has_thumb: Boolean(item && item.image_thumb),
       deposit_score: snapshot.deposit_score ?? (item ? item.deposit_score : 0),
     },
     counterparty: {

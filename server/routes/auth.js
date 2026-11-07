@@ -17,6 +17,7 @@ const { ok, fail } = require('../utils/http');
 const { createRateLimit } = require('../middlewares/rate-limit');
 const { revoke } = require('../services/token-blacklist');
 const {
+  findUser,
   findAccountByStudentNo,
   verifyPassword,
   createAccount,
@@ -170,6 +171,25 @@ function createAuthRouter(options) {
       });
     }
   );
+
+  /**
+   * POST /api/v1/auth/refresh
+   * 用旧 Token 换新 Token（旧 Token 立即拉黑），实现「活跃用户不掉线」
+   */
+  router.post('/refresh', (req, res) => {
+    const payload = req.user || {};
+    const oldToken = req.token;
+
+    const user = findUser(payload.user_id);
+    if (!user || !oldToken) {
+      return fail(req, res, 401, 40101, '未登录或Token失效');
+    }
+
+    revoke(oldToken, payload.exp ? payload.exp - Math.floor(Date.now() / 1000) : 0);
+
+    const token = signToken(user, payload.student_no || user.student_no);
+    return ok(req, res, { token, token_type: 'Bearer', expires_in: ttlSeconds });
+  });
 
   /**
    * POST /api/v1/auth/logout
