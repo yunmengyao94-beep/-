@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="./css/reset.css" />
     <link rel="stylesheet" href="./css/layout.css" />
     <link rel="stylesheet" href="./components/base.css" />
+    <link rel="stylesheet" href="./components/shell.css" />
     <link rel="stylesheet" href="./components/motion.css" />
     <link rel="stylesheet" href="./components/feedback.css" />
     <link rel="stylesheet" href="./fonts/fonts.css" />
@@ -50,7 +51,7 @@
     </header>
 
     <!-- ==================== 表单主体 ==================== -->
-    <main class="page page--narrow page--with-action-bar">
+    <main class="page page--narrow page--with-action-bar page--publish">
       <form class="card flex flex-col gap-4" id="publish-form" novalidate>
         <div class="publish-grid">
           <div class="publish-main">
@@ -137,6 +138,21 @@
             </div>
           </div>
 
+          <!-- 是否高值物品 -->
+          <label class="switch">
+            <input
+              class="switch__input"
+              id="field-high-value"
+              name="is_high_value"
+              type="checkbox"
+            />
+            <span class="switch__track" aria-hidden="true"></span>
+            <span class="switch__text">
+              <span class="switch__label">是否高值物品</span>
+              <span class="switch__hint">高值物品（数码、假发、正装）借用时需双人担保</span>
+            </span>
+          </label>
+
           <!-- 右栏：图片与定损 -->
           <div class="publish-side">
             <!-- 图片上传 -->
@@ -168,21 +184,6 @@
               <p class="input-group__hint" id="upload-count">已选 0 张</p>
               <p class="field-error hidden" id="err-image"></p>
             </div>
-
-            <!-- 是否高值物品 -->
-            <label class="switch">
-              <input
-                class="switch__input"
-                id="field-high-value"
-                name="is_high_value"
-                type="checkbox"
-              />
-              <span class="switch__track" aria-hidden="true"></span>
-              <span class="switch__text">
-                <span class="switch__label">是否高值物品</span>
-                <span class="switch__hint">高值物品（数码、假发、正装）借用时需双人担保</span>
-              </span>
-            </label>
 
             <!-- 损坏赔偿明细表：随「高值物品」开关显隐 -->
             <section
@@ -220,7 +221,7 @@
     </main>
 
     <!-- 底部固定提交栏 -->
-    <div class="action-bar">
+    <div class="action-bar publish-action-bar">
       <div class="action-bar__inner">
         <button class="btn btn--primary btn--block" id="publish-btn" type="button">发布</button>
       </div>

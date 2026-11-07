@@ -295,6 +295,7 @@ import { createBreakpointSwitcher } from '../utils/breakpoint.js';
     'notifications.html': 'messages',
     'profile.html': 'profile',
     'settings.html': 'settings',
+    'publish.html': 'home',
   };
 
   /** 挂载 PC 壳层（移动端由 CSS 隐藏） */
