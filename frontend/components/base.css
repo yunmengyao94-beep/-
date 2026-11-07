@@ -2869,3 +2869,102 @@ body.is-pc .item-card:hover {
   line-height: 1.7;
   color: var(--text-sub, #888);
 }
+
+/* ============================================================================
+ * 31. 断点切换「无感过渡」（768px）
+ * ----------------------------------------------------------------------------
+ * · body.fade-transition：全局虚化（opacity + blur），掩盖布局切换瞬间
+ * · body.layout-pending：把布局冻结在旧形态，等虚化完成后再放开
+ * ========================================================================== */
+
+body {
+  transition:
+    opacity 0.25s ease,
+    filter 0.25s ease;
+}
+
+body.fade-transition {
+  opacity: 0;
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+/* 冻结期：保持切换前的形态，避免半秒内闪一下 */
+@media (min-width: 768px) {
+  body.layout-pending[data-prev='mobile'] {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  body.layout-pending[data-prev='mobile'] .app-sidebar,
+  body.layout-pending[data-prev='mobile'] .app-topbar {
+    display: none !important;
+  }
+
+  body.layout-pending[data-prev='mobile'] .tabbar {
+    display: flex !important;
+  }
+
+  body.layout-pending[data-prev='mobile'] .fab {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  body.layout-pending[data-prev='pc'] .app-sidebar {
+    display: flex !important;
+    opacity: 1 !important;
+  }
+
+  body.layout-pending[data-prev='pc'] .app-topbar {
+    display: flex !important;
+  }
+
+  body.layout-pending[data-prev='pc'] .tabbar,
+  body.layout-pending[data-prev='pc'] .fab {
+    display: none !important;
+  }
+}
+
+/* 切到 PC 后，壳层轻微滑入 */
+body.shell-entering .app-sidebar {
+  animation: yxx-shell-slide-in 0.3s ease both;
+}
+
+body.shell-entering .app-topbar {
+  animation: yxx-shell-fade-in 0.3s ease both;
+}
+
+@keyframes yxx-shell-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes yxx-shell-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body,
+  body.fade-transition {
+    transition: none;
+  }
+
+  body.shell-entering .app-sidebar,
+  body.shell-entering .app-topbar {
+    animation: none;
+  }
+}

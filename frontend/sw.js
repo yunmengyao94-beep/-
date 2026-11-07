@@ -85,6 +85,7 @@ const SHELL_SCRIPTS = [
   './utils/item-images.js',
   './utils/search-history.js',
   './utils/transitions.js',
+  './utils/breakpoint.js',
   './utils/fingerprint.js',
   './utils/rate-limit.js',
   './utils/item-image.js',

@@ -5,6 +5,7 @@ import { initFabDrag } from '../components/fab.js';
 import { applyDeviceClasses } from '../utils/device.js';
 import { applyFontSize, getFontSizeKey } from '../utils/preferences.js';
 import { initPageTransitions } from '../utils/transitions.js';
+import { createBreakpointSwitcher } from '../utils/breakpoint.js';
 
 /**
  * 应用公共入口
@@ -325,9 +326,18 @@ import { initPageTransitions } from '../utils/transitions.js';
   applyDeviceClasses();
   applyStoredFontSize();
   initPageTransitions();
-  window.addEventListener('resize', () => {
-    applyDeviceClasses();
+
+  // 断点切换：节流 + 冻结旧布局 + 虚化过渡，避免 TabBar / Sidebar 闪一下
+  const breakpointSwitcher = createBreakpointSwitcher({
+    applyDevice: applyDeviceClasses,
+    supportsViewTransition: () => typeof document.startViewTransition === 'function',
+    startViewTransition:
+      typeof document.startViewTransition === 'function'
+        ? (callback) => document.startViewTransition(callback)
+        : null,
   });
+
+  window.addEventListener('resize', () => breakpointSwitcher.handleResize());
 
   setupDesktopShell();
   initFabDrag();
