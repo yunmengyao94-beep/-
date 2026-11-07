@@ -19,6 +19,7 @@ const path = require('path');
 const DATA_DIR = path.join(__dirname);
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const SEED_FILE = path.join(DATA_DIR, 'seed_db.json');
+const BACKUP_FILE = path.join(DATA_DIR, 'db.backup.json');
 
 /** 读取 JSON 文件，失败返回 null */
 function readJson(file) {
@@ -44,7 +45,47 @@ function normalize(source) {
 }
 
 const seedData = normalize(readJson(SEED_FILE));
-const db = normalize(readJson(DB_FILE) || seedData);
+
+/** 本次启动是否发生了「主文件损坏 → 备份恢复」 */
+let dbRecoveredFromBackup = false;
+
+/**
+ * 加载主数据文件
+ * 顺序：db.json → db.backup.json（损坏时自动恢复）→ seed_db.json
+ */
+function loadDatabase() {
+  const primary = readJson(DB_FILE);
+
+  if (primary) return normalize(primary);
+
+  // 主文件缺失或 JSON 损坏：尝试备份
+  if (fs.existsSync(DB_FILE)) {
+    const backup = readJson(BACKUP_FILE);
+    if (backup) {
+      dbRecoveredFromBackup = true;
+      try {
+        fs.copyFileSync(BACKUP_FILE, DB_FILE);
+      } catch {
+        // 复制失败也继续用内存里的备份
+      }
+      console.error('[yxx][告警] db.json 损坏或无法解析，已从 db.backup.json 恢复');
+      return normalize(backup);
+    }
+    console.error('[yxx][告警] db.json 损坏且无可用备份，回退到种子数据');
+  } else if (fs.existsSync(BACKUP_FILE)) {
+    // 主文件被误删：同样用备份兜底
+    const backup = readJson(BACKUP_FILE);
+    if (backup) {
+      dbRecoveredFromBackup = true;
+      console.error('[yxx][告警] db.json 不存在，已从 db.backup.json 恢复');
+      return normalize(backup);
+    }
+  }
+
+  return normalize(JSON.parse(JSON.stringify(seedData)));
+}
+
+const db = loadDatabase();
 
 // 旧 db.json 没有 accounts 字段时，从种子数据补齐（账号体系迁移）
 if (db.accounts.length === 0 && seedData.accounts.length > 0) {
@@ -60,6 +101,21 @@ let orderSeq = Math.max(
   ORDER_ID_SEED,
   db.orders.reduce((max, order) => Math.max(max, Number(order.id) || 0), 0) + 1
 );
+
+/**
+ * 备份当前数据文件到 db.backup.json
+ * @returns {boolean} 是否成功
+ */
+function backupDb() {
+  try {
+    if (!fs.existsSync(DB_FILE)) return false;
+    fs.copyFileSync(DB_FILE, BACKUP_FILE);
+    return true;
+  } catch (error) {
+    console.error('[yxx] 备份失败:', error.message);
+    return false;
+  }
+}
 
 /** 落盘：先写临时文件再 rename，避免半截 JSON */
 function persistDb() {
@@ -493,6 +549,9 @@ function createAccount(input) {
 }
 
 module.exports = {
+  backupDb,
+  BACKUP_FILE,
+  hasRecoveredFromBackup: () => dbRecoveredFromBackup,
   nextItemId,
   addNotification,
   listNotifications,

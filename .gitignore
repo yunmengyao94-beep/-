@@ -57,4 +57,6 @@ frontend/fonts/*.otf
 
 # ---------- 运行时数据（服务端落盘）----------
 server/db.json
+server/db.backup.json
+server/.yxx.lock
 server/db.json.tmp

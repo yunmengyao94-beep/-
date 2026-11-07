@@ -12,6 +12,12 @@ import { showToast } from '../components/feedback.js';
 import { ensureToken } from '../utils/auth.js';
 import { request } from '../utils/request.js';
 import { saveItemImages } from '../utils/item-images.js';
+import {
+  getPublishLock,
+  recordSensitiveHit,
+  clearSensitiveHits,
+  MAX_HITS,
+} from '../utils/publish-guard.js';
 
 /* ------------------------------------------------------------------ 常量 */
 
@@ -214,6 +220,7 @@ function removeImage(id) {
 
   applyAccountBuilding();
   updateCount();
+  applyPublishLock();
 }
 
 /**
@@ -291,6 +298,44 @@ async function fingerprintOf(dataUrl) {
     hash = Math.imul(hash, 16777619);
   }
   return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+/** 锁定倒计时定时器 */
+let lockTimer = null;
+
+/** 应用「敏感词连击锁」：禁用按钮并显示剩余时间 */
+function applyPublishLock() {
+  const lock = getPublishLock();
+
+  if (!lock.locked) {
+    if (lockTimer) {
+      clearInterval(lockTimer);
+      lockTimer = null;
+    }
+    if (publishBtn) {
+      publishBtn.disabled = false;
+      publishBtn.textContent = '发布';
+    }
+    return;
+  }
+
+  if (!publishBtn) return;
+
+  publishBtn.disabled = true;
+  const tick = () => {
+    const current = getPublishLock();
+    if (!current.locked) {
+      applyPublishLock();
+      return;
+    }
+    const minutes = Math.floor(current.remainSeconds / 60);
+    const seconds = current.remainSeconds % 60;
+    publishBtn.textContent = `已锁定 ${minutes}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  tick();
+  if (lockTimer) clearInterval(lockTimer);
+  lockTimer = setInterval(tick, 1000);
 }
 
 /** 打开系统文件选择框 */
@@ -562,6 +607,7 @@ async function handleSubmit() {
     }
 
     submitted = true;
+    clearSensitiveHits();
     showToast('发布成功，正在返回首页', 'success');
 
     setTimeout(() => {
@@ -569,7 +615,20 @@ async function handleSubmit() {
     }, 700);
   } catch (error) {
     const message = (error && error.message) || '网络异常';
-    showToast(`发布失败：${message}`, 'error');
+
+    // 敏感词连击：3 次后锁定发布 5 分钟
+    if (message.includes('敏感词')) {
+      const result = recordSensitiveHit();
+      if (result.locked) {
+        applyPublishLock();
+        showToast('连续触发敏感词，发布已锁定 5 分钟', 'error');
+      } else {
+        showToast(`发布失败：${message}（还剩 ${MAX_HITS - result.hits} 次机会）`, 'error');
+      }
+    } else {
+      showToast(`发布失败：${message}`, 'error');
+    }
+
     setSubmittingState(false);
   } finally {
     submitting = false;
