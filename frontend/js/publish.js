@@ -81,8 +81,8 @@ function base64Bytes(dataUrl) {
   return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
 }
 
-/** 用对象 URL 加载图片，加载完成即可释放 */
-function loadImage(file) {
+/** 用 <img> 解码（绝大多数格式走这条路） */
+function loadViaImageElement(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -97,6 +97,33 @@ function loadImage(file) {
     };
     img.src = url;
   });
+}
+
+/**
+ * 解码图片：<img> 失败时尝试 createImageBitmap
+ * （部分浏览器对 HEIC/HEIF 或超大图只在 ImageBitmap 路径下可用）
+ */
+async function loadImage(file) {
+  try {
+    return await loadViaImageElement(file);
+  } catch (error) {
+    if (typeof createImageBitmap === 'function') {
+      try {
+        const bitmap = await createImageBitmap(file);
+        return bitmap;
+      } catch {
+        // 继续抛出原始错误
+      }
+    }
+    throw error;
+  }
+}
+
+/** 是否为 HEIC / HEIF（iOS 默认拍照格式，浏览器普遍无法解码） */
+function isHeicFile(file) {
+  const name = String((file && file.name) || '');
+  const type = String((file && file.type) || '');
+  return /\.heic$/i.test(name) || /\.heif$/i.test(name) || /heic|heif/i.test(type);
 }
 
 /**
@@ -227,11 +254,43 @@ async function addFiles(fileList) {
       appendThumb(item);
       updateCount();
     } catch (error) {
-      showToast(`「${file.name}」压缩失败：${error.message}`, 'error');
+      if (isHeicFile(file)) {
+        showToast('不支持 HEIC 格式，请在相册里转为 JPG（或直接截图）后重试', 'error');
+      } else {
+        showToast(`「${file.name}」压缩失败：${error.message}`, 'error');
+      }
     }
   }
 
   if (overflow) showToast(`最多上传 ${MAX_IMAGES} 张图片`, 'error');
+}
+
+/**
+ * 计算图片内容指纹（SHA-256 前 16 字节；不安全环境降级为 FNV-1a）
+ * 用途：作为 image_hash 随发布请求上报，便于服务端识别"同一张图"
+ * @param {string} dataUrl
+ * @returns {Promise<string>}
+ */
+async function fingerprintOf(dataUrl) {
+  try {
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+      const bytes = new TextEncoder().encode(dataUrl);
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      return Array.from(new Uint8Array(digest))
+        .slice(0, 16)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+  } catch {
+    // 降级到下面的简易哈希
+  }
+
+  let hash = 2166136261;
+  for (let i = 0; i < dataUrl.length; i += 1) {
+    hash ^= dataUrl.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
 /** 打开系统文件选择框 */
@@ -482,6 +541,12 @@ async function handleSubmit() {
     await ensureToken();
 
     const payload = buildPayload(values);
+
+    // 用第一张压缩图的指纹作为 image_hash（不再上报空串）
+    if (selectedImages.length > 0) {
+      payload.image_hash = await fingerprintOf(selectedImages[0].dataUrl);
+    }
+
     // 与「最短 Loading 时长」并行：接口快也不闪一下，慢则按实际等待
     const [created] = await Promise.all([
       request('/items/publish', { method: 'POST', body: payload }),
