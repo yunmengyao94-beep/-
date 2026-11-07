@@ -1,4 +1,5 @@
 import { showToast } from '../components/feedback.js';
+import { request, getToken } from '../utils/request.js';
 
 /**
  * 应用公共入口
@@ -221,6 +222,30 @@ import { showToast } from '../components/feedback.js';
     });
   }
 
+  /* ------------------------------------------------ 6. 未读消息红点 */
+
+  /** 拉取未读数并刷新 tabbar 红点 */
+  async function refreshUnreadBadge() {
+    const badges = document.querySelectorAll('[data-unread]');
+    if (badges.length === 0) return;
+    if (!getToken()) {
+      badges.forEach((node) => node.classList.add('hidden'));
+      return;
+    }
+
+    try {
+      const data = await request('/notifications');
+      const unread = (data && data.unread_count) || 0;
+
+      badges.forEach((node) => {
+        node.textContent = unread > 99 ? '99+' : String(unread);
+        node.classList.toggle('hidden', unread === 0);
+      });
+    } catch {
+      badges.forEach((node) => node.classList.add('hidden'));
+    }
+  }
+
   /* ------------------------------------------------------------- 启动 */
 
   applyStoredTheme();
@@ -229,4 +254,5 @@ import { showToast } from '../components/feedback.js';
   setupImageFallback();
   setupLiveReload();
   setupCrossTabSync();
+  refreshUnreadBadge();
 })();

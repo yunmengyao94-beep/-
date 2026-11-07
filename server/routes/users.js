@@ -13,6 +13,7 @@ const { ok, fail } = require('../utils/http');
 const { maskStudentNo, maskName } = require('../utils/mask');
 const { isoWithOffset } = require('../utils/http');
 const {
+  db,
   findUser,
   findAccountByStudentNo,
   availableOf,
@@ -178,6 +179,35 @@ router.post(
     });
   }
 );
+
+/**
+ * GET /api/v1/users/me/items
+ * 当前用户发布的物品（「我的发布」列表）
+ * 注：放在 users 路由下而不是 /items/mine —— /items/:id 是公开 GET，
+ *     /items/mine 会被当成 id=mine 而跳过鉴权。
+ */
+router.get('/me/items', (req, res) => {
+  const user = findUser(req.user && req.user.user_id);
+  if (!user) {
+    return fail(req, res, 404, 40401, '资源不存在');
+  }
+
+  const list = db.items
+    .filter((item) => item.owner_id === Number(user.id))
+    .slice()
+    .sort((a, b) => b.id - a.id)
+    .map((item) => ({
+      ...item,
+      owner: {
+        id: item.owner_id,
+        nickname: maskName(user.real_name),
+        credit_level: user.credit_level,
+        building_loc: user.building_loc,
+      },
+    }));
+
+  return ok(req, res, { list, total: list.length });
+});
 
 /**
  * PATCH /api/v1/users/me

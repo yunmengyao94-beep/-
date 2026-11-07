@@ -2580,3 +2580,117 @@ body.guide-open {
   border: 0;
   cursor: pointer;
 }
+
+/* ============================================================================
+ * 24. 消息通知中心 / 我的发布
+ * ========================================================================== */
+
+/* Tabbar 未读小徽章（内联在文字后面，避免绝对定位） */
+.tabbar__badge {
+  display: inline-block;
+  min-width: 16px;
+  padding: 0 4px;
+  margin-left: 2px;
+  font-size: 10px;
+  font-weight: var(--font-weight-bold, 600);
+  line-height: 16px;
+  color: #fff;
+  text-align: center;
+  background-color: var(--danger, #ff4d4f);
+  border-radius: var(--radius-round, 999px);
+  vertical-align: top;
+}
+
+/* 通知列表 */
+.notice-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notice-item {
+  display: flex;
+  gap: var(--space-3, 12px);
+  align-items: flex-start;
+  padding: var(--space-3, 12px) 0;
+  border-bottom: 1px solid var(--border-color-light, #f2f3f5);
+  cursor: pointer;
+}
+
+.notice-item:last-child {
+  border-bottom: 0;
+}
+
+.notice-item__dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 8px;
+  background-color: transparent;
+  border-radius: 50%;
+}
+
+.notice-item.is-unread .notice-item__dot {
+  background-color: var(--danger, #ff4d4f);
+}
+
+.notice-item__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.notice-item__title {
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 1.5;
+  color: var(--text-main, #333);
+}
+
+.notice-item.is-unread .notice-item__title {
+  font-weight: var(--font-weight-bold, 600);
+}
+
+.notice-item__body {
+  font-size: var(--font-size-sm, 13px);
+  line-height: 1.6;
+  color: var(--text-sub, #888);
+}
+
+.notice-item__time {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-placeholder, #bfbfbf);
+}
+
+/* 我的发布 */
+.my-item {
+  display: flex;
+  gap: var(--space-3, 12px);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3, 12px) 0;
+  border-bottom: 1px solid var(--border-color-light, #f2f3f5);
+}
+
+.my-item:last-child {
+  border-bottom: 0;
+}
+
+.my-item__main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.my-item__title {
+  font-size: var(--font-size-base, 14px);
+  color: var(--text-main, #333);
+}
+
+.my-item__meta {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}

@@ -28,6 +28,7 @@ const { createAuthRouter } = require('./routes/auth');
 const itemsRouter = require('./routes/items');
 const ordersRouter = require('./routes/orders');
 const usersRouter = require('./routes/users');
+const notificationsRouter = require('./routes/notifications');
 const { createLiveReload } = require('./live-reload');
 
 const app = express();
@@ -127,6 +128,7 @@ app.use('/api/v1/auth', createAuthRouter({ secret: JWT_SECRET, ttlSeconds: TOKEN
 app.use('/api/v1/items', itemsRouter);
 app.use('/api/v1/orders', ordersRouter);
 app.use('/api/v1/users', usersRouter);
+app.use('/api/v1/notifications', notificationsRouter);
 
 /* --------------------------------------------------------- 兜底与错误处理 */
 

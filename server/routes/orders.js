@@ -25,6 +25,7 @@ const {
   appendCreditLog,
   persistDb,
   applyOverduePenalties,
+  addNotification,
 } = require('../store');
 
 const router = express.Router();
@@ -171,6 +172,33 @@ router.patch('/:id/state', (req, res) => {
   order.state = transition.to;
   const now = isoWithOffset();
 
+  // 状态流转通知（双向）
+  if (action === 'confirm_handover') {
+    addNotification({
+      user_id: order.owner_id,
+      type: 'order',
+      title: `${maskName(me.real_name)} 已确认接收物品`,
+      body: '订单进入「使用中」，请留意归还时间。',
+      ref_id: order.id,
+    });
+  } else if (action === 'request_return') {
+    addNotification({
+      user_id: order.owner_id,
+      type: 'order',
+      title: `${maskName(me.real_name)} 申请归还物品`,
+      body: '请确认物品状态后点击「确认归还」。',
+      ref_id: order.id,
+    });
+  } else if (action === 'confirm_return') {
+    addNotification({
+      user_id: order.borrower_id,
+      type: 'order',
+      title: '物品已归还，信用分已解冻',
+      body: '感谢按时归还，欢迎再次借用。',
+      ref_id: order.id,
+    });
+  }
+
   // 归还完成：出借人确认后，解冻押金分并释放物品
   if (transition.to === 2) {
     order.finished_at = now;
@@ -315,6 +343,15 @@ router.post(
       ref_id: order.id,
       reason: `借用「${item.title}」冻结信用分 ${item.deposit_score}`,
       created_at: now,
+    });
+
+    // 通知出借人：有人申请借用
+    addNotification({
+      user_id: order.owner_id,
+      type: 'order',
+      title: `${maskName(borrower.real_name)} 申请借用您的「${item.title}」`,
+      body: '请及时处理，确认后即可交接。',
+      ref_id: order.id,
     });
 
     persistDb();

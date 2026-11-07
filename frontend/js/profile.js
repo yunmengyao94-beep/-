@@ -13,6 +13,7 @@ import { showToast, openModal, closeModal } from '../components/feedback.js';
 import { isValidRoom } from '../utils/accounts-db.js';
 import { fingerprintText } from '../utils/fingerprint.js';
 import { checkThrottle, markThrottle } from '../utils/rate-limit.js';
+import { removeItemImages } from '../utils/item-images.js';
 
 /* ------------------------------------------------------------------ 常量 */
 
@@ -454,6 +455,149 @@ function renderAccountInfo() {
   }
 }
 
+/* --------------------------------------------------------- 我的发布 */
+
+const ITEM_STATUS = {
+  0: { text: '可借', badge: 'badge--success' },
+  1: { text: '使用中', badge: 'badge--warning' },
+  2: { text: '已下架', badge: 'badge--outline' },
+  3: { text: '仲裁中', badge: 'badge--danger' },
+};
+
+const myItemsList = document.getElementById('my-items-list');
+const myItemsEmpty = document.getElementById('my-items-empty');
+const myItemsCount = document.getElementById('my-items-count');
+
+let myItems = [];
+
+/** 渲染我的发布 */
+function renderMyItems() {
+  if (!myItemsList) return;
+
+  myItemsList.textContent = '';
+
+  if (myItemsEmpty) {
+    myItemsEmpty.textContent = '';
+    myItemsEmpty.classList.add('hidden');
+  }
+
+  if (myItemsCount) myItemsCount.textContent = `共 ${myItems.length} 件`;
+
+  if (myItems.length === 0) {
+    if (myItemsEmpty) {
+      myItemsEmpty.classList.remove('hidden');
+      const wrap = document.createElement('div');
+      wrap.className = 'empty-state';
+
+      const icon = document.createElement('div');
+      icon.className = 'empty-state__icon';
+      icon.textContent = '📦';
+
+      const text = document.createElement('p');
+      text.className = 'empty-state__text';
+      text.textContent = '还没有发布过物品';
+
+      const link = document.createElement('a');
+      link.className = 'btn btn--primary btn--sm empty-state__action';
+      link.href = './publish.html';
+      link.textContent = '去发布';
+
+      wrap.append(icon, text, link);
+      myItemsEmpty.appendChild(wrap);
+    }
+    return;
+  }
+
+  myItems.forEach((item) => {
+    const row = document.createElement('div');
+    row.className = 'my-item';
+
+    const main = document.createElement('div');
+    main.className = 'my-item__main';
+
+    const title = document.createElement('span');
+    title.className = 'my-item__title ellipsis';
+    title.textContent = item.title || `物品 #${item.id}`;
+
+    const meta = document.createElement('span');
+    meta.className = 'my-item__meta';
+    const status = ITEM_STATUS[item.status] || ITEM_STATUS[0];
+    meta.textContent = `${item.building_loc || '未填楼栋'} · ${status.text} · 押金 ${item.deposit_score} 分`;
+
+    main.append(title, meta);
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn btn--secondary btn--sm';
+    delBtn.textContent = '删除';
+    delBtn.addEventListener('click', () => confirmDeleteItem(item));
+
+    row.append(main, delBtn);
+    myItemsList.appendChild(row);
+  });
+}
+
+/** 删除确认 → 调接口 → 清理本地图片 */
+function confirmDeleteItem(item) {
+  if (item.status === 1 || item.status === 3) {
+    showToast('当前物品正在流转中，无法删除', 'error');
+    return;
+  }
+
+  const html = [
+    `<p class="ai-modal__text">确定删除「${String(item.title || '').replace(/[<>&]/g, '')}」吗？删除后不可恢复。</p>`,
+    '<div class="ai-modal__actions">',
+    '<button class="btn btn--secondary" id="del-cancel" type="button">取消</button>',
+    '<button class="btn btn--primary" id="del-confirm" type="button">删除</button>',
+    '</div>',
+  ].join('');
+
+  const mask = openModal('删除物品', html);
+  if (!mask) return;
+
+  const cancelBtn = mask.querySelector('#del-cancel');
+  const confirmBtn = mask.querySelector('#del-confirm');
+
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', async () => {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '删除中...';
+
+      try {
+        await request(`/items/${item.id}`, { method: 'DELETE' });
+
+        // 联动清理本地图片缓存，避免 localStorage 泄漏
+        removeItemImages(item.id);
+
+        myItems = myItems.filter((entry) => entry.id !== item.id);
+        closeModal();
+        renderMyItems();
+        showToast('物品已删除', 'success');
+      } catch (error) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '删除';
+        showToast(error.message || '删除失败', 'error');
+      }
+    });
+  }
+}
+
+/** 加载我的发布 */
+async function loadMyItems() {
+  if (!myItemsList) return;
+
+  try {
+    const data = await request('/users/me/items');
+    myItems = (data && data.list) || [];
+    renderMyItems();
+  } catch {
+    myItems = [];
+    renderMyItems();
+  }
+}
+
 /* ------------------------------------------------------------------ 加载 */
 
 async function loadProfile() {
@@ -482,6 +626,7 @@ function init() {
   }
 
   loadProfile();
+  loadMyItems();
 }
 
 if (document.readyState === 'loading') {

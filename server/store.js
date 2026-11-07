@@ -37,6 +37,9 @@ function normalize(source) {
   if (!Array.isArray(data.orders)) data.orders = [];
   if (!Array.isArray(data.credit_logs)) data.credit_logs = [];
   if (!Array.isArray(data.accounts)) data.accounts = [];
+  if (!Array.isArray(data.notifications)) data.notifications = [];
+  if (!data.seq || typeof data.seq !== 'object') data.seq = {};
+  if (!Number.isInteger(data.seq.item)) data.seq.item = 0;
   return data;
 }
 
@@ -132,6 +135,18 @@ function nextOrderId() {
   const id = orderSeq;
   orderSeq += 1;
   return id;
+}
+
+/**
+ * 分配物品 id（自增，永不复用）
+ * 不能用 max(id)+1 —— 物品删除后 ID 会被复用，
+ * 历史订单 / 通知里的 item_id 就会指向另一件物品。
+ */
+function nextItemId() {
+  const maxExisting = db.items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0);
+  const base = Math.max(Number(db.seq && db.seq.item) || 0, maxExisting);
+  db.seq.item = base + 1;
+  return db.seq.item;
 }
 
 /**
@@ -300,6 +315,22 @@ function applyOverduePenalties(user) {
       if (order.state !== 4) {
         order.state = 4;
         changed += 1;
+
+        // 逾期通知：借用人 + 出借人各一条
+        addNotification({
+          user_id: order.borrower_id,
+          type: 'order',
+          title: `订单 #${order.id} 已逾期`,
+          body: '请尽快归还物品，逾期每天将扣除信用分。',
+          ref_id: order.id,
+        });
+        addNotification({
+          user_id: order.owner_id,
+          type: 'order',
+          title: `订单 #${order.id} 已逾期`,
+          body: '借用人尚未归还，建议主动联系对方。',
+          ref_id: order.id,
+        });
       }
 
       if (overdueDays <= 0 || overdueDays <= settledDays) return;
@@ -328,6 +359,70 @@ function applyOverduePenalties(user) {
 
   if (changed > 0) persistDb();
   return changed;
+}
+
+/* -------------------------------------------------------------- 通知 */
+
+/**
+ * 新增一条通知
+ * @param {{user_id: number, type?: 'system'|'order', title: string, body?: string, ref_id?: number|null}} input
+ * @returns {object}
+ */
+function addNotification(input) {
+  const nextId = db.notifications.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1;
+  const row = {
+    id: nextId,
+    user_id: Number(input.user_id),
+    type: input.type === 'system' ? 'system' : 'order',
+    title: String(input.title || '').slice(0, 120),
+    body: String(input.body || '').slice(0, 300),
+    is_read: false,
+    ref_id: input.ref_id === undefined ? null : input.ref_id,
+    created_at: new Date(Date.now() + 8 * 3600 * 1000).toISOString().replace('Z', '+08:00'),
+  };
+
+  db.notifications.push(row);
+  return row;
+}
+
+/** 某用户的通知列表（时间倒序） */
+function listNotifications(userId) {
+  return db.notifications
+    .filter((item) => item.user_id === Number(userId))
+    .slice()
+    .sort((a, b) =>
+      a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : b.id - a.id
+    );
+}
+
+/** 未读数 */
+function unreadNotificationCount(userId) {
+  return db.notifications.filter((item) => item.user_id === Number(userId) && !item.is_read).length;
+}
+
+/**
+ * 标记单条已读
+ * @returns {boolean} 是否命中
+ */
+function markNotificationRead(userId, id) {
+  const row = db.notifications.find(
+    (item) => item.id === Number(id) && item.user_id === Number(userId)
+  );
+  if (!row) return false;
+  row.is_read = true;
+  return true;
+}
+
+/** 全部已读，返回影响条数 */
+function markAllNotificationsRead(userId) {
+  let count = 0;
+  db.notifications.forEach((item) => {
+    if (item.user_id === Number(userId) && !item.is_read) {
+      item.is_read = true;
+      count += 1;
+    }
+  });
+  return count;
 }
 
 /* ---------------------------------------------------------------- 账号 */
@@ -398,6 +493,12 @@ function createAccount(input) {
 }
 
 module.exports = {
+  nextItemId,
+  addNotification,
+  listNotifications,
+  unreadNotificationCount,
+  markNotificationRead,
+  markAllNotificationsRead,
   OVERDUE_DAILY_PENALTY,
   applyOverduePenalties,
   db,

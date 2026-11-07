@@ -110,6 +110,23 @@ export function getItemCover(itemId) {
   return list.length > 0 ? list[0] : '';
 }
 
+/**
+ * 删除某件物品的本地图片（物品下架/删除时调用，防止 localStorage 泄漏）
+ * @param {number|string} itemId
+ * @returns {boolean} 是否确实删除了一条记录
+ */
+export function removeItemImages(itemId) {
+  const id = String(itemId || '').trim();
+  if (!id) return false;
+
+  const map = readAll();
+  if (!(id in map)) return false;
+
+  delete map[id];
+  writeAll(map);
+  return true;
+}
+
 /** 清空本地图片（设置页「清除缓存」可调用） */
 export function clearItemImages() {
   try {

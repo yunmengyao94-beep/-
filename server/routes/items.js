@@ -8,7 +8,7 @@
 const express = require('express');
 const { ok, fail } = require('../utils/http');
 const { parseLimit, encodeCursor, decodeCursor } = require('../utils/pagination');
-const { db, findItem, findUser, persistDb } = require('../store');
+const { db, findItem, findUser, persistDb, nextItemId } = require('../store');
 const { maskName } = require('../utils/mask');
 const { createRateLimit } = require('../middlewares/rate-limit');
 const { checkSensitive } = require('../utils/sensitive');
@@ -154,7 +154,7 @@ router.post(
       return fail(req, res, 401, 40101, '未登录或 Token 失效，请重新登录');
     }
 
-    const itemId = db.items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+    const itemId = nextItemId();
     const item = {
       id: itemId,
       owner_id: owner.id,
@@ -181,6 +181,38 @@ router.post(
     });
   }
 );
+
+/**
+ * DELETE /api/v1/items/:id
+ * 仅出借人本人可删除；流转中（使用中 / 仲裁中）拒绝删除
+ */
+router.delete('/:id', (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return fail(req, res, 400, 40001, '参数校验失败：id 必须为正整数', { field: 'id' });
+  }
+
+  const item = findItem(id);
+  if (!item) {
+    return fail(req, res, 404, 40401, '资源不存在');
+  }
+
+  if (item.owner_id !== (req.user && req.user.user_id)) {
+    return fail(req, res, 403, 40301, '只有物品所有者可以删除');
+  }
+
+  // status: 0 可借 / 1 已借出 / 2 已下架 / 3 仲裁中
+  if (item.status === 1 || item.status === 3) {
+    return fail(req, res, 409, 40902, '当前物品正在流转中，无法删除');
+  }
+
+  const index = db.items.findIndex((entry) => entry.id === id);
+  if (index >= 0) db.items.splice(index, 1);
+
+  persistDb();
+
+  return ok(req, res, { item_id: id, deleted: true });
+});
 
 /**
  * GET /api/v1/items/:id
