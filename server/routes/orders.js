@@ -96,8 +96,9 @@ router.get('/mine', (req, res) => {
   let state;
   if (req.query.state !== undefined && req.query.state !== '') {
     state = Number(req.query.state);
-    if (!Number.isInteger(state) || state < 0 || state > 4) {
-      return fail(req, res, 400, 40001, '参数校验失败：state 必须是 0–4 的整数', {
+    // 0 待交接 / 1 使用中 / 2 已完成 / 3 取消 / 4 逾期 / 5 待出借人确认
+    if (!Number.isInteger(state) || state < 0 || state > 5) {
+      return fail(req, res, 400, 40001, '参数校验失败：state 必须是 0–5 的整数', {
         field: 'state',
       });
     }

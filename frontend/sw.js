@@ -17,8 +17,8 @@
  */
 
 /** 缓存版本：发版时递增（v2 起改为「版本号 + 构建日期」，便于定位线上版本） */
-const CACHE_VERSION = 'v2';
-const BUILD_DATE = '2026-11-08';
+const CACHE_VERSION = 'v3';
+const BUILD_DATE = '2026-11-08.3';
 const CACHE_NAME = `yxx-${CACHE_VERSION}`;
 
 // 构建日期仅用于排查线上版本（可在 DevTools 的 Cache Storage 中看到）
