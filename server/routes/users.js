@@ -19,12 +19,20 @@ const {
   listCreditLogs,
   appendCreditLog,
   persistDb,
+  applyOverduePenalties,
 } = require('../store');
+const { createRateLimit } = require('../middlewares/rate-limit');
 
 const router = express.Router();
 
 /** 单次认证奖励分 */
 const AI_CERT_BONUS = 10;
+/** 认证挑战有效期（10 分钟） */
+const CHALLENGE_TTL_MS = 10 * 60 * 1000;
+
+/** 已签发未使用的挑战：challenge → { userId, expiresAt } */
+const creditChallenges = new Map();
+
 /** 同一用户两次认证奖励的最小间隔（24 小时） */
 const AI_CERT_COOLDOWN_MS = 24 * 3600 * 1000;
 
@@ -37,6 +45,9 @@ router.get('/me', (req, res) => {
   if (!user) {
     return fail(req, res, 404, 40401, '资源不存在');
   }
+
+  // 惰性逾期判定：超时未还的订单在此刻结算扣分
+  applyOverduePenalties(user);
 
   return ok(req, res, {
     user_id: user.id,
@@ -61,6 +72,27 @@ router.get('/me', (req, res) => {
 });
 
 /**
+ * POST /api/v1/users/credit/challenge
+ * 端侧 OCR 成功后在提交奖励前换取一次性挑战，防止直接用 curl 刷接口
+ */
+router.post(
+  '/credit/challenge',
+  createRateLimit({ windowMs: 60000, max: 10, keyPrefix: 'credit-challenge' }),
+  (req, res) => {
+    const user = findUser(req.user && req.user.user_id);
+    if (!user) {
+      return fail(req, res, 404, 40401, '资源不存在');
+    }
+
+    const challenge = `${user.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    const expiresAt = Date.now() + CHALLENGE_TTL_MS;
+    creditChallenges.set(challenge, { userId: user.id, expiresAt });
+
+    return ok(req, res, { challenge, expires_in: Math.floor(CHALLENGE_TTL_MS / 1000) });
+  }
+);
+
+/**
  * POST /api/v1/users/credit/bonus
  * 请求：{ source: 'ai_cert' }
  * 说明：
@@ -68,54 +100,84 @@ router.get('/me', (req, res) => {
  *   · 同一用户 24 小时内只能领一次
  *   · 写 credit_logs（delta = +10，余额同步增加），并落盘
  */
-router.post('/credit/bonus', (req, res) => {
-  const source = req.body && req.body.source;
-  if (source !== 'ai_cert') {
-    return fail(req, res, 400, 40001, '参数校验失败：source 仅支持 ai_cert', { field: 'source' });
+router.post(
+  '/credit/bonus',
+  createRateLimit({ windowMs: 60000, max: 10, keyPrefix: 'credit-bonus' }),
+  (req, res) => {
+    const body = req.body || {};
+    const source = body.source;
+    if (source !== 'ai_cert') {
+      return fail(req, res, 400, 40001, '参数校验失败：source 仅支持 ai_cert', { field: 'source' });
+    }
+
+    const imageHash = typeof body.image_hash === 'string' ? body.image_hash.trim() : '';
+    if (!/^[0-9a-f]{8,64}$/i.test(imageHash)) {
+      return fail(req, res, 400, 40001, '参数校验失败：缺少有效的图片指纹 image_hash', {
+        field: 'image_hash',
+      });
+    }
+
+    const challengeId = typeof body.challenge === 'string' ? body.challenge.trim() : '';
+    const challenge = creditChallenges.get(challengeId);
+    if (!challenge) {
+      return fail(req, res, 400, 40001, '认证会话无效，请重新上传截图', { field: 'challenge' });
+    }
+    if (Date.now() > challenge.expiresAt) {
+      creditChallenges.delete(challengeId);
+      return fail(req, res, 400, 40001, '认证会话已过期，请重新上传截图', { field: 'challenge' });
+    }
+
+    const user = findUser(req.user && req.user.user_id);
+    if (!user) {
+      return fail(req, res, 404, 40401, '资源不存在');
+    }
+
+    if (Number(challenge.userId) !== Number(user.id)) {
+      creditChallenges.delete(challengeId);
+      return fail(req, res, 403, 40301, '认证会话与当前账号不匹配', { field: 'challenge' });
+    }
+
+    // 一次性消费，防止同一挑战重复领取
+    creditChallenges.delete(challengeId);
+
+    const now = Date.now();
+    const logs = listCreditLogs(user.id);
+    const lastCert = logs.find((log) => log.ref_type === 'ai_cert');
+    if (lastCert && now - Date.parse(lastCert.created_at) < AI_CERT_COOLDOWN_MS) {
+      return fail(req, res, 409, 40902, '今日认证奖励已领取，明天再来试试');
+    }
+
+    user.credit_score += AI_CERT_BONUS;
+    user.credit_available = availableOf(user);
+
+    const createdAt = isoWithOffset();
+
+    appendCreditLog({
+      user_id: user.id,
+      change_type: 'add',
+      delta: AI_CERT_BONUS,
+      balance_after: user.credit_score,
+      frozen_after: user.credit_frozen,
+      ref_type: 'ai_cert',
+      ref_id: null,
+      reason: `芝麻信用认证奖励 +${AI_CERT_BONUS}`,
+      created_at: createdAt,
+    });
+
+    persistDb();
+
+    return ok(req, res, {
+      credit: {
+        score: user.credit_score,
+        frozen: user.credit_frozen,
+        available: availableOf(user),
+        level: user.credit_level,
+        level_code: 'L' + user.credit_level,
+      },
+      bonus: AI_CERT_BONUS,
+    });
   }
-
-  const user = findUser(req.user && req.user.user_id);
-  if (!user) {
-    return fail(req, res, 404, 40401, '资源不存在');
-  }
-
-  const now = Date.now();
-  const logs = listCreditLogs(user.id);
-  const lastCert = logs.find((log) => log.ref_type === 'ai_cert');
-  if (lastCert && now - Date.parse(lastCert.created_at) < AI_CERT_COOLDOWN_MS) {
-    return fail(req, res, 409, 40902, '今日认证奖励已领取，明天再来试试');
-  }
-
-  user.credit_score += AI_CERT_BONUS;
-  user.credit_available = availableOf(user);
-
-  const createdAt = isoWithOffset();
-
-  appendCreditLog({
-    user_id: user.id,
-    change_type: 'add',
-    delta: AI_CERT_BONUS,
-    balance_after: user.credit_score,
-    frozen_after: user.credit_frozen,
-    ref_type: 'ai_cert',
-    ref_id: null,
-    reason: `芝麻信用认证奖励 +${AI_CERT_BONUS}`,
-    created_at: createdAt,
-  });
-
-  persistDb();
-
-  return ok(req, res, {
-    credit: {
-      score: user.credit_score,
-      frozen: user.credit_frozen,
-      available: availableOf(user),
-      level: user.credit_level,
-      level_code: 'L' + user.credit_level,
-    },
-    bonus: AI_CERT_BONUS,
-  });
-});
+);
 
 /**
  * PATCH /api/v1/users/me

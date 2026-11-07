@@ -116,6 +116,24 @@ export class RequestError extends Error {
   }
 }
 
+/** 本机设备标识：用于服务端限流维度（首次调用时生成） */
+function getDeviceId() {
+  const KEY = 'yxx_device_id';
+  try {
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+      id =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `dev-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(KEY, id);
+    }
+    return id;
+  } catch {
+    return '';
+  }
+}
+
 /** 读取本地 Token */
 export function getToken() {
   try {
@@ -199,6 +217,9 @@ function notifyAuthExpired() {
  */
 export async function request(url, options = {}) {
   const headers = Object.assign({ Accept: 'application/json' }, options.headers || {});
+
+  const deviceId = getDeviceId();
+  if (deviceId) headers['X-Device-Id'] = deviceId;
 
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;

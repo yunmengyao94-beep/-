@@ -250,6 +250,70 @@ function ensureUserForStudent(studentNo, profile = {}) {
   return { user, created: true };
 }
 
+/* ---------------------------------------------------------------- 逾期 */
+
+/** 逾期每天扣多少信用分 */
+const OVERDUE_DAILY_PENALTY = 5;
+const DAY_MS = 24 * 3600 * 1000;
+
+/**
+ * 惰性逾期判定：读取用户数据时调用，不依赖定时任务
+ * 规则：
+ *   · state = 1（使用中）且 now > due_at → 置为 state = 4（已逾期）
+ *   · 每逾期 1 天扣 OVERDUE_DAILY_PENALTY 分，只补扣"尚未结算"的天数
+ *   · 同一天内多次调用不会重复扣分（order.penalty_days 记录已结算天数）
+ * @param {object} user
+ * @returns {number} 被处理的订单数
+ */
+function applyOverduePenalties(user) {
+  if (!user) return 0;
+
+  const now = Date.now();
+  let changed = 0;
+
+  db.orders
+    .filter((order) => order.borrower_id === user.id && (order.state === 1 || order.state === 4))
+    .forEach((order) => {
+      const due = Date.parse(order.due_at || '');
+      if (!due || now <= due) return;
+
+      // 只按"已满 24 小时"计费：不足 1 天仅标记状态，不扣分（给用户一个宽限日）
+      const overdueDays = Math.floor((now - due) / DAY_MS);
+      const settledDays = Number(order.penalty_days) || 0;
+
+      if (order.state !== 4) {
+        order.state = 4;
+        changed += 1;
+      }
+
+      if (overdueDays <= 0 || overdueDays <= settledDays) return;
+
+      const deltaDays = overdueDays - settledDays;
+      const penalty = deltaDays * OVERDUE_DAILY_PENALTY;
+
+      order.penalty_days = overdueDays;
+      user.credit_score = Math.max(0, user.credit_score - penalty);
+      user.credit_available = availableOf(user);
+
+      appendCreditLog({
+        user_id: user.id,
+        change_type: 'deduct',
+        delta: -penalty,
+        balance_after: user.credit_score,
+        frozen_after: user.credit_frozen,
+        ref_type: 'order',
+        ref_id: order.id,
+        reason: `订单 #${order.id} 逾期 ${deltaDays} 天，扣 ${penalty} 分`,
+        created_at: new Date(Date.now() + 8 * 3600 * 1000).toISOString().replace('Z', '+08:00'),
+      });
+
+      changed += 1;
+    });
+
+  if (changed > 0) persistDb();
+  return changed;
+}
+
 /* ---------------------------------------------------------------- 账号 */
 
 /** scrypt 哈希，形如 scrypt$&lt;salt-hex&gt;$&lt;hash-hex&gt; */
@@ -318,6 +382,8 @@ function createAccount(input) {
 }
 
 module.exports = {
+  OVERDUE_DAILY_PENALTY,
+  applyOverduePenalties,
   db,
   DB_FILE,
   SEED_FILE,

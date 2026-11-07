@@ -23,6 +23,7 @@ const {
   addOrder,
   appendCreditLog,
   persistDb,
+  applyOverduePenalties,
 } = require('../store');
 
 const router = express.Router();
@@ -30,10 +31,13 @@ const router = express.Router();
 /** 默认借用时长：72 小时 */
 const DEFAULT_LOAN_HOURS = 72;
 
-/** 允许的状态流转：action → { from, to } */
+/** 允许的状态流转：action → { from: 允许的起始状态[], to, role } */
 const TRANSITIONS = {
-  confirm_handover: { from: 0, to: 1 },
-  request_return: { from: 1, to: 2 },
+  confirm_handover: { from: [0], to: 1, role: 'borrower' },
+  // 借用人发起归还：使用中(1) 或 已逾期(4) → 待出借人确认(5)
+  request_return: { from: [1, 4], to: 5, role: 'borrower' },
+  // 出借人确认归还：待确认(5) → 已完成(2)
+  confirm_return: { from: [5], to: 2, role: 'owner' },
 };
 
 /**
@@ -99,6 +103,9 @@ router.get('/mine', (req, res) => {
     }
   }
 
+  // 惰性逾期判定：读取订单前先把超时未还的订单标为已逾期并扣分
+  applyOverduePenalties(me);
+
   const orders = listOrders(me.id, { direction, state });
 
   return ok(req, res, {
@@ -109,10 +116,11 @@ router.get('/mine', (req, res) => {
 
 /**
  * PATCH /api/v1/orders/:id/state
- * 请求：{ "action": "confirm_handover" | "request_return" }
- * 说明：
- *   · confirm_handover：待交接(0) → 使用中(1)，仅借用人可操作
- *   · request_return ：使用中(1) → 已完成(2)，仅借用人可操作；同时解冻信用分
+ * 请求：{ "action": "confirm_handover" | "request_return" | "confirm_return" }
+ * 说明（双向确认）：
+ *   · confirm_handover：待交接(0) → 使用中(1)，仅借用人
+ *   · request_return ：使用中(1)/已逾期(4) → 待出借人确认(5)，仅借用人
+ *   · confirm_return ：待确认(5) → 已完成(2)，仅出借人；此时才解冻押金分并释放物品
  */
 router.patch('/:id/state', (req, res) => {
   const orderId = Number(req.params.id);
@@ -128,10 +136,8 @@ router.patch('/:id/state', (req, res) => {
       res,
       400,
       40001,
-      '参数校验失败：action 只能是 confirm_handover 或 request_return',
-      {
-        field: 'action',
-      }
+      '参数校验失败：action 只能是 confirm_handover / request_return / confirm_return',
+      { field: 'action' }
     );
   }
 
@@ -145,11 +151,15 @@ router.patch('/:id/state', (req, res) => {
     return fail(req, res, 401, 40101, '未登录或 Token 失效，请重新登录');
   }
 
-  if (order.borrower_id !== me.id) {
+  // 角色校验：借用人 / 出借人各自只能执行自己的动作
+  if (transition.role === 'borrower' && order.borrower_id !== me.id) {
     return fail(req, res, 403, 40301, '只有借用人可以执行该操作');
   }
+  if (transition.role === 'owner' && order.owner_id !== me.id) {
+    return fail(req, res, 403, 40301, '只有出借人可以执行该操作');
+  }
 
-  if (order.state !== transition.from) {
+  if (!transition.from.includes(order.state)) {
     return fail(req, res, 409, 40901, `当前状态不允许该操作（订单状态 ${order.state}）`, {
       current_state: order.state,
       expected_state: transition.from,
@@ -159,7 +169,7 @@ router.patch('/:id/state', (req, res) => {
   order.state = transition.to;
   const now = isoWithOffset();
 
-  // 归还完成：解冻押金分（delta 恒为 0，保持 6.3.4 对账恒等式）
+  // 归还完成：出借人确认后，解冻押金分并释放物品
   if (transition.to === 2) {
     order.finished_at = now;
 

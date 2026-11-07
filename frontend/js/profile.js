@@ -11,6 +11,8 @@ import { ensureToken } from '../utils/auth.js';
 import { formatTime } from '../utils/format.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
 import { isValidRoom } from '../utils/accounts-db.js';
+import { fingerprintText } from '../utils/fingerprint.js';
+import { checkThrottle, markThrottle } from '../utils/rate-limit.js';
 
 /* ------------------------------------------------------------------ 常量 */
 
@@ -73,6 +75,9 @@ let profileState = null;
 let ocrBusy = false;
 /** 预览图令牌：作废过期的 FileReader 回调 */
 let previewToken = 0;
+/** 最近一次识别的截图 dataURL 与内容指纹（奖励接口需要） */
+let previewDataUrl = '';
+let recognizedHash = '';
 
 /* ------------------------------------------------------------------ 工具 */
 
@@ -658,9 +663,12 @@ function showAiPreview(file) {
 
     els.aiPreview.textContent = '';
 
+    previewDataUrl = String(reader.result || '');
+    recognizedHash = '';
+
     const img = document.createElement('img');
     img.className = 'ai-preview__img';
-    img.src = String(reader.result || '');
+    img.src = previewDataUrl;
     img.alt = '芝麻信用截图';
 
     els.aiPreview.appendChild(img);
@@ -712,6 +720,13 @@ async function handleAiScreenshot(file) {
       clearAiState();
       showToast('未识别到有效信用分，请确认截图为支付宝芝麻信用页面', 'error');
       return;
+    }
+
+    // 识别成功：对本次截图取内容指纹，奖励接口必须携带（防直接 curl）
+    try {
+      recognizedHash = await fingerprintText(previewDataUrl);
+    } catch {
+      recognizedHash = '';
     }
 
     openScoreModal(score);
@@ -782,12 +797,29 @@ async function grantCreditBonus(points) {
     return;
   }
 
+  // 前端限流：同一设备 60 秒一次（服务端还有一层）
+  const gate = checkThrottle('credit-bonus');
+  if (!gate.allowed) {
+    clearAiState();
+    showToast(`操作过于频繁，请 ${gate.waitSeconds} 秒后再试`, 'error');
+    return;
+  }
+
   try {
-    // 加分由服务端执行并落库，前端只负责展示结果
+    // 先换取一次性挑战，再携带截图指纹提交，服务端校验后才加分
+    const challengeRes = await request('/users/credit/challenge', { method: 'POST' });
+    const challenge = challengeRes && challengeRes.challenge;
+
     const data = await request('/users/credit/bonus', {
       method: 'POST',
-      body: { source: 'ai_cert' },
+      body: {
+        source: 'ai_cert',
+        image_hash: recognizedHash || '00000000',
+        challenge,
+      },
     });
+
+    markThrottle('credit-bonus');
 
     clearAiState();
     showToast(`认证成功，信用分 +${(data && data.bonus) || points}`, 'success');

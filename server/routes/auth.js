@@ -14,6 +14,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 
 const { ok, fail } = require('../utils/http');
+const { createRateLimit } = require('../middlewares/rate-limit');
 const {
   findAccountByStudentNo,
   verifyPassword,
@@ -33,6 +34,9 @@ const ROOM_PATTERN = /^\d{3}$/;
 function createAuthRouter(options) {
   const { secret, ttlSeconds } = options;
   const router = express.Router();
+
+  // 登录/注册基础限流：同一 IP + 设备 1 分钟内最多 10 次
+  router.use(createRateLimit({ windowMs: 60 * 1000, max: 10, keyPrefix: 'auth' }));
 
   /** 统一签发 JWT */
   function signToken(user, studentNo) {

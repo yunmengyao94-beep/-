@@ -10,6 +10,7 @@ import { request } from '../utils/request.js';
 import { showToast } from '../components/feedback.js';
 import { isValidStudentNo, isValidRoom, PASSWORD_MIN_LENGTH } from '../utils/accounts-db.js';
 import { bindAgreementLinks, bindTermsGate } from '../utils/agreement.js';
+import { checkThrottle, markThrottle } from '../utils/rate-limit.js';
 
 const form = document.getElementById('register-form');
 const studentNoInput = document.getElementById('reg-student-no');
@@ -99,6 +100,13 @@ async function handleRegister(event) {
     return;
   }
 
+  // 前端限流：同一设备 60 秒只能提交一次注册
+  const gate = checkThrottle('register');
+  if (!gate.allowed) {
+    showToast(`操作过于频繁，请 ${gate.waitSeconds} 秒后再试`, 'error');
+    return;
+  }
+
   submitting = true;
   if (submitBtn) {
     submitBtn.disabled = true;
@@ -118,6 +126,7 @@ async function handleRegister(event) {
       },
     });
 
+    markThrottle('register');
     showToast('注册成功，请使用新账号登录', 'success');
 
     setTimeout(() => {

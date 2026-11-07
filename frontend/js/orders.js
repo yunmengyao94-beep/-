@@ -27,6 +27,7 @@ const STATE_META = {
   2: { text: '已完成', badge: 'badge--success' },
   3: { text: '已取消', badge: 'badge--outline' },
   4: { text: '已逾期', badge: 'badge--danger' },
+  5: { text: '待出借人确认', badge: 'badge--warning' },
 };
 
 /** 当前筛选条件 */
@@ -129,8 +130,11 @@ function createOrderCard(order) {
   // 操作区：只有借入方才需要操作
   if (order.direction === 'borrow' && order.state === 0) {
     body.appendChild(createActionButton('确认交接', order, 'confirm_handover'));
-  } else if (order.direction === 'borrow' && order.state === 1) {
+  } else if (order.direction === 'borrow' && (order.state === 1 || order.state === 4)) {
     body.appendChild(createActionButton('发起归还', order, 'request_return'));
+  } else if (order.direction === 'lend' && order.state === 5) {
+    // 出借人确认归还：确认后物品释放、押金分解冻
+    body.appendChild(createActionButton('确认归还', order, 'confirm_return'));
   } else if (order.direction === 'lend' && order.state < 2) {
     const hint = document.createElement('p');
     hint.className = 'order-card__hint';
@@ -160,12 +164,15 @@ function createActionButton(label, order, action) {
 /** 弹出确认框 → 调接口 → 更新 */
 function confirmAction(order, action, label) {
   const isHandover = action === 'confirm_handover';
+  const isOwnerConfirm = action === 'confirm_return';
 
   const body = [
     `<p class="ai-modal__text">${
       isHandover
         ? '确认已经拿到物品？确认后订单进入「使用中」，押金分继续冻结。'
-        : '确认归还物品？确认后订单完成，冻结的信用分将立即解冻。'
+        : isOwnerConfirm
+          ? '确认对方已归还物品？确认后订单完成，物品重新上架，借用人的押金分将解冻。'
+          : '发起归还后需要出借人确认，确认完成才会解冻押金分。'
     }</p>`,
     '<div class="ai-modal__actions">',
     '<button class="btn btn--secondary" id="order-cancel" type="button">取消</button>',
@@ -197,7 +204,10 @@ function confirmAction(order, action, label) {
           order.finished_at = data.finished_at || new Date().toISOString();
 
         closeModal();
-        showToast(isHandover ? '已确认交接' : '归还成功，信用分已解冻', 'success');
+        let message = '已确认交接';
+        if (action === 'request_return') message = '已发起归还，等待出借人确认';
+        if (action === 'confirm_return') message = '已确认归还，押金分已解冻';
+        showToast(message, 'success');
 
         // 当前筛选与最新状态不一致时，从列表移除；否则重绘
         renderCurrent();
