@@ -1,3 +1,5 @@
+import { showToast } from '../components/feedback.js';
+
 /**
  * 应用公共入口
  * ---------------------------------------------------------------------------
@@ -39,6 +41,7 @@
         .register('./sw.js')
         .then((registration) => {
           if (root) root.dataset.sw = 'ready';
+          watchServiceWorkerUpdate(registration);
           return registration;
         })
         .catch(() => {
@@ -129,6 +132,42 @@
   }
 
   /* -------------------------------------------------------- 4. 开发热刷新 */
+
+  /** 只在本次会话刷新一次，避免 controllerchange 造成刷新循环 */
+  let updateReloading = false;
+
+  /** 监听 SW 更新：新版本就绪后提示并刷新 */
+  function watchServiceWorkerUpdate(registration) {
+    if (!registration) return;
+
+    const hadController = Boolean(navigator.serviceWorker.controller);
+
+    const reloadOnce = () => {
+      if (updateReloading || !hadController) return;
+      updateReloading = true;
+      window.location.reload();
+    };
+
+    registration.addEventListener('updatefound', () => {
+      const installing = registration.installing;
+      if (!installing) return;
+
+      installing.addEventListener('statechange', () => {
+        if (installing.state !== 'installed') return;
+        if (!hadController) return; // 首次安装：无需刷新
+
+        showToast('发现新版本，正在更新…', 'success');
+        setTimeout(reloadOnce, 900);
+      });
+    });
+
+    navigator.serviceWorker.addEventListener('controllerchange', reloadOnce);
+
+    // 主动检查一次（浏览器通常 24h 才自动检查）
+    if (typeof registration.update === 'function') {
+      registration.update().catch(() => {});
+    }
+  }
 
   /**
    * 本地开发：监听服务端 /__live（SSE），文件变化后清理 Cache Storage 再刷新。

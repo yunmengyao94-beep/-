@@ -20,12 +20,11 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const jwt = require('jsonwebtoken');
 
-const { ok, fail } = require('./utils/http');
-const { maskStudentNo, maskName } = require('./utils/mask');
+const { fail } = require('./utils/http');
 const auth = require('./middlewares/auth');
-const { ensureUserForStudent, db: dataStore } = require('./store');
+const { db: dataStore } = require('./store');
+const { createAuthRouter } = require('./routes/auth');
 const itemsRouter = require('./routes/items');
 const ordersRouter = require('./routes/orders');
 const usersRouter = require('./routes/users');
@@ -44,6 +43,7 @@ const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 const PUBLIC_ROUTES = [
   '/api/v1/health',
   '/api/v1/auth/login',
+  '/api/v1/auth/register',
   // 校园 App 允许未登录浏览：列表与详情只放行 GET，发布/编辑仍需 Token
   { path: '/api/v1/items', methods: ['GET'] },
   { path: '/api/v1/items/:id', methods: ['GET'] },
@@ -112,63 +112,8 @@ app.get('/api/v1/health', (req, res) => {
   res.json({ code: 200, msg: 'success', data: 'server is running' });
 });
 
-/**
- * 模拟登录：POST /api/v1/auth/login
- * 请求：{ "student_no": "任意学号" }
- * 逻辑（对齐 7.3.1）：校验入参 → 定位模拟用户 → 签发 7 天假 JWT（含 user_id: 1）
- */
-app.post('/api/v1/auth/login', (req, res) => {
-  const raw = req.body && req.body.student_no;
-  const studentNo = typeof raw === 'string' ? raw.trim() : '';
-
-  if (!studentNo || studentNo.length > 32) {
-    return fail(req, res, 400, 40001, '参数校验失败：student_no 必填，1–32 位字符串', {
-      field: 'student_no',
-    });
-  }
-
-  const body = req.body || {};
-  const profile = {
-    name: typeof body.name === 'string' ? body.name.trim().slice(0, 20) : '',
-    college: typeof body.college === 'string' ? body.college.trim().slice(0, 20) : '',
-    building: typeof body.building === 'string' ? body.building.trim().slice(0, 20) : '',
-  };
-
-  // 账号即身份：按学号找用户，首次登录自动建档（各账号独立信用分与订单）
-  const { user } = ensureUserForStudent(studentNo, profile);
-  if (!user) {
-    return fail(req, res, 500, 50001, '账号初始化失败，请稍后重试');
-  }
-
-  const token = jwt.sign(
-    {
-      user_id: user.id, // 需求指定：JWT 内容包含 user_id: 1
-      sub: String(user.id),
-      student_no: studentNo,
-      role: 'student',
-      role_level: 'L' + user.credit_level,
-      iss: 'yxx',
-    },
-    JWT_SECRET,
-    { expiresIn: TOKEN_TTL_SECONDS }
-  );
-
-  return ok(req, res, {
-    token,
-    token_type: 'Bearer',
-    expires_in: TOKEN_TTL_SECONDS,
-    user: {
-      user_id: user.id,
-      student_no: maskStudentNo(user.student_no),
-      real_name: maskName(user.real_name),
-      college_code: user.college_code,
-      building_loc: user.building_loc,
-      credit_score: user.credit_score,
-      credit_available: user.credit_available,
-      credit_level: user.credit_level,
-    },
-  });
-});
+// 登录 / 注册：见 server/routes/auth.js（密码 scrypt 校验，JWT 含真实 user_id）
+app.use('/api/v1/auth', createAuthRouter({ secret: JWT_SECRET, ttlSeconds: TOKEN_TTL_SECONDS }));
 
 /* ------------------------------------------------------------- 鉴权中间件 */
 

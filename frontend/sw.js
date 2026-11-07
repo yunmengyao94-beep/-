@@ -16,7 +16,13 @@
  *   3. 改动策略后应同步升级 CACHE_NAME（例如 yxx-v2），activate 会自动清掉旧缓存。
  */
 
-const CACHE_NAME = 'yxx-v1';
+/** 缓存版本：发版时递增（v2 起改为「版本号 + 构建日期」，便于定位线上版本） */
+const CACHE_VERSION = 'v2';
+const BUILD_DATE = '2026-11-08';
+const CACHE_NAME = `yxx-${CACHE_VERSION}`;
+
+// 构建日期仅用于排查线上版本（可在 DevTools 的 Cache Storage 中看到）
+self.__YXX_BUILD__ = BUILD_DATE;
 
 /** 接口网络优先的超时时间（毫秒） */
 const API_TIMEOUT = 3000;

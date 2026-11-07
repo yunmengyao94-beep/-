@@ -1,21 +1,17 @@
 /**
  * 登录页
  * ---------------------------------------------------------------------------
- * 登录流程：
- *   1. 学号格式校验：13 位、25 / 24 开头
- *   2. 本地账号库比对学号 + 密码（utils/accounts-db.js）
- *   3. 校验通过后向服务端换取 JWT（服务端只负责签发 Token）
- *   4. 写入 yxx_token / yxx_user → 跳回来源页或首页
- * 失败统一提示「学号或密码错误」，不区分"账号不存在 / 密码错"，避免撞库探测。
+ * 流程：格式校验 → POST /api/v1/auth/login（服务端校验学号 + scrypt 密码）
+ *       → 写入 yxx_token / yxx_user → 跳回来源页或首页
+ * 说明：前端不保存任何密码，凭据校验完全在服务端完成（P0-3 / P0-4）。
  */
 
 import { request, setToken } from '../utils/request.js';
 import { showToast } from '../components/feedback.js';
 import { upsertAccount } from '../utils/accounts.js';
-import { ensureAccountDB, verifyCredentials, isValidStudentNo } from '../utils/accounts-db.js';
+import { isValidStudentNo, PASSWORD_MIN_LENGTH } from '../utils/accounts-db.js';
 import { bindAgreementLinks, bindTermsGate } from '../utils/agreement.js';
 
-/** 与 utils/request.js 中的 TOKEN_KEY 保持一致 */
 const TOKEN_KEY = 'yxx_token';
 const USER_KEY = 'yxx_user';
 const DEFAULT_REDIRECT = './index.html';
@@ -28,7 +24,7 @@ const errStudentNo = document.getElementById('err-student-no');
 const errPassword = document.getElementById('err-password');
 
 let submitting = false;
-/** 是否已勾选同意条款（由 utils/agreement.js 的勾选门维护） */
+/** 是否已勾选同意条款 */
 let isAgreed = () => false;
 
 /** 从 query 中取回跳地址（只允许站内相对路径，防开放重定向） */
@@ -47,7 +43,7 @@ function setError(node, message) {
   node.classList.toggle('hidden', !message);
 }
 
-/** 仅做「必填 + 格式」的前置校验，凭据校验交给账号库 */
+/** 仅校验格式，凭据交给服务端 */
 function validateFormat() {
   const studentNo = studentNoInput ? studentNoInput.value.trim() : '';
   const password = passwordInput ? passwordInput.value : '';
@@ -67,8 +63,8 @@ function validateFormat() {
   if (!password) {
     setError(errPassword, '请输入密码');
     ok = false;
-  } else if (password.length < 6) {
-    setError(errPassword, '密码至少 6 位');
+  } else if (password.length < PASSWORD_MIN_LENGTH) {
+    setError(errPassword, `密码至少 ${PASSWORD_MIN_LENGTH} 位`);
     ok = false;
   } else {
     setError(errPassword, '');
@@ -89,16 +85,6 @@ async function handleLogin(event) {
   const values = validateFormat();
   if (!values) return;
 
-  // 账号库比对
-  const result = verifyCredentials(values.studentNo, values.password);
-  if (!result.ok) {
-    showToast('学号或密码错误', 'error');
-    setError(errPassword, '学号或密码错误');
-    return;
-  }
-
-  const account = result.account;
-
   submitting = true;
   if (submitBtn) {
     submitBtn.disabled = true;
@@ -108,13 +94,7 @@ async function handleLogin(event) {
   try {
     const data = await request('/auth/login', {
       method: 'POST',
-      body: {
-        student_no: account.studentNo,
-        password: values.password,
-        name: account.name,
-        college: account.college,
-        building: account.building,
-      },
+      body: { student_no: values.studentNo, password: values.password },
     });
 
     const token = data && data.token;
@@ -122,14 +102,15 @@ async function handleLogin(event) {
 
     setToken(token);
 
+    const serverUser = (data && data.user) || {};
     const user = {
-      user_id: (data.user && data.user.user_id) || null,
-      student_no: account.studentNo,
-      nickname: account.name,
-      real_name: account.name,
-      college_code: account.college,
-      building_loc: account.building,
-      room_no: account.room,
+      user_id: serverUser.user_id,
+      student_no: serverUser.student_no || values.studentNo,
+      nickname: serverUser.nickname || '同学',
+      real_name: serverUser.real_name || serverUser.nickname || '',
+      college_code: serverUser.college_code || '',
+      building_loc: serverUser.building_loc || '',
+      room_no: serverUser.room_no || '',
     };
 
     try {
@@ -139,18 +120,20 @@ async function handleLogin(event) {
     }
 
     upsertAccount({
-      student_no: account.studentNo,
-      nickname: account.name,
-      real_name: account.name,
+      student_no: user.student_no,
+      nickname: user.nickname,
+      real_name: user.real_name,
       user_id: user.user_id,
       token,
     });
 
-    showToast(`欢迎回来，${account.name}`, 'success');
+    showToast(`欢迎回来，${user.nickname}`, 'success');
     window.location.href = readRedirect();
   } catch (error) {
     const message = (error && error.message) || '登录失败，请稍后重试';
-    showToast(`登录失败：${message}`, 'error');
+    showToast(message === '学号或密码错误' ? message : `登录失败：${message}`, 'error');
+    setError(errPassword, error && error.code === 40102 ? '学号或密码错误' : '');
+
     submitting = false;
     if (submitBtn) {
       submitBtn.disabled = !isAgreed();
@@ -160,8 +143,6 @@ async function handleLogin(event) {
 }
 
 function init() {
-  ensureAccountDB();
-
   try {
     if (localStorage.getItem(TOKEN_KEY)) {
       window.location.replace(readRedirect());

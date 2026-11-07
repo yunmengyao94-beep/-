@@ -60,5 +60,34 @@
   ],
   "items": [],
   "credit_logs": [],
-  "orders": []
+  "orders": [],
+  "accounts": [
+    {
+      "student_no": "2508080110101",
+      "password": "scrypt$28d4271897f7d5003716198fd299c6e8$c07f7455bdb44eb9fa27bdaaac6ed6f44b0e37435f076c396659cf634449a1c81992cb56ac43db82c090d9f5e72f6819193831ddc6181d86966eb854dda07f1c",
+      "name": "张同学",
+      "college": "0801",
+      "building": "第7公寓",
+      "room": "502",
+      "created_at": "2026-09-01T08:00:00+08:00"
+    },
+    {
+      "student_no": "2508080110102",
+      "password": "scrypt$de5f1421715ef5e7d962d18a8fdd8fb2$26f5e47b55029488e9beab8382ee183788d59cfd4a516824305a873decbf06a402fcabfeb9504c1eb66804dfba53847c0cb6e559e8f6906eda5a7536c3c957c6",
+      "name": "李同学",
+      "college": "0801",
+      "building": "第5公寓",
+      "room": "311",
+      "created_at": "2026-09-01T08:00:00+08:00"
+    },
+    {
+      "student_no": "2408080110103",
+      "password": "scrypt$8d2ede965b3fb5fd242204c639767891$ca9f20a5bd3c49a22f23ccaaf84ea2a8e6393922ef0fa2b371d5a20760b5cfca5ab62196d9832fd12bcb49d039c805350ae52e6c20e210b5847f15253081627c",
+      "name": "王同学",
+      "college": "0802",
+      "building": "第3公寓",
+      "room": "208",
+      "created_at": "2026-09-01T08:00:00+08:00"
+    }
+  ]
 }

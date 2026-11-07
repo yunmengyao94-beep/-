@@ -638,7 +638,7 @@ function openScoreModal(score) {
   if (confirmBtn) {
     confirmBtn.addEventListener('click', () => {
       closeModal();
-      grantCreditBonus(10, '芝麻信用认证奖励');
+      grantCreditBonus(10);
     });
   }
 }
@@ -648,50 +648,27 @@ function openScoreModal(score) {
  * @param {number} points 加分数
  * @param {string} reason 流水事由
  */
-function grantCreditBonus(points, reason) {
+async function grantCreditBonus(points) {
   if (!profileState) {
     showToast('用户数据未就绪，请稍后重试', 'error');
     return;
   }
 
-  const credit = profileState.credit;
-  credit.score = (Number(credit.score) || 0) + points;
-  credit.available = (Number(credit.available) || 0) + points;
-
-  // 大盘：分数 / 可用分 / 环形进度 / 等级
-  if (els.score) els.score.textContent = String(credit.score);
-  if (els.available) els.available.textContent = String(credit.available);
-  renderRing(credit.score);
-  renderLevel(credit.score);
-
-  // 流水最上方插入一条奖励记录
-  const log = {
-    id: `local-${Date.now()}`,
-    change_type: 'add',
-    delta: points,
-    balance_after: credit.score,
-    reason,
-    ref_type: 'ai_cert',
-    ref_id: null,
-    created_at: new Date().toISOString(),
-  };
-  renderLogs([log, ...allLogs]);
-
-  persistCredit(credit);
-  clearAiState();
-  showToast(`认证成功，信用分 +${points}`, 'success');
-}
-
-/** 把最新信用分写回本地 user（供其它页面读取） */
-function persistCredit(credit) {
   try {
-    const raw = localStorage.getItem(USER_STORAGE_KEY);
-    const user = raw ? JSON.parse(raw) : { user_id: null, nickname: '校园用户' };
-    user.credit_score = credit.score;
-    user.credit_available = credit.available;
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-  } catch {
-    // 本地存储不可用时忽略
+    // 加分由服务端执行并落库，前端只负责展示结果
+    const data = await request('/users/credit/bonus', {
+      method: 'POST',
+      body: { source: 'ai_cert' },
+    });
+
+    clearAiState();
+    showToast(`认证成功，信用分 +${(data && data.bonus) || points}`, 'success');
+
+    // 重新拉取个人中心数据（信用分 + 流水都以服务端为准）
+    await loadProfile();
+  } catch (error) {
+    clearAiState();
+    showToast((error && error.message) || '认证奖励发放失败，请稍后重试', 'error');
   }
 }
 

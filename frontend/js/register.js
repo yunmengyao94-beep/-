@@ -1,17 +1,14 @@
 /**
  * 注册页
  * ---------------------------------------------------------------------------
- * 注册写入本地账号库（utils/accounts-db.js），
- * 之后即可用该学号 + 密码在登录页登录。
+ * 流程：本地格式校验 → POST /api/v1/auth/register（服务端建账号 + 建用户）
+ *       → Toast → 带学号跳回登录页
+ * 说明：密码只提交给服务端（scrypt 哈希入库），前端不留任何副本。
  */
 
+import { request } from '../utils/request.js';
 import { showToast } from '../components/feedback.js';
-import {
-  ensureAccountDB,
-  addAccount,
-  findAccount,
-  isValidStudentNo,
-} from '../utils/accounts-db.js';
+import { isValidStudentNo, isValidRoom, PASSWORD_MIN_LENGTH } from '../utils/accounts-db.js';
 import { bindAgreementLinks, bindTermsGate } from '../utils/agreement.js';
 
 const form = document.getElementById('register-form');
@@ -36,6 +33,7 @@ const REDIRECT_DELAY = 900;
 
 /** 是否已勾选同意条款 */
 let isAgreed = () => false;
+let submitting = false;
 
 function setError(node, message) {
   if (!node) return;
@@ -61,7 +59,6 @@ function validate() {
   if (!studentNo) errors.studentNo = '请输入学号';
   else if (!isValidStudentNo(studentNo))
     errors.studentNo = '学号需为 13 位数字，且以 25 或 24 开头';
-  else if (findAccount(studentNo)) errors.studentNo = '该学号已注册，请直接登录';
 
   if (!name) errors.name = '请输入姓名';
   else if (name.length < 2) errors.name = '姓名至少 2 个字符';
@@ -71,10 +68,12 @@ function validate() {
   if (!building) errors.building = '请选择楼栋';
 
   if (!room) errors.room = '请输入房间号';
-  else if (!/^\d{3}$/.test(room)) errors.room = '房间号需为 3 位数字，例如 501';
+  else if (!isValidRoom(room)) errors.room = '房间号需为 3 位数字，例如 501';
 
   if (!password) errors.password = '请输入密码';
-  else if (password.length < 6) errors.password = '密码至少 6 位';
+  else if (password.length < PASSWORD_MIN_LENGTH) {
+    errors.password = `密码至少 ${PASSWORD_MIN_LENGTH} 位`;
+  }
 
   Object.entries(errors).forEach(([key, message]) => setError(ERROR_NODES[key], message));
 
@@ -83,8 +82,9 @@ function validate() {
   return { studentNo, name, college, building, room, password };
 }
 
-function handleRegister(event) {
+async function handleRegister(event) {
   if (event) event.preventDefault();
+  if (submitting) return;
 
   if (!isAgreed()) {
     showToast('请先阅读并同意《用户协议》和《隐私政策》', 'error');
@@ -99,35 +99,47 @@ function handleRegister(event) {
     return;
   }
 
+  submitting = true;
   if (submitBtn) {
     submitBtn.disabled = true;
     submitBtn.textContent = '注册中...';
   }
 
-  ensureAccountDB();
-
-  setTimeout(() => {
-    const result = addAccount(values);
-
-    if (!result.ok) {
-      showToast('该学号已注册，请直接登录', 'error');
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = '注册';
-      }
-      return;
-    }
+  try {
+    await request('/auth/register', {
+      method: 'POST',
+      body: {
+        student_no: values.studentNo,
+        password: values.password,
+        name: values.name,
+        college: values.college,
+        building: values.building,
+        room: values.room,
+      },
+    });
 
     showToast('注册成功，请使用新账号登录', 'success');
+
     setTimeout(() => {
       window.location.href = `./login.html?student_no=${encodeURIComponent(values.studentNo)}`;
     }, REDIRECT_DELAY);
-  }, 400);
+  } catch (error) {
+    const message = (error && error.message) || '注册失败，请稍后重试';
+    showToast(message, 'error');
+
+    if (error && error.code === 40902) {
+      setError(ERROR_NODES.studentNo, '该学号已注册，请直接登录');
+    }
+
+    submitting = false;
+    if (submitBtn) {
+      submitBtn.disabled = !isAgreed();
+      submitBtn.textContent = '注册';
+    }
+  }
 }
 
 function init() {
-  ensureAccountDB();
-
   isAgreed = bindTermsGate(document.getElementById('agree-terms'), submitBtn);
   bindAgreementLinks();
 

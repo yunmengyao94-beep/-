@@ -12,6 +12,7 @@
  * 真实实现中这些函数对应 repository / service 层与数据库事务。
  */
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -35,10 +36,17 @@ function normalize(source) {
   if (!Array.isArray(data.items)) data.items = [];
   if (!Array.isArray(data.orders)) data.orders = [];
   if (!Array.isArray(data.credit_logs)) data.credit_logs = [];
+  if (!Array.isArray(data.accounts)) data.accounts = [];
   return data;
 }
 
-const db = normalize(readJson(DB_FILE) || readJson(SEED_FILE));
+const seedData = normalize(readJson(SEED_FILE));
+const db = normalize(readJson(DB_FILE) || seedData);
+
+// 旧 db.json 没有 accounts 字段时，从种子数据补齐（账号体系迁移）
+if (db.accounts.length === 0 && seedData.accounts.length > 0) {
+  db.accounts = seedData.accounts.slice();
+}
 
 /** 订单号自增起点：首次借用返回 30001（与接口约定一致） */
 const ORDER_ID_SEED = 30001;
@@ -242,12 +250,83 @@ function ensureUserForStudent(studentNo, profile = {}) {
   return { user, created: true };
 }
 
+/* ---------------------------------------------------------------- 账号 */
+
+/** scrypt 哈希，形如 scrypt$&lt;salt-hex&gt;$&lt;hash-hex&gt; */
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(String(password), salt, 64);
+  return ['scrypt', salt.toString('hex'), hash.toString('hex')].join('$');
+}
+
+/**
+ * 校验密码（恒定时间比较，避免时序侧信道）
+ * @param {string} password 明文
+ * @param {string} stored hashPassword() 的结果
+ */
+function verifyPassword(password, stored) {
+  try {
+    const parts = String(stored || '').split('$');
+    if (parts.length !== 3 || parts[0] !== 'scrypt') return false;
+
+    const salt = Buffer.from(parts[1], 'hex');
+    const expected = Buffer.from(parts[2], 'hex');
+    const actual = crypto.scryptSync(String(password), salt, expected.length);
+
+    return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+  } catch {
+    return false;
+  }
+}
+
+/** 按学号查账号 */
+function findAccountByStudentNo(studentNo) {
+  const no = String(studentNo || '').trim();
+  if (!no) return null;
+  return db.accounts.find((account) => account.student_no === no) || null;
+}
+
+/**
+ * 新建账号并同步创建用户（账号即身份）
+ * @param {{student_no: string, password: string, name: string, college?: string, building?: string, room?: string}} input
+ * @returns {{ok: boolean, reason?: string, user?: object}}
+ */
+function createAccount(input) {
+  const no = String(input.student_no || '').trim();
+  if (findAccountByStudentNo(no)) return { ok: false, reason: 'exists' };
+
+  const now = new Date(Date.now() + 8 * 3600 * 1000).toISOString().replace('Z', '+08:00');
+
+  db.accounts.push({
+    student_no: no,
+    password: hashPassword(input.password),
+    name: input.name,
+    college: input.college || '',
+    building: input.building || '',
+    room: input.room || '',
+    created_at: now,
+  });
+
+  const { user } = ensureUserForStudent(no, {
+    name: input.name,
+    college: input.college,
+    building: input.building,
+  });
+
+  persistDb();
+  return { ok: true, user };
+}
+
 module.exports = {
   db,
   DB_FILE,
   SEED_FILE,
   persistDb,
   ORDER_ID_SEED,
+  hashPassword,
+  verifyPassword,
+  findAccountByStudentNo,
+  createAccount,
   findUser,
   findUserByStudentNo,
   ensureUserForStudent,

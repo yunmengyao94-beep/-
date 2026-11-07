@@ -246,7 +246,9 @@ export async function request(url, options = {}) {
   }
 
   if (payload.code !== 200) {
-    const isAuthError = payload.code === 40101 || response.status === 401;
+    // 登录/注册接口的 401 属于"凭据错误"，不能当成会话过期处理
+    const isAuthEndpoint = typeof url === 'string' && url.startsWith('/auth/');
+    const isAuthError = !isAuthEndpoint && (payload.code === 40101 || response.status === 401);
 
     if (isAuthError) {
       clearToken();
