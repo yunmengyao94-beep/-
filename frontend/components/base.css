@@ -2233,3 +2233,143 @@ body.keyboard-open .action-bar {
   font-size: var(--font-size-xs, 12px);
   color: var(--text-placeholder, #bfbfbf);
 }
+
+/* ============================================================================
+ * 22. 我的订单（方向 Tab / 状态筛选 / 订单卡片）
+ * ========================================================================== */
+
+/* 分段控件：我借出的 / 我借入的 */
+.segmented {
+  display: flex;
+  gap: 4px;
+  margin: var(--space-3, 12px) var(--space-4, 16px) 0;
+  padding: 4px;
+  background-color: var(--bg-color, #f5f7fa);
+  border-radius: var(--radius-round, 999px);
+}
+
+.segmented__btn {
+  flex: 1;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: var(--font-size-base, 14px);
+  color: var(--text-sub, #888);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-round, 999px);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast, 0.15s) ease,
+    color var(--transition-fast, 0.15s) ease;
+}
+
+.segmented__btn.is-active {
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--primary, #1890ff);
+  background-color: var(--bg-card, #fff);
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.06));
+}
+
+/* 状态筛选 chips */
+.chip-row {
+  display: flex;
+  gap: var(--space-2, 8px);
+  padding: var(--space-3, 12px) var(--space-4, 16px) 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: none;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-sub, #888);
+  white-space: nowrap;
+  background-color: var(--bg-card, #fff);
+  border: 1px solid var(--border-color, #ebeef5);
+  border-radius: var(--radius-round, 999px);
+  cursor: pointer;
+}
+
+.chip.is-active {
+  color: var(--primary, #1890ff);
+  background-color: var(--primary-light, #e6f7ff);
+  border-color: var(--primary, #1890ff);
+}
+
+/* 订单卡片 */
+.order-card {
+  display: flex;
+  gap: var(--space-3, 12px);
+  padding: var(--space-3, 12px);
+  margin: var(--space-3, 12px) var(--space-4, 16px) 0;
+  background-color: var(--bg-card, #fff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.06));
+}
+
+.order-card__media {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  overflow: hidden;
+  font-size: 26px;
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--primary, #1890ff);
+  background-image: linear-gradient(135deg, #eaf3ff, #d6e8ff);
+  border-radius: var(--radius-md, 8px);
+}
+
+.order-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.order-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.order-card__head {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.order-card__title {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.order-card__meta {
+  font-size: var(--font-size-xs, 12px);
+  line-height: 1.5;
+  color: var(--text-sub, #888);
+}
+
+.order-card__actions {
+  display: flex;
+  gap: var(--space-2, 8px);
+  margin-top: 6px;
+}
+
+.order-card__hint {
+  margin-top: 6px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-placeholder, #bfbfbf);
+}

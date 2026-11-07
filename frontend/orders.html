@@ -28,40 +28,54 @@
     <div id="network-banner" class="network-banner" role="status" aria-live="polite"></div>
 
     <header class="navbar">
-      <button class="navbar__back" id="back-btn" type="button" aria-label="返回上一页">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M15 5 8 12l7 7" />
-        </svg>
-        <span>返回</span>
-      </button>
       <span class="navbar__title navbar__title--center">我的订单</span>
       <span class="navbar__spacer" aria-hidden="true"></span>
     </header>
 
-    <main class="page page--narrow">
-      <section class="card" style="margin-top: 12px" aria-labelledby="order-title">
-        <div class="log-card__head">
-          <h2 class="log-card__title" id="order-title">借用记录</h2>
-          <span class="log-card__count" id="order-count">共 0 单</span>
-        </div>
+    <main class="page page--narrow" style="padding-bottom: 24px">
+      <!-- 方向切换 -->
+      <div class="segmented" role="tablist" aria-label="订单方向">
+        <button class="segmented__btn" id="tab-lend" type="button" role="tab" aria-selected="false">
+          我借出的
+        </button>
+        <button
+          class="segmented__btn is-active"
+          id="tab-borrow"
+          type="button"
+          role="tab"
+          aria-selected="true"
+        >
+          我借入的
+        </button>
+      </div>
 
-        <ul class="log-list" id="order-list" aria-live="polite"></ul>
-        <div class="hidden" id="order-empty"></div>
-      </section>
+      <!-- 状态筛选 -->
+      <div class="chip-row" role="tablist" aria-label="订单状态">
+        <button class="chip is-active" data-state="0" type="button" role="tab" aria-selected="true">
+          待交接
+        </button>
+        <button class="chip" data-state="1" type="button" role="tab" aria-selected="false">
+          使用中
+        </button>
+        <button class="chip" data-state="2" type="button" role="tab" aria-selected="false">
+          已完成
+        </button>
+      </div>
+
+      <!-- 订单列表 -->
+      <div id="order-list" aria-live="polite"></div>
+      <div class="hidden" id="order-empty"></div>
+      <p class="log-card__count" id="order-count" style="margin: 12px 16px 0">共 0 单</p>
     </main>
 
     <nav class="tabbar" aria-label="主导航">
       <a class="tabbar__item" href="./index.html">
         <span class="tabbar__icon" aria-hidden="true">🏠</span>
         <span>首页</span>
+      </a>
+      <a class="tabbar__item is-active" href="./orders.html" aria-current="page">
+        <span class="tabbar__icon" aria-hidden="true">📋</span>
+        <span>订单</span>
       </a>
       <a class="tabbar__item" href="./publish.html">
         <span class="tabbar__icon" aria-hidden="true">➕</span>

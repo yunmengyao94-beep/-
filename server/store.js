@@ -109,15 +109,140 @@ function listCreditLogs(userId) {
     );
 }
 
+/* ---------------------------------------------------------------- 订单 */
+
+/** 本地时间转 ISO 8601（+08:00） */
+function isoLocal(ms) {
+  const d = new Date(ms + 8 * 3600 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  return (
+    `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}` +
+    `T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}+08:00`
+  );
+}
+
+/**
+ * 播种演示订单（仅首次启动内存为空时执行）
+ * 目的：让「我借出的 / 我借入的」两个 Tab 都有数据可看。
+ * 订单号从 29001 起，避免占用真实新建订单的 30001 段位。
+ */
+function seedDemoOrders() {
+  if (db.orders.length > 0) return;
+
+  const now = Date.now();
+  const HOUR = 3600 * 1000;
+  const DAY = 24 * HOUR;
+
+  const make = (id, itemId, ownerId, borrowerId, state, offsets) => {
+    const item = db.items.find((i) => i.id === itemId);
+    const createdAt = isoLocal(now - offsets.created * DAY);
+    const dueAt = isoLocal(now + offsets.due * DAY);
+
+    return {
+      id,
+      order_no: `YXX${String(id).padStart(9, '0')}`,
+      item_id: itemId,
+      owner_id: ownerId,
+      borrower_id: borrowerId,
+      frozen_score: item ? item.deposit_score : 0,
+      state,
+      due_at: dueAt,
+      created_at: createdAt,
+      finished_at: state === 2 ? isoLocal(now - offsets.created * DAY + 2 * DAY) : null,
+      snapshot: {
+        item_id: itemId,
+        title: item ? item.title : `物品 #${itemId}`,
+        image_hash: item ? item.image_hash : null,
+        deposit_score: item ? item.deposit_score : 0,
+        damage_rules: item ? item.damage_rules : null,
+        agreed_at_publish: true,
+        snapshot_at: createdAt,
+      },
+    };
+  };
+
+  const demo = [
+    // 我借入（borrower_id = 1）
+    make(29001, 1, 2, 1, 0, { created: 1, due: 2 }),
+    make(29002, 2, 2, 1, 1, { created: 2, due: 1 }),
+    make(29003, 3, 2, 1, 2, { created: 5, due: -3 }),
+    // 我借出（owner_id = 1）
+    make(29004, 4, 1, 2, 0, { created: 1, due: 2 }),
+    make(29005, 5, 1, 2, 1, { created: 3, due: 1 }),
+    make(29006, 6, 1, 2, 2, { created: 6, due: -2 }),
+  ];
+
+  db.orders.push(...demo);
+
+  // 为「待交接 / 使用中」的订单补上冻结分与冻结流水，保证演示数据自洽
+  demo
+    .filter((order) => order.state < 2 && order.frozen_score > 0)
+    .forEach((order) => {
+      const borrower = db.users.find((u) => u.id === order.borrower_id);
+      if (!borrower) return;
+
+      borrower.credit_frozen = (borrower.credit_frozen || 0) + order.frozen_score;
+      borrower.credit_available = Math.max(0, borrower.credit_score - borrower.credit_frozen);
+
+      db.credit_logs.push({
+        id: db.credit_logs.reduce((max, l) => Math.max(max, l.id), 0) + 1,
+        user_id: borrower.id,
+        change_type: 'freeze',
+        delta: 0,
+        balance_after: borrower.credit_score,
+        frozen_after: borrower.credit_frozen,
+        ref_type: 'order',
+        ref_id: order.id,
+        reason: `借用「${order.snapshot.title}」冻结信用分 ${order.frozen_score}`,
+        created_at: order.created_at,
+      });
+    });
+}
+
+/** 按 id 查订单 */
+function findOrder(id) {
+  return db.orders.find((o) => o.id === Number(id)) || null;
+}
+
+/**
+ * 列出某用户的订单
+ * @param {number} userId
+ * @param {{direction?: 'borrow'|'lend', state?: number}} [filter]
+ * @returns {object[]} 按创建时间倒序
+ */
+function listOrders(userId, filter = {}) {
+  const uid = Number(userId);
+
+  return db.orders
+    .filter((order) => {
+      const isOwner = order.owner_id === uid;
+      const isBorrower = order.borrower_id === uid;
+      if (!isOwner && !isBorrower) return false;
+
+      if (filter.direction === 'lend' && !isOwner) return false;
+      if (filter.direction === 'borrow' && !isBorrower) return false;
+      if (filter.state !== undefined && filter.state !== null && order.state !== filter.state) {
+        return false;
+      }
+      return true;
+    })
+    .slice()
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+}
+
+seedDemoOrders();
+
 module.exports = {
   db,
   ORDER_ID_SEED,
   findUser,
   findItem,
+  findOrder,
   availableOf,
   nextOrderId,
   buildOrderNo,
   addOrder,
+  listOrders,
   appendCreditLog,
   listCreditLogs,
 };
