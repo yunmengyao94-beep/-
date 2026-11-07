@@ -163,6 +163,10 @@ router.patch('/:id/state', (req, res) => {
   if (transition.to === 2) {
     order.finished_at = now;
 
+    // 释放物品：归还后重新变为可借（否则会永久锁死为「已被借出」）
+    const item = findItem(order.item_id);
+    if (item && item.status === 1) item.status = 0;
+
     const frozen = Number(order.frozen_score) || 0;
     const borrower = findUser(order.borrower_id);
     if (borrower && frozen > 0) {
