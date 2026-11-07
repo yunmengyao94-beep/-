@@ -393,8 +393,21 @@ function ensureTesseract() {
   return tesseractLoading;
 }
 
+/** 本地资源路径（由 scripts/fetch-ai-assets.mjs 下载到 frontend/assets/ai/） */
+const OCR_LOCAL_PATHS = {
+  workerPath: './assets/ai/worker.min.js',
+  langPath: './assets/ai',
+  corePath: './assets/ai',
+};
+
 /**
- * 初始化 OCR 引擎：中文 + 英文，语言包与 worker 均指向本地 assets/ai
+ * CDN 兜底：不传任何路径即使用 tesseract.js 默认源
+ * （jsDelivr 上的 worker/core + @tesseract.js-data 的语言包）
+ */
+const OCR_CDN_PATHS = {};
+
+/**
+ * 初始化 OCR 引擎：优先本地资源，失败自动回退 CDN
  * @returns {Promise<object>} Tesseract Worker
  */
 export async function initOCR() {
@@ -402,15 +415,22 @@ export async function initOCR() {
 
   const Tesseract = await ensureTesseract();
 
-  ocrWorker = await Tesseract.createWorker(OCR_LANGS, 1, {
-    workerPath: './assets/ai/worker.min.js',
-    langPath: './assets/ai',
-    corePath: './assets/ai',
-    cacheMethod: 'none',
-    logger: (message) => {
-      if (typeof progressHandler === 'function') progressHandler(message);
-    },
-  });
+  const create = (paths) =>
+    Tesseract.createWorker(OCR_LANGS, 1, {
+      ...paths,
+      cacheMethod: 'none',
+      logger: (message) => {
+        if (typeof progressHandler === 'function') progressHandler(message);
+      },
+    });
+
+  try {
+    // 本地资源存在时完全离线，速度也更快
+    ocrWorker = await create(OCR_LOCAL_PATHS);
+  } catch {
+    // 本地缺失/损坏（例如未执行 fetch 脚本）：回退 CDN，保证点击不报错
+    ocrWorker = await create(OCR_CDN_PATHS);
+  }
 
   // eslint-disable-next-line no-console
   console.log('OCR 引擎已就绪');

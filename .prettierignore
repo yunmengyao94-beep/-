@@ -10,3 +10,7 @@ package-lock.json
 sql/
 *.min.css
 *.min.js
+
+# ---------- 第三方运行时资源（体积大 / 由脚本下载，不参与 lint 与格式化） ----------
+frontend/assets/ai/
+frontend/fonts/

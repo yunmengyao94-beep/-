@@ -1,0 +1,41 @@
+/**
+ * 开源中文字体（SIL OFL 1.1）—— 由 scripts/fetch-fonts.mjs 自动生成
+ * ---------------------------------------------------------------------------
+ * 默认不强制全局生效（系统字体栈在移动端渲染更快）。
+ * 想让页面用上思源黑体，在任意 CSS 里加一行：
+ *   body { font-family: 'YXX Noto Sans SC', var(--font-family-base); }
+ */
+
+@font-face {
+  font-family: 'YXX Noto Sans SC';
+  src: url('./NotoSansSC-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'YXX Noto Sans SC';
+  src: url('./NotoSansSC-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'YXX Noto Serif SC';
+  src: url('./NotoSerifSC-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 工具类：局部使用 */
+.u-font-sans {
+  font-family:
+    'YXX Noto Sans SC', var(--font-family-base, -apple-system, 'PingFang SC', sans-serif);
+}
+
+.u-font-serif {
+  font-family: 'YXX Noto Serif SC', var(--font-family-serif, 'Songti SC', serif);
+}

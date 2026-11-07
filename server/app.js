@@ -29,6 +29,7 @@ const { findUser } = require('./store');
 const itemsRouter = require('./routes/items');
 const ordersRouter = require('./routes/orders');
 const usersRouter = require('./routes/users');
+const { createLiveReload } = require('./live-reload');
 const db = require('./mock_db.json');
 
 const app = express();
@@ -87,7 +88,16 @@ app.use((req, res, next) => {
 // 5) 静态资源：直接预览 frontend 下的页面与样式
 //    （原生 ES Module 在 file:// 下会被 CORS 拦截，故统一走 HTTP 预览）
 //    放在延迟中间件之前，避免每个 CSS/JS 都被拖 300ms
-app.use(express.static(path.join(__dirname, '..', 'frontend'), { extensions: ['html'] }));
+const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
+app.use(express.static(FRONTEND_DIR, { extensions: ['html'] }));
+
+// 5.1) 开发热刷新：GET /__live（SSE）
+//      仅本地 Mock 使用；同样放在延迟中间件之前，保证事件即时送达
+const liveReload = createLiveReload({
+  dirs: [FRONTEND_DIR],
+  log: (msg) => console.info(msg),
+});
+app.get('/__live', liveReload.middleware);
 
 // 6) 网络延迟模拟：所有接口统一延时，贴近真实移动网络体验
 app.use((req, res, next) => {
@@ -183,13 +193,67 @@ app.use((err, req, res, _next) => {
 
 /* ------------------------------------------------------------------ 启动 */
 
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.info(`[yxx-mock] 服务已启动：http://localhost:${PORT}（延迟 ${DELAY_MS}ms）`);
-    console.info(
-      `[yxx-mock] 数据规模：users=${db.users.length} items=${db.items.length} credit_logs=${db.credit_logs.length}`
-    );
+/** 是否需要启动后自动打开浏览器（node server/app.js --open） */
+const SHOULD_OPEN = process.argv.includes('--open');
+/** 端口被占用时最多顺延尝试的次数 */
+const PORT_RETRY = 10;
+
+/** 用系统默认浏览器打开地址 */
+function openBrowser(url) {
+  const { spawn } = require('child_process');
+  const cmd =
+    process.platform === 'win32'
+      ? ['cmd', ['/c', 'start', '', url]]
+      : process.platform === 'darwin'
+        ? ['open', [url]]
+        : ['xdg-open', [url]];
+
+  try {
+    spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore' }).unref();
+    console.info(`[yxx-mock] 已调用系统浏览器打开 ${url}`);
+  } catch (error) {
+    console.warn(`[yxx-mock] 打开浏览器失败（请手动访问 ${url}）：${error.message}`);
+  }
+}
+
+/**
+ * 带端口顺延的监听：EADDRINUSE 时自动尝试下一个端口
+ * @param {number} port
+ * @param {number} remaining
+ */
+function listen(port, remaining = PORT_RETRY) {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port);
+
+    server.once('listening', () => resolve({ server, port }));
+    server.once('error', (error) => {
+      if (error.code === 'EADDRINUSE' && remaining > 0) {
+        console.warn(`[yxx-mock] 端口 ${port} 被占用，自动改用 ${port + 1} …`);
+        resolve(listen(port + 1, remaining - 1));
+        return;
+      }
+      reject(error);
+    });
   });
+}
+
+if (require.main === module) {
+  listen(PORT)
+    .then(({ port }) => {
+      const url = `http://localhost:${port}`;
+      console.info(`[yxx-mock] 服务已启动：${url}（延迟 ${DELAY_MS}ms）`);
+      console.info(
+        `[yxx-mock] 数据规模：users=${db.users.length} items=${db.items.length} credit_logs=${db.credit_logs.length}`
+      );
+      console.info(`[yxx-mock] 首页：${url}/index.html | 热刷新：已开启（改文件后浏览器自动刷新）`);
+
+      liveReload.start();
+      if (SHOULD_OPEN) openBrowser(`${url}/index.html`);
+    })
+    .catch((error) => {
+      console.error(`[yxx-mock] 启动失败：${error.message}`);
+      process.exit(1);
+    });
 }
 
 module.exports = app;

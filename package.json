@@ -14,13 +14,19 @@
   },
   "scripts": {
     "dev": "node server/app.js",
-    "server": "node server/app.js",
+    "server": "node server/app.js --open",
     "lint": "eslint --rulesdir ./eslint-rules .",
     "lint:fix": "eslint --rulesdir ./eslint-rules . --fix",
     "check:no-absolute": "node scripts/check-no-absolute.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "server:quiet": "node server/app.js",
+    "start": "node server/app.js --open",
+    "server:watch": "node --watch server/app.js",
+    "fetch:ai": "node scripts/fetch-ai-assets.mjs",
+    "fetch:fonts": "node scripts/fetch-fonts.mjs",
+    "fetch:assets": "node scripts/fetch-ai-assets.mjs && node scripts/fetch-fonts.mjs"
   },
   "lint-staged": {
     "*.js": [

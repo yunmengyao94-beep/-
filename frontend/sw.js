@@ -226,6 +226,12 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // 0) 开发热刷新长连接：直接放行，不参与缓存
+  if (url.pathname.startsWith('/__live')) return;
+
+  // 0.1) AI 资源（约 40MB）与字体（约 27MB）不进 Cache Storage，避免撑爆配额
+  if (url.pathname.startsWith('/assets/ai/') || url.pathname.startsWith('/fonts/')) return;
+
   // 1) 接口：网络优先
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirstApi(request));

@@ -115,9 +115,44 @@
     document.addEventListener('error', handleImageError, true);
   }
 
+  /* -------------------------------------------------------- 4. 开发热刷新 */
+
+  /**
+   * 本地开发：监听服务端 /__live（SSE），文件变化后清理 Cache Storage 再刷新。
+   * 只在 localhost / 127.0.0.1 生效，线上（含 PWA 安装环境）完全不会连接。
+   */
+  function setupLiveReload() {
+    if (typeof EventSource !== 'function') return;
+
+    const host = location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') return;
+
+    let source = null;
+    try {
+      source = new EventSource('/__live');
+    } catch {
+      return;
+    }
+
+    source.addEventListener('reload', async () => {
+      source.close();
+      // 关键：Cache First 会命中旧文件，先清空再刷新才能看到最新代码
+      try {
+        if (typeof caches !== 'undefined') {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        }
+      } catch {
+        // 清缓存失败也继续刷新
+      }
+      location.reload();
+    });
+  }
+
   /* ------------------------------------------------------------- 启动 */
 
   registerServiceWorker();
   setupNetworkBanner();
   setupImageFallback();
+  setupLiveReload();
 })();

@@ -1,0 +1,26 @@
+{
+  "tesseract.min.js": {
+    "size": 66695,
+    "sha256": "a8e29918d098b2b06e1012bdaeffb4aec0445c5d5654709023e0bd1f442a80e8"
+  },
+  "worker.min.js": {
+    "size": 123724,
+    "sha256": "aca1229639fc9907d86f96e825955a2b7c5716d17f3bc3acd71f9c7ab66181fc"
+  },
+  "tesseract-core-simd-lstm.wasm.js": {
+    "size": 3938656,
+    "sha256": "18797eef96bab787636c40b53efaa445cf5ca1c97abd735c4fd8dc3d03652959"
+  },
+  "tesseract-core-lstm.wasm.js": {
+    "size": 3938276,
+    "sha256": "50ec33088c93e69135b09917072c1b2c8cb77eb256946f16723cf6a83c7f8e49"
+  },
+  "chi_sim.traineddata.gz": {
+    "size": 20159757,
+    "sha256": "59388039851e4d1293d729c183fd8c1fa9bbbb959eed996e945024671e68c1d6"
+  },
+  "eng.traineddata.gz": {
+    "size": 10923060,
+    "sha256": "ed350f3752f81ee8f38769edc14d92d997dababe23b565c59879372cc46a2468"
+  }
+}

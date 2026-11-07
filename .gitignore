@@ -48,3 +48,9 @@ temp/
 *.traineddata
 *.traineddata.gz
 frontend/assets/ai/*.min.js
+
+# ---------- 下载的 AI 内核与字体（用 scripts/fetch-ai-assets.mjs / fetch-fonts.mjs 重新生成） ----------
+frontend/assets/ai/*.wasm.js
+frontend/assets/ai/*.js
+!frontend/assets/ai/README.md
+frontend/fonts/*.otf
