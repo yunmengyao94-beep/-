@@ -11,6 +11,7 @@ import { request } from '../utils/request.js';
 import { debounce } from '../utils/utils.js';
 import { categoryLabel } from '../utils/constants.js';
 import { resolveItemImage, DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
+import { startGuide, hasSeenGuide, markGuideSeen } from '../components/onboarding.js';
 import { initCustomSelect } from '../components/custom-select.js';
 import { showToast } from '../components/feedback.js';
 
@@ -651,6 +652,45 @@ function bindCardClick() {
 
 /* ------------------------------------------------------------------ 启动 */
 
+/* ---------------------------------------------------------------- 新手引导 */
+
+/** 引导步骤：高亮底部「发布」「我的」，最后居中收尾 */
+function buildGuideSteps() {
+  const publishTab = document.querySelector('.tabbar__item[href="./publish.html"]');
+  const profileTab = document.querySelector('.tabbar__item[href="./profile.html"]');
+
+  return [
+    {
+      target: publishTab,
+      title: '发布闲置',
+      desc: '在这里发布你的闲置物品，赚取信用分。',
+    },
+    {
+      target: profileTab,
+      title: '我的信用',
+      desc: '在这里查看你的信用大盘和流水，还能用 AI 提取芝麻信用分哦！',
+    },
+    {
+      target: null,
+      title: '准备好了吗？',
+      desc: '开始体验易校圈的信用共享吧，祝你好借好还。',
+      action: '开始体验',
+    },
+  ];
+}
+
+/** 首次登录后自动触发（?guide=1 可强制重看） */
+function maybeStartGuide() {
+  const params = new URLSearchParams(window.location.search || '');
+  const forced = params.get('guide') === '1';
+
+  if (!forced && hasSeenGuide()) return;
+
+  window.setTimeout(() => {
+    startGuide({ steps: buildGuideSteps(), onDone: markGuideSeen });
+  }, 500);
+}
+
 function boot() {
   readUrlState();
   initCustomSelect();
@@ -663,6 +703,7 @@ function boot() {
   setupInfiniteScroll();
   setupPullToRefresh();
   loadFirstPage();
+  maybeStartGuide();
 }
 
 if (document.readyState === 'loading') {

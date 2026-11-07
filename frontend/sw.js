@@ -72,6 +72,7 @@ const SHELL_SCRIPTS = [
   './utils/accounts-db.js',
   './utils/agreement.js',
   './utils/item-image.js',
+  './components/onboarding.js',
   './components/custom-select.js',
   './components/feedback.js',
 ];

@@ -2407,3 +2407,102 @@ body.keyboard-open .action-bar {
 .agree-row__text a:active {
   opacity: 0.7;
 }
+
+/* ============================================================================
+ * 23. 新手引导（Onboarding）
+ * ----------------------------------------------------------------------------
+ * 高亮实现：聚光元素本身透明，用超大 box-shadow 压暗四周（无 absolute）
+ * 层级：.guide(1300) < .guide__spot(1301) < .guide__blocker(1302) < .guide__tooltip(1303)
+ * ========================================================================== */
+.guide {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  pointer-events: none;
+}
+
+.guide__spot {
+  position: fixed;
+  z-index: 1301;
+  border-radius: var(--radius-md, 8px);
+  box-shadow:
+    0 0 0 3px rgba(24, 144, 255, 0.9),
+    0 0 0 9999px rgba(0, 0, 0, 0.66);
+  transition:
+    top 0.22s ease,
+    left 0.22s ease,
+    width 0.22s ease,
+    height 0.22s ease;
+}
+
+/* 透明拦截层：引导期间禁止操作页面其它区域 */
+.guide__blocker {
+  position: fixed;
+  inset: 0;
+  z-index: 1302;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.guide__tooltip {
+  position: fixed;
+  z-index: 1303;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  width: min(300px, calc(100vw - 40px));
+  padding: var(--space-4, 16px);
+  color: var(--text-main, #333);
+  background-color: var(--bg-card, #fff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-float, 0 8px 24px rgba(0, 0, 0, 0.24));
+  pointer-events: auto;
+}
+
+/* 居中模式（最后一步） */
+.guide__tooltip--center {
+  align-items: center;
+  text-align: center;
+}
+
+.guide__title {
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-bold, 600);
+  line-height: 1.6;
+}
+
+.guide__desc {
+  font-size: var(--font-size-sm, 13px);
+  line-height: 1.7;
+  color: var(--text-sub, #888);
+}
+
+.guide__footer {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-1, 4px);
+}
+
+.guide__dots {
+  display: flex;
+  gap: 5px;
+}
+
+.guide__dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--border-color, #ebeef5);
+  border-radius: 50%;
+}
+
+.guide__dot.is-active {
+  width: 16px;
+  background-color: var(--primary, #1890ff);
+  border-radius: var(--radius-round, 999px);
+}
+
+body.guide-open {
+  overflow: hidden;
+}

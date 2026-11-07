@@ -9,6 +9,7 @@
 import { showToast, openModal, closeModal } from '../components/feedback.js';
 import { clearToken } from '../utils/request.js';
 import { listAccounts, removeAccount } from '../utils/accounts.js';
+import { resetGuide } from '../components/onboarding.js';
 
 const TOKEN_KEY = 'yxx_token';
 const USER_KEY = 'yxx_user';
@@ -317,6 +318,12 @@ function bindClearOrders() {
 
 /* ------------------------------------------------------------------ 绑定 */
 
+/** 重新查看新手引导：清除标记后回首页触发 */
+function replayGuide() {
+  resetGuide();
+  window.location.href = './index.html?guide=1';
+}
+
 function bindBack() {
   if (!backBtn) return;
   backBtn.addEventListener('click', () => {
@@ -359,6 +366,17 @@ function init() {
   bindTheme();
   bindClearCache();
   bindClearOrders();
+
+  const replayRow = document.getElementById('row-replay-guide');
+  if (replayRow) {
+    replayRow.addEventListener('click', replayGuide);
+    replayRow.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        replayGuide();
+      }
+    });
+  }
   renderAccount();
   refreshCacheState();
 
