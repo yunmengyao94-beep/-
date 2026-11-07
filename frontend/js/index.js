@@ -203,7 +203,12 @@ export function renderCards(data) {
   }
 
   const fragment = document.createDocumentFragment();
-  list.forEach((item) => fragment.appendChild(createCard(item)));
+  list.forEach((item, index) => {
+    const card = createCard(item);
+    // 渐次浮现：最多 8 个错峰，避免长列表延迟过长
+    card.style.setProperty('--i', String(Math.min(index, 8)));
+    fragment.appendChild(card);
+  });
   gridEl.appendChild(fragment);
   gridEl.classList.remove('hidden');
   updateCount(list.length);

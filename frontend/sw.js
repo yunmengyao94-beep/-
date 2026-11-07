@@ -55,6 +55,7 @@ const SHELL_STYLES = [
   './css/reset.css',
   './css/layout.css',
   './components/base.css',
+  './components/motion.css',
   './components/shell.css',
   './components/feedback.css',
 ];
@@ -83,6 +84,7 @@ const SHELL_SCRIPTS = [
   './utils/agreement.js',
   './utils/item-images.js',
   './utils/search-history.js',
+  './utils/transitions.js',
   './utils/fingerprint.js',
   './utils/rate-limit.js',
   './utils/item-image.js',

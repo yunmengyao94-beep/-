@@ -208,7 +208,11 @@ function appendLogs(count) {
 
   const next = allLogs.slice(renderedLogs, renderedLogs + count);
   const fragment = document.createDocumentFragment();
-  next.forEach((log) => fragment.appendChild(createLogItem(log)));
+  next.forEach((log, index) => {
+    const node = createLogItem(log);
+    node.style.setProperty('--i', String(Math.min(index, 8)));
+    fragment.appendChild(node);
+  });
   els.logList.appendChild(fragment);
 
   renderedLogs += next.length;

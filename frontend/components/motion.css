@@ -1,0 +1,229 @@
+/* ============================================================================
+ * 动效系统（Page Transitions / Micro-interactions / Stagger）
+ * ----------------------------------------------------------------------------
+ * 性能原则：
+ *   · 只动 opacity / transform / translate，不触发布局（layout）与重绘（paint）
+ *   · 页面级动画只作用在 <main>，不碰 body（避免 fixed 子元素错位）
+ *   · 尊重 prefers-reduced-motion
+ * ========================================================================== */
+
+/* ------------------------------------------------------------------ 关键帧 */
+
+@keyframes yxx-page-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes yxx-page-in-right {
+  from {
+    opacity: 0;
+    translate: 28px 0;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes yxx-page-out-left {
+  from {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  to {
+    opacity: 0;
+    translate: -32px 0;
+  }
+}
+
+@keyframes yxx-rise-in {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* ------------------------------------------------------- 页面进入（兜底） */
+
+main {
+  animation: yxx-page-in 0.26s cubic-bezier(0.22, 0.7, 0.3, 1) both;
+}
+
+@media (max-width: 767.98px) {
+  main {
+    animation-name: yxx-page-in-right;
+    animation-duration: 0.28s;
+  }
+}
+
+/* 离场：由 transitions.js 在点击内部链接后添加 */
+html.is-leaving main {
+  animation: yxx-page-out-left 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+/* 支持跨文档 View Transitions 的浏览器：交给 API，避免双重动画 */
+html.has-vt main {
+  animation: none;
+}
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: yxx-vt-out 0.18s ease both;
+}
+
+::view-transition-new(root) {
+  animation: yxx-vt-in 0.24s ease both;
+}
+
+@keyframes yxx-vt-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes yxx-vt-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 移动端：右滑进入 / 左滑退出（View Transition 版本） */
+@media (max-width: 767.98px) {
+  ::view-transition-old(root) {
+    animation: yxx-vt-out-left 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  ::view-transition-new(root) {
+    animation: yxx-vt-in-right 0.3s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  }
+
+  @keyframes yxx-vt-out-left {
+    to {
+      opacity: 0;
+      translate: -32px 0;
+    }
+  }
+
+  @keyframes yxx-vt-in-right {
+    from {
+      opacity: 0;
+      translate: 28px 0;
+    }
+  }
+}
+
+/* --------------------------------------------------------- 微交互：按压缩放 */
+
+.btn,
+.chip,
+.segmented__btn,
+.segmented__item,
+.setting-row--action,
+.tabbar__item,
+.sidebar__item,
+.sidebar__publish,
+.notice-item,
+.order-card,
+.my-item,
+.log-more {
+  transition:
+    transform 0.1s ease,
+    opacity 0.1s ease;
+}
+
+.btn:active,
+.chip:active,
+.segmented__btn:active,
+.segmented__item:active,
+.setting-row--action:active,
+.tabbar__item:active,
+.sidebar__item:active,
+.sidebar__publish:active,
+.notice-item:active,
+.order-card:active,
+.my-item:active,
+.log-more:active {
+  transform: scale(0.96);
+}
+
+/* 卡片单独处理：保留原有 hover 效果，按下时略缩 */
+.item-card {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.2s ease;
+}
+
+.item-card:active {
+  transform: scale(0.97);
+}
+
+/* ------------------------------------------------- 列表渐次浮现（Stagger） */
+
+.item-card,
+.log-item,
+.order-card,
+.notice-item,
+.my-item {
+  animation: yxx-rise-in 0.34s cubic-bezier(0.22, 0.7, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+
+/* ------------------------------------------------------------ 无障碍降级 */
+
+@media (prefers-reduced-motion: reduce) {
+  main,
+  html.is-leaving main,
+  .item-card,
+  .log-item,
+  .order-card,
+  .notice-item,
+  .my-item {
+    animation: none !important;
+  }
+
+  .btn,
+  .chip,
+  .segmented__btn,
+  .segmented__item,
+  .setting-row--action,
+  .tabbar__item,
+  .sidebar__item,
+  .notice-item,
+  .order-card,
+  .item-card,
+  .my-item {
+    transition: none !important;
+  }
+
+  .btn:active,
+  .chip:active,
+  .segmented__btn:active,
+  .segmented__item:active,
+  .setting-row--action:active,
+  .tabbar__item:active,
+  .sidebar__item:active,
+  .notice-item:active,
+  .order-card:active,
+  .my-item:active,
+  .item-card:active {
+    transform: none;
+  }
+}

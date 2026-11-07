@@ -4,6 +4,7 @@ import { mountShell } from '../components/shell.js';
 import { initFabDrag } from '../components/fab.js';
 import { applyDeviceClasses } from '../utils/device.js';
 import { applyFontSize, getFontSizeKey } from '../utils/preferences.js';
+import { initPageTransitions } from '../utils/transitions.js';
 
 /**
  * 应用公共入口
@@ -323,6 +324,7 @@ import { applyFontSize, getFontSizeKey } from '../utils/preferences.js';
   setupImageFallback();
   applyDeviceClasses();
   applyStoredFontSize();
+  initPageTransitions();
   window.addEventListener('resize', () => {
     applyDeviceClasses();
   });

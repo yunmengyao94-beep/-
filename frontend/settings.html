@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="./css/reset.css" />
     <link rel="stylesheet" href="./css/layout.css" />
     <link rel="stylesheet" href="./components/base.css" />
+    <link rel="stylesheet" href="./components/motion.css" />
     <link rel="stylesheet" href="./components/shell.css" />
     <link rel="stylesheet" href="./fonts/fonts.css" />
     <link rel="stylesheet" href="./components/feedback.css" />
@@ -48,9 +49,9 @@
       <span class="navbar__spacer" aria-hidden="true"></span>
     </header>
 
-    <main class="page page--narrow" style="padding-bottom: 24px">
+    <main class="page page--narrow page--settings" style="padding-bottom: 24px">
       <!-- ==================== 账号管理 ==================== -->
-      <section class="setting-group" aria-labelledby="group-account">
+      <section class="setting-group" aria-labelledby="group-account" data-group="account">
         <h2 class="setting-group__title" id="group-account">账号管理</h2>
 
         <div class="setting-list">
@@ -82,7 +83,7 @@
       </section>
 
       <!-- ==================== 通用与隐私 ==================== -->
-      <section class="setting-group" aria-labelledby="group-common">
+      <section class="setting-group" aria-labelledby="group-common" data-group="general">
         <h2 class="setting-group__title" id="group-common">通用与隐私</h2>
 
         <div class="setting-list">
@@ -132,7 +133,7 @@
       </section>
 
       <!-- ==================== 显示与偏好 ==================== -->
-      <section class="setting-group" aria-labelledby="group-display">
+      <section class="setting-group" aria-labelledby="group-display" data-group="display">
         <h2 class="setting-group__title" id="group-display">显示与偏好</h2>
 
         <div class="setting-list">
@@ -150,7 +151,7 @@
       </section>
 
       <!-- ==================== 帮助与反馈 ==================== -->
-      <section class="setting-group" aria-labelledby="group-help">
+      <section class="setting-group" aria-labelledby="group-help" data-group="help">
         <h2 class="setting-group__title" id="group-help">帮助与反馈</h2>
 
         <div class="setting-list">
@@ -172,7 +173,7 @@
       </section>
 
       <!-- ==================== 关于 ==================== -->
-      <section class="setting-group" aria-labelledby="group-about">
+      <section class="setting-group" aria-labelledby="group-about" data-group="about">
         <h2 class="setting-group__title" id="group-about">关于</h2>
 
         <div class="setting-list">
