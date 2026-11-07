@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b2f6b" />
+    <meta name="description" content="易校圈 · 我的" />
+    <title>我的 · 易校圈</title>
+
+    <!-- 公共样式 -->
+    <link rel="stylesheet" href="./css/variables.css" />
+    <link rel="stylesheet" href="./css/reset.css" />
+    <link rel="stylesheet" href="./css/layout.css" />
+    <link rel="stylesheet" href="./components/base.css" />
+    <link rel="stylesheet" href="./components/feedback.css" />
+  </head>
+
+  <body class="page-with-tabbar" style="background-color: var(--bg-color)">
+    <main class="profile-page">
+      <!-- ==================== 用户信息区 ==================== -->
+      <section class="profile-hero">
+        <div class="profile-avatar" id="profile-avatar" aria-hidden="true">张</div>
+        <h1 class="profile-name" id="profile-name">加载中…</h1>
+        <p class="profile-no" id="profile-no">——</p>
+        <div class="profile-meta">
+          <span class="profile-meta__item" id="profile-college">——</span>
+          <span class="profile-meta__item" id="profile-building">——</span>
+        </div>
+      </section>
+
+      <!-- ==================== 信用大盘 ==================== -->
+      <section class="card credit-card" aria-label="信用概览">
+        <div class="credit-card__main">
+          <!-- 环形进度：viewBox 矢量，任何 DPI 都清晰 -->
+          <div class="credit-ring-wrap">
+            <svg class="credit-ring" viewBox="0 0 120 120" role="img" aria-labelledby="ring-title">
+              <title id="ring-title">信用分环形进度</title>
+              <circle class="credit-ring__track" cx="60" cy="60" r="52" />
+              <circle class="credit-ring__bar" id="credit-ring-bar" cx="60" cy="60" r="52" />
+            </svg>
+            <div class="credit-ring__center">
+              <span class="credit-ring__score" id="credit-score">——</span>
+              <span class="credit-ring__label">信用分</span>
+            </div>
+          </div>
+
+          <!-- 右侧：可用分 / 冻结分 -->
+          <div class="credit-side">
+            <div class="credit-stat">
+              <span class="credit-stat__value" id="credit-available">——</span>
+              <span class="credit-stat__label">可用分</span>
+            </div>
+            <div class="credit-stat">
+              <span class="credit-stat__value" id="credit-frozen">——</span>
+              <span class="credit-stat__label">冻结分</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="credit-footer">
+          <span class="level-chip level-chip--l4" id="credit-level">L4 良好</span>
+          <p class="upgrade-hint" id="upgrade-hint">距离升级至 L5 还差 —— 分</p>
+        </div>
+      </section>
+
+      <!-- ==================== 我的信用流水 ==================== -->
+      <section class="card log-card" aria-labelledby="log-title">
+        <div class="log-card__head">
+          <h2 class="log-card__title" id="log-title">我的信用流水</h2>
+          <span class="log-card__count" id="log-count">共 0 条</span>
+        </div>
+
+        <ul class="log-list" id="log-list" aria-live="polite"></ul>
+        <div class="hidden" id="log-empty"></div>
+
+        <button
+          class="btn btn--secondary btn--block btn--sm log-more hidden"
+          id="log-more"
+          type="button"
+        >
+          加载更多
+        </button>
+      </section>
+
+      <!-- ==================== 实名与信用认证 ==================== -->
+      <section class="card ai-card" aria-labelledby="ai-title">
+        <div class="ai-card__head">
+          <h2 class="ai-card__title" id="ai-title">实名与信用认证</h2>
+          <span class="badge badge--outline">本地离线</span>
+        </div>
+
+        <p class="ai-card__desc">
+          上传支付宝芝麻信用截图，可在本地离线提取信用分，不上传服务器，保护隐私。
+        </p>
+
+        <button class="btn btn--primary btn--block" id="ai-upload-btn" type="button">
+          上传截图认证
+        </button>
+
+        <!-- 隐藏的文件选择：由上面的按钮触发 -->
+        <input class="hidden" id="ai-file-input" type="file" accept="image/*" multiple="false" />
+
+        <div class="ai-preview hidden" id="ai-preview"></div>
+        <p class="ai-hint hidden" id="ai-hint">截图仅在本地识别，原始图片不会离开设备</p>
+
+        <!-- 识别进度（初始化完成后显示，实时更新百分比） -->
+        <div class="ai-progress hidden" id="ai-progress" role="status" aria-live="polite">
+          <div class="ai-progress__head">
+            <span class="spinner spinner--sm" aria-hidden="true"></span>
+            <span id="ai-progress-text">识别中: 0%</span>
+          </div>
+          <div class="ai-progress__track">
+            <div class="ai-progress__bar" id="ai-progress-bar"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 全屏加载遮罩：AI 引擎初始化 -->
+    <div class="ai-overlay hidden" id="ai-overlay" role="status" aria-live="polite">
+      <div class="ai-overlay__box">
+        <span class="spinner" aria-hidden="true"></span>
+        <p class="ai-overlay__text" id="ai-overlay-text">AI 引擎初始化中，请稍候...</p>
+      </div>
+    </div>
+
+    <!-- ==================== 底部标签栏 ==================== -->
+    <nav class="tabbar" aria-label="主导航">
+      <a class="tabbar__item" href="./index.html">
+        <span class="tabbar__icon" aria-hidden="true">🏠</span>
+        <span>首页</span>
+      </a>
+      <a class="tabbar__item" href="./publish.html">
+        <span class="tabbar__icon" aria-hidden="true">➕</span>
+        <span>发布</span>
+      </a>
+      <a class="tabbar__item is-active" href="./profile.html" aria-current="page">
+        <span class="tabbar__icon" aria-hidden="true">👤</span>
+        <span>我的</span>
+      </a>
+    </nav>
+
+    <!-- Tesseract.js：本地优先（defer 不阻塞渲染）；文件缺失时由 profile.js 兜底尝试 CDN -->
+    <script src="./assets/ai/tesseract.min.js" defer></script>
+
+    <script type="module" src="./js/profile.js"></script>
+  </body>
+</html>

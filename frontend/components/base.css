@@ -1487,3 +1487,474 @@ body.keyboard-open .action-bar {
     font-size: 14px;
   }
 }
+
+/* ============================================================================
+ * 16. 个人中心（Sprint 7）
+ * ----------------------------------------------------------------------------
+ * 环形进度用 SVG viewBox 绘制，矢量缩放不糊；中心文字与圆环用 Grid 同格叠放，
+ * 依然不使用绝对定位。
+ * ========================================================================== */
+
+/* 顶部深色渐变用户区 */
+.profile-hero {
+  padding: var(--space-6, 24px) var(--space-4, 16px) 48px;
+  color: var(--text-inverse, #fff);
+  text-align: center;
+  background-image: linear-gradient(135deg, #0b2f6b 0%, #1b4fa8 45%, #1890ff 100%);
+}
+
+.profile-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-3, 12px);
+  font-size: 24px;
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--primary, #1890ff);
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+}
+
+.profile-name {
+  font-size: var(--font-size-lg, 18px);
+  font-weight: var(--font-weight-bold, 600);
+  letter-spacing: 0.5px;
+}
+
+.profile-no {
+  margin-top: 4px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: var(--font-size-sm, 13px);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+  justify-content: center;
+  margin-top: var(--space-3, 12px);
+}
+
+.profile-meta__item {
+  padding: 3px 10px;
+  font-size: var(--font-size-xs, 12px);
+  color: rgba(255, 255, 255, 0.92);
+  background-color: rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-round, 999px);
+}
+
+/* 信用大盘：上浮覆盖用户区底部 */
+.credit-card {
+  margin: -32px var(--space-4, 16px) 0;
+  padding: var(--space-4, 16px);
+}
+
+.credit-card__main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4, 16px);
+  align-items: center;
+}
+
+/* 环形进度：SVG 与中心文字同格叠放 */
+.credit-ring-wrap {
+  display: grid;
+  flex: none;
+  grid-template: 1fr / 1fr;
+  place-items: center;
+  width: 116px;
+  height: 116px;
+}
+
+.credit-ring {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+}
+
+.credit-ring__track {
+  fill: none;
+  stroke: var(--border-color-light, #f2f3f5);
+  stroke-width: 10;
+}
+
+.credit-ring__bar {
+  fill: none;
+  stroke: var(--primary, #1890ff);
+  stroke-width: 10;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 60px 60px;
+  transition: stroke-dashoffset var(--transition-slow, 0.4s) ease;
+}
+
+.credit-ring__center {
+  display: flex;
+  grid-area: 1 / 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.credit-ring__score {
+  font-size: 30px;
+  font-weight: var(--font-weight-bold, 600);
+  line-height: 1;
+  color: var(--text-main, #333);
+}
+
+.credit-ring__label {
+  font-size: 11px;
+  color: var(--text-sub, #888);
+}
+
+.credit-side {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2, 8px);
+  min-width: 140px;
+}
+
+.credit-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3, 12px);
+  text-align: center;
+  background-color: var(--bg-color, #f5f7fa);
+  border-radius: var(--radius-md, 8px);
+}
+
+.credit-stat__value {
+  font-size: var(--font-size-lg, 18px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.credit-stat__label {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+/* 等级徽章 + 升级提示 */
+.credit-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  margin-top: var(--space-3, 12px);
+  padding-top: var(--space-3, 12px);
+  border-top: 1px solid var(--border-color-light, #f2f3f5);
+}
+
+.level-chip {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-inverse, #fff);
+  border-radius: var(--radius-round, 999px);
+}
+
+.level-chip--l5 {
+  background-color: #722ed1;
+}
+
+.level-chip--l4 {
+  background-color: var(--success, #52c41a);
+}
+
+.level-chip--l3 {
+  background-color: var(--primary, #1890ff);
+}
+
+.level-chip--l2 {
+  background-color: var(--warning, #faad14);
+}
+
+.level-chip--l1,
+.level-chip--l0 {
+  background-color: var(--danger, #ff4d4f);
+}
+
+.upgrade-hint {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+.upgrade-hint strong {
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--primary, #1890ff);
+}
+
+/* 页面主体容器 */
+.profile-page {
+  padding-bottom: var(--space-6, 24px);
+}
+
+.profile-loading {
+  padding: var(--space-8, 32px) var(--space-4, 16px);
+}
+
+/* ============================================================================
+ * 17. 信用流水列表（个人中心）
+ * ========================================================================== */
+.log-card {
+  margin: var(--space-3, 12px) var(--space-4, 16px) 0;
+}
+
+.log-card__head {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: var(--space-2, 8px);
+  border-bottom: 1px solid var(--border-color-light, #f2f3f5);
+}
+
+.log-card__title {
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.log-card__count {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+.log-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 列表项：左侧事由+时间，右侧变动值+余额，中间一条分割线 */
+.log-item {
+  display: flex;
+  gap: var(--space-3, 12px);
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-3, 12px) 0;
+  border-bottom: 1px solid var(--border-color-light, #f2f3f5);
+}
+
+.log-item:last-child {
+  border-bottom: 0;
+}
+
+.log-item__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.log-item__reason {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: var(--font-size-base, 14px);
+  line-height: 1.5;
+  color: var(--text-main, #333);
+}
+
+.log-item__time {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+.log-item__side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+.log-item__delta {
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 600);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.log-item__delta--plus {
+  color: var(--success, #52c41a);
+}
+
+.log-item__delta--minus {
+  color: var(--danger, #ff4d4f);
+}
+
+.log-item__delta--zero {
+  color: var(--text-sub, #888);
+}
+
+.log-item__balance {
+  font-size: 11px;
+  color: var(--text-sub, #888);
+  white-space: nowrap;
+}
+
+/* 冻结/解冻小标签：解释 delta 为 0 的原因 */
+.log-item__tag {
+  flex: none;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 1.6;
+  color: var(--text-sub, #888);
+  white-space: nowrap;
+  background-color: var(--border-color-light, #f2f3f5);
+  border-radius: var(--radius-round, 999px);
+}
+
+.log-more {
+  margin-top: var(--space-3, 12px);
+}
+
+/* ============================================================================
+ * 18. AI 信用认证模块（个人中心）
+ * ========================================================================== */
+.ai-card {
+  margin: var(--space-3, 12px) var(--space-4, 16px) 0;
+}
+
+.ai-card__head {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2, 8px);
+}
+
+.ai-card__title {
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.ai-card__desc {
+  margin-bottom: var(--space-3, 12px);
+  font-size: var(--font-size-sm, 13px);
+  line-height: 1.7;
+  color: var(--text-sub, #888);
+}
+
+.ai-preview {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-3, 12px);
+}
+
+.ai-preview__img {
+  max-width: 100%;
+  max-height: 180px;
+  border: 1px solid var(--border-color, #ebeef5);
+  border-radius: var(--radius-md, 8px);
+  object-fit: contain;
+}
+
+.ai-hint {
+  margin-top: var(--space-2, 8px);
+  font-size: var(--font-size-xs, 12px);
+  line-height: 1.6;
+  color: var(--text-sub, #888);
+  text-align: center;
+}
+
+/* 全屏加载遮罩：AI 引擎初始化 / 识别期间使用 */
+.ai-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1110);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6, 24px);
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+.ai-overlay__box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  align-items: center;
+  width: min(320px, 100%);
+  padding: var(--space-6, 24px) var(--space-5, 20px);
+  text-align: center;
+  background-color: var(--bg-card, #fff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-float, 0 8px 24px rgba(0, 0, 0, 0.12));
+}
+
+.ai-overlay__text {
+  font-size: var(--font-size-base, 14px);
+  line-height: 1.6;
+  color: var(--text-main, #333);
+}
+
+/* 识别进度（页面内，区别于初始化遮罩） */
+.ai-progress {
+  margin-top: var(--space-3, 12px);
+  padding: var(--space-3, 12px);
+  background-color: var(--bg-color, #f5f7fa);
+  border-radius: var(--radius-md, 8px);
+}
+
+.ai-progress__head {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  margin-bottom: var(--space-2, 8px);
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-main, #333);
+}
+
+.ai-progress__track {
+  height: 6px;
+  overflow: hidden;
+  background-color: var(--border-color, #ebeef5);
+  border-radius: var(--radius-round, 999px);
+}
+
+.ai-progress__bar {
+  width: 0;
+  height: 100%;
+  background-color: var(--primary, #1890ff);
+  border-radius: var(--radius-round, 999px);
+  transition: width var(--transition-base, 0.25s) ease;
+}
+
+/* 识别结果弹窗正文 */
+.ai-modal__text {
+  font-size: var(--font-size-base, 14px);
+  line-height: 1.8;
+  color: var(--text-main, #333);
+}
+
+.ai-modal__score {
+  font-size: 22px;
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--primary, #1890ff);
+}
+
+.ai-modal__actions {
+  display: flex;
+  gap: var(--space-2, 8px);
+  margin-top: var(--space-4, 16px);
+}
+
+.ai-modal__actions .btn {
+  flex: 1;
+}
