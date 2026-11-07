@@ -11,6 +11,11 @@ import { clearToken, request } from '../utils/request.js';
 import { listAccounts, removeAccount } from '../utils/accounts.js';
 import { resetGuide } from '../components/onboarding.js';
 import { clearItemImages } from '../utils/item-images.js';
+import {
+  FONT_SIZE_MAP,
+  FONT_SIZE_KEY,
+  applyFontSize as applyFontSizePreference,
+} from '../utils/preferences.js';
 
 const TOKEN_KEY = 'yxx_token';
 const USER_KEY = 'yxx_user';
@@ -327,6 +332,150 @@ function bindClearOrders() {
   });
 }
 
+/* ------------------------------------------------------- 显示与偏好 */
+
+/** 应用字号（实时改 CSS 变量并持久化） */
+function applyFontSize(key) {
+  const applied = applyFontSizePreference(key);
+  const size = FONT_SIZE_MAP[applied] || FONT_SIZE_MAP.standard;
+  const _size = size;
+
+  const group = document.getElementById('font-size-options');
+  if (group) {
+    group.querySelectorAll('[data-size]').forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.size === applied);
+    });
+  }
+}
+
+/** 绑定字号选项 */
+function bindFontSize() {
+  const group = document.getElementById('font-size-options');
+  if (!group) return;
+
+  let current = 'standard';
+  try {
+    current = localStorage.getItem(FONT_SIZE_KEY) || 'standard';
+  } catch {
+    current = 'standard';
+  }
+
+  applyFontSize(current);
+
+  group.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-size]');
+    if (!btn) return;
+    applyFontSize(btn.dataset.size);
+    showToast('字体大小已更新', 'success');
+  });
+}
+
+/* ------------------------------------------------------- 帮助与反馈 */
+
+/** 打开问题反馈弹窗 */
+function openFeedbackModal() {
+  const html = [
+    '<div class="feedback-form">',
+    '<textarea class="feedback-form__textarea" id="feedback-text" maxlength="500" ',
+    'placeholder="请描述你遇到的问题或建议（最多 500 字）"></textarea>',
+    '<label class="feedback-form__file">',
+    '上传截图（可选）：<input type="file" id="feedback-file" accept="image/*" />',
+    '</label>',
+    '<p class="field-error hidden" id="feedback-error"></p>',
+    '<div class="ai-modal__actions">',
+    '<button class="btn btn--secondary" id="feedback-cancel" type="button">取消</button>',
+    '<button class="btn btn--primary" id="feedback-submit" type="button">提交</button>',
+    '</div>',
+    '</div>',
+  ].join('');
+
+  const mask = openModal('问题反馈', html);
+  if (!mask) return;
+
+  const textarea = mask.querySelector('#feedback-text');
+  const fileInput = mask.querySelector('#feedback-file');
+  const errorNode = mask.querySelector('#feedback-error');
+  const cancelBtn = mask.querySelector('#feedback-cancel');
+  const submitBtn = mask.querySelector('#feedback-submit');
+
+  const setError = (message) => {
+    if (!errorNode) return;
+    errorNode.textContent = message || '';
+    errorNode.classList.toggle('hidden', !message);
+  };
+
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+  if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+      const content = textarea ? textarea.value.trim() : '';
+      if (content.length < 5) {
+        setError('请至少填写 5 个字，方便我们定位问题');
+        return;
+      }
+
+      // 演示版：反馈存本机（生产应 POST 到反馈服务 + 对象存储截图）
+      try {
+        const raw = localStorage.getItem('yxx_feedback');
+        const list = raw ? JSON.parse(raw) : [];
+        list.push({
+          content,
+          screenshot:
+            fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0].name : '',
+          created_at: new Date().toISOString(),
+        });
+        localStorage.setItem('yxx_feedback', JSON.stringify(list.slice(-20)));
+      } catch {
+        // 忽略
+      }
+
+      closeModal();
+      showToast('反馈已收到，感谢你的建议', 'success');
+    });
+  }
+}
+
+/** 多语言：暂只支持简体中文 */
+function openLanguagePicker() {
+  const html = [
+    '<p class="ai-modal__text">当前仅支持简体中文，English 正在开发中，敬请期待。</p>',
+    '<div class="ai-modal__actions">',
+    '<button class="btn btn--primary" id="lang-ok" type="button">我知道了</button>',
+    '</div>',
+  ].join('');
+
+  const mask = openModal('多语言', html);
+  if (!mask) return;
+
+  const okBtn = mask.querySelector('#lang-ok');
+  if (okBtn) okBtn.addEventListener('click', closeModal);
+}
+
+/** 绑定帮助与反馈 / 多语言 */
+function bindHelpAndLanguage() {
+  const feedbackRow = document.getElementById('row-feedback');
+  if (feedbackRow) {
+    feedbackRow.addEventListener('click', openFeedbackModal);
+    feedbackRow.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openFeedbackModal();
+      }
+    });
+  }
+
+  const languageRow = document.getElementById('row-language');
+  if (languageRow) {
+    languageRow.addEventListener('click', openLanguagePicker);
+    languageRow.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openLanguagePicker();
+      }
+    });
+  }
+}
+
 /* ------------------------------------------------------------------ 绑定 */
 
 /** 重新查看新手引导：清除标记后回首页触发 */
@@ -377,6 +526,8 @@ function init() {
   bindTheme();
   bindClearCache();
   bindClearOrders();
+  bindFontSize();
+  bindHelpAndLanguage();
 
   const replayRow = document.getElementById('row-replay-guide');
   if (replayRow) {

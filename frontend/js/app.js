@@ -1,6 +1,9 @@
 import { showToast } from '../components/feedback.js';
 import { request, getToken, setToken } from '../utils/request.js';
 import { mountShell } from '../components/shell.js';
+import { initFabDrag } from '../components/fab.js';
+import { applyDeviceClasses } from '../utils/device.js';
+import { applyFontSize, getFontSizeKey } from '../utils/preferences.js';
 
 /**
  * 应用公共入口
@@ -305,13 +308,27 @@ import { mountShell } from '../components/shell.js';
     }
   }
 
+  /* --------------------------------------------- 8. 端识别 / 字号 / FAB */
+
+  /** 启动时恢复用户字号偏好 */
+  function applyStoredFontSize() {
+    applyFontSize(getFontSizeKey());
+  }
+
   /* ------------------------------------------------------------- 启动 */
 
   applyStoredTheme();
   registerServiceWorker();
   setupNetworkBanner();
   setupImageFallback();
+  applyDeviceClasses();
+  applyStoredFontSize();
+  window.addEventListener('resize', () => {
+    applyDeviceClasses();
+  });
+
   setupDesktopShell();
+  initFabDrag();
   setupLiveReload();
   setupCrossTabSync();
   refreshUnreadBadge();

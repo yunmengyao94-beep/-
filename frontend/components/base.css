@@ -2736,3 +2736,136 @@ body.guide-open {
     height: 52px;
   }
 }
+
+/* ============================================================================
+ * 27. FAB 拖拽 / 端识别 / 设置页控件
+ * ========================================================================== */
+
+.fab {
+  touch-action: none;
+  cursor: grab;
+}
+
+.fab.is-dragging {
+  cursor: grabbing;
+  transform: scale(1.06);
+  transition: none;
+}
+
+/* UA 识别：移动端去掉点击高亮与 hover 位移 */
+body.is-mobile {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.is-mobile .item-card:hover,
+body.is-mobile .fab:hover {
+  transform: none;
+}
+
+/* PC 端允许 hover 位移反馈 */
+body.is-pc .item-card:hover {
+  transform: translateY(-2px);
+}
+
+/* 设置页：字号分段选择 */
+.segmented {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  background-color: var(--bg-color, #f5f7fa);
+  border-radius: 10px;
+}
+
+.segmented__item {
+  min-width: 52px;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: var(--text-sub, #888);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.segmented__item.is-active {
+  color: var(--primary, #1890ff);
+  background-color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.setting-row--stack {
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+/* 问题反馈弹窗 */
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feedback-form__textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-main, #333);
+  resize: vertical;
+  background-color: var(--bg-color, #f5f7fa);
+  border: 1px solid var(--border-color, #e5e6eb);
+  border-radius: 10px;
+}
+
+.feedback-form__file {
+  font-size: 13px;
+  color: var(--text-sub, #888);
+}
+
+/* FAQ 手风琴（帮助中心） */
+.faq {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faq__item {
+  padding: 12px 14px;
+  background-color: var(--bg-card, #fff);
+  border-radius: 12px;
+}
+
+.faq__q {
+  font-size: var(--font-size-base, 14px);
+  font-weight: 600;
+  color: var(--text-main, #333);
+  cursor: pointer;
+  list-style: none;
+}
+
+.faq__q::-webkit-details-marker {
+  display: none;
+}
+
+.faq__q::after {
+  float: right;
+  color: var(--text-placeholder, #bfbfbf);
+  content: '＋';
+}
+
+.faq__item[open] .faq__q::after {
+  content: '－';
+}
+
+.faq__a {
+  margin-top: 8px;
+  font-size: var(--font-size-sm, 13px);
+  line-height: 1.7;
+  color: var(--text-sub, #888);
+}

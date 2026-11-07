@@ -131,6 +131,46 @@
         </div>
       </section>
 
+      <!-- ==================== 显示与偏好 ==================== -->
+      <section class="setting-group" aria-labelledby="group-display">
+        <h2 class="setting-group__title" id="group-display">显示与偏好</h2>
+
+        <div class="setting-list">
+          <div class="setting-row setting-row--stack">
+            <span>字体大小</span>
+            <div class="segmented" id="font-size-options" role="group" aria-label="字体大小">
+              <button class="segmented__item" data-size="small" type="button">小</button>
+              <button class="segmented__item is-active" data-size="standard" type="button">
+                标准
+              </button>
+              <button class="segmented__item" data-size="large" type="button">大</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 帮助与反馈 ==================== -->
+      <section class="setting-group" aria-labelledby="group-help">
+        <h2 class="setting-group__title" id="group-help">帮助与反馈</h2>
+
+        <div class="setting-list">
+          <div class="setting-row setting-row--action" id="row-feedback" role="button" tabindex="0">
+            <span>问题反馈</span>
+            <span class="setting-row__value">意见 / Bug →</span>
+          </div>
+
+          <a
+            class="setting-row setting-row--action"
+            id="row-help"
+            href="./help.html"
+            style="text-decoration: none"
+          >
+            <span>帮助中心</span>
+            <span class="setting-row__value">常见问题 →</span>
+          </a>
+        </div>
+      </section>
+
       <!-- ==================== 关于 ==================== -->
       <section class="setting-group" aria-labelledby="group-about">
         <h2 class="setting-group__title" id="group-about">关于</h2>
@@ -139,6 +179,11 @@
           <div class="setting-row">
             <span>当前版本</span>
             <span class="setting-row__value">V1.0.0</span>
+          </div>
+
+          <div class="setting-row setting-row--action" id="row-language" role="button" tabindex="0">
+            <span>多语言</span>
+            <span class="setting-row__value" id="language-value">简体中文 →</span>
           </div>
 
           <a

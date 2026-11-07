@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1890ff" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./favicon.ico" sizes="any" />
+    <meta name="description" content="易校圈 · 帮助中心" />
+    <title>帮助中心 · 易校圈</title>
+
+    <script src="./js/auth.js"></script>
+
+    <link rel="stylesheet" href="./css/variables.css" />
+    <link rel="stylesheet" href="./css/reset.css" />
+    <link rel="stylesheet" href="./css/layout.css" />
+    <link rel="stylesheet" href="./components/base.css" />
+    <link rel="stylesheet" href="./components/shell.css" />
+    <link rel="stylesheet" href="./fonts/fonts.css" />
+    <link rel="stylesheet" href="./components/feedback.css" />
+  </head>
+
+  <body class="page-with-tabbar" style="background-color: var(--bg-color)">
+    <div id="network-banner" class="network-banner" role="status" aria-live="polite"></div>
+
+    <header class="navbar">
+      <a class="navbar__back" href="./settings.html" aria-label="返回设置">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M15 5 8 12l7 7" />
+        </svg>
+        <span>返回</span>
+      </a>
+      <span class="navbar__title navbar__title--center">帮助中心</span>
+      <span class="navbar__spacer" aria-hidden="true"></span>
+    </header>
+
+    <main class="page page--narrow" style="padding-bottom: 24px">
+      <section class="setting-group" aria-labelledby="faq-title">
+        <h2 class="setting-group__title" id="faq-title">常见问题</h2>
+
+        <div class="faq">
+          <details class="faq__item" open>
+            <summary class="faq__q">如何发布闲置物品？</summary>
+            <p class="faq__a">
+              在首页/消息/订单/我的右下角点「＋」按钮，或 PC
+              端左侧点「发布物品」。填写标题、选择类目、设置押金分并上传至少一张图即可发布。
+            </p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__q">押金分是怎么冻结的？</summary>
+            <p class="faq__a">
+              下单时从你的「可用分」里冻结对应押金，期间不可用于其他借用；出借人确认归还后自动解冻，逾期会按天扣分。
+            </p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__q">为什么发布图片要压缩？</summary>
+            <p class="faq__a">
+              手机原图动辄几 MB，压缩到 512px WebP 后通常只有几十
+              KB，上传更快、显示更流畅；压缩前后体积会显示在缩略图下方。
+            </p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__q">归还后对方一直不确认怎么办？</summary>
+            <p class="faq__a">
+              发起归还后订单进入「待出借人确认」，出借人确认后押金分才会解冻。若长时间未确认，可通过问题反馈联系我们。
+            </p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__q">信用分怎么提升？</summary>
+            <p class="faq__a">
+              按时归还可积累良好记录；完成芝麻信用认证（OCR 识别）每天可领 +10
+              分。多次逾期会被扣分并影响借用额度。
+            </p>
+          </details>
+
+          <details class="faq__item">
+            <summary class="faq__q">换手机后图片看不到？</summary>
+            <p class="faq__a">
+              本地图片只存在原设备；发布时的首图缩略图会同步到服务端，换设备后可看到缩略图。清缓存后本地原图会丢失。
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <p class="auth-foot">还有问题？回到「设置 → 问题反馈」告诉我们</p>
+    </main>
+
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>

@@ -42,6 +42,7 @@ const SHELL_PAGES = [
   './settings.html',
   './notifications.html',
   './agreement.html',
+  './help.html',
   './index.html',
   './item.html',
   './profile.html',
