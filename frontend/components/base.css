@@ -1958,3 +1958,35 @@ body.keyboard-open .action-bar {
 .ai-modal__actions .btn {
   flex: 1;
 }
+
+/* ============================================================================
+ * 19. 全局网络状态横幅 + 图片降级占位
+ * ========================================================================== */
+
+/* 横幅：默认不占位，显示时占据文档流顶部，不遮挡导航 */
+.network-banner {
+  display: none;
+  padding: 8px var(--space-4, 16px);
+  font-size: var(--font-size-sm, 13px);
+  line-height: 1.5;
+  color: #fff;
+  text-align: center;
+}
+
+.network-banner.is-visible {
+  display: block;
+}
+
+.network-banner.is-offline {
+  background-color: var(--warning, #faad14);
+}
+
+.network-banner.is-online {
+  background-color: var(--success, #52c41a);
+}
+
+/* 图片加载失败的灰底占位 */
+.img-fallback {
+  background-color: var(--border-color-light, #f2f3f5);
+  object-fit: contain;
+}

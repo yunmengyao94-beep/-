@@ -25,6 +25,71 @@ export const AUTH_EXPIRED_EVENT = 'yxx:auth-expired';
 /** 自定义「请重新登录」提示（默认 window.alert） */
 let unauthorizedHandler = null;
 
+/* ------------------------------------------------------------ 离线缓存 */
+
+/** 离线缓存键前缀（与 SW 的 Cache Storage 相互独立） */
+const OFFLINE_CACHE_PREFIX = 'yxx_cache_v1:';
+
+/** 最多缓存多少条接口数据，避免把 localStorage 写满 */
+const OFFLINE_CACHE_MAX = 20;
+
+/** 只有「无 body 的 GET」才适合离线缓存 */
+function isCacheable(url, options) {
+  const method = String((options && options.method) || 'GET').toUpperCase();
+  const body = options ? options.body : undefined;
+  return method === 'GET' && (body === undefined || body === null) && typeof url === 'string';
+}
+
+/** 写入离线缓存（附带时间戳，便于按新旧淘汰） */
+function writeOfflineCache(url, data) {
+  try {
+    localStorage.setItem(OFFLINE_CACHE_PREFIX + url, JSON.stringify({ at: Date.now(), data }));
+    trimOfflineCache();
+  } catch {
+    // 存储写满或不可用：忽略，不影响主流程
+  }
+}
+
+/** 读取离线缓存，命中返回 data，否则返回 null */
+function readOfflineCache(url) {
+  try {
+    const raw = localStorage.getItem(OFFLINE_CACHE_PREFIX + url);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && 'data' in parsed ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 超出上限时按时间淘汰最旧的一条 */
+function trimOfflineCache() {
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(OFFLINE_CACHE_PREFIX)) keys.push(key);
+    }
+    if (keys.length <= OFFLINE_CACHE_MAX) return;
+
+    keys
+      .map((key) => {
+        let at = 0;
+        try {
+          at = JSON.parse(localStorage.getItem(key) || '{}').at || 0;
+        } catch {
+          at = 0;
+        }
+        return { key, at };
+      })
+      .sort((a, b) => a.at - b.at)
+      .slice(0, keys.length - OFFLINE_CACHE_MAX)
+      .forEach((item) => localStorage.removeItem(item.key));
+  } catch {
+    // 忽略
+  }
+}
+
 /**
  * 请求异常：区分业务码与网络异常，便于业务层分支处理
  */
@@ -123,6 +188,11 @@ export async function request(url, options = {}) {
   try {
     response = await fetch(BASE_URL + url, Object.assign({}, options, { headers, body }));
   } catch {
+    // 真断网（SW 也拦不住）：优先回退本地缓存，让页面有数据可渲染
+    if (isCacheable(url, options)) {
+      const cached = readOfflineCache(url);
+      if (cached !== null) return cached;
+    }
     throw new RequestError('网络异常，请检查网络后重试', 0);
   }
 
@@ -135,6 +205,19 @@ export async function request(url, options = {}) {
 
   if (!payload || typeof payload !== 'object') {
     throw new RequestError(`服务响应异常（HTTP ${response.status}）`, response.status);
+  }
+
+  // Service Worker 的离线兜底响应：静默回退本地缓存，不打断用户
+  if (payload.code === 50301) {
+    if (isCacheable(url, options)) {
+      const cached = readOfflineCache(url);
+      if (cached !== null) return cached;
+    }
+    throw new RequestError(
+      payload.msg || '当前为离线模式，展示本地数据',
+      50301,
+      payload.data || null
+    );
   }
 
   if (payload.code !== 200) {
@@ -151,6 +234,10 @@ export async function request(url, options = {}) {
       payload.code,
       payload.data || null
     );
+  }
+
+  if (isCacheable(url, options)) {
+    writeOfflineCache(url, payload.data);
   }
 
   return payload.data;

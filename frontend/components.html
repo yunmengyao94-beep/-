@@ -4,6 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>易校圈 · UI Kit（Sprint 3）</title>
+    <meta name="theme-color" content="#1890ff" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="易校圈" />
+    <link rel="apple-touch-icon" href="./assets/icons/logo-192.png" />
+    <link rel="manifest" href="./manifest.json" />
 
     <!-- 样式加载顺序：令牌 → 重置 → 布局工具类 → 基础组件 → 反馈组件 -->
     <link rel="stylesheet" href="./css/variables.css" />
@@ -221,6 +228,7 @@
   </head>
 
   <body class="page-with-tabbar" style="background-color: var(--bg-color)">
+    <div id="network-banner" class="network-banner" role="status" aria-live="polite"></div>
     <!-- ==================== 顶部导航（sticky 吸顶） ==================== -->
     <header class="navbar">
       <div class="flex items-center gap-2">
@@ -752,5 +760,6 @@
         sections.forEach((section) => observer.observe(section));
       }
     </script>
+    <script type="module" src="./js/app.js"></script>
   </body>
 </html>
