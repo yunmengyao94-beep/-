@@ -234,7 +234,7 @@ body.is-sidebar-collapsed {
     transform: rotate(180deg);
   }
 
-  /* ---------------- 顶部栏 ---------------- */
+  /* ---------------- 顶部栏（左 / 中 / 右 三栏） ---------------- */
   .app-topbar {
     position: fixed;
     top: 0;
@@ -252,11 +252,56 @@ body.is-sidebar-collapsed {
     transition: left 0.2s ease;
   }
 
+  /* 左栏：折叠按钮 + 品牌（固定宽度，不参与伸缩） */
+  .topbar__left {
+    display: flex;
+    flex: none;
+    gap: 10px;
+    align-items: center;
+    margin-right: 8px;
+  }
+
+  .topbar__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    color: var(--text-sub, #666);
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .topbar__toggle:hover {
+    color: var(--primary, #1890ff);
+    background-color: var(--bg-color, #f5f7fa);
+  }
+
+  .topbar__toggle svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .topbar__brand {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main, #333);
+    white-space: nowrap;
+  }
+
+  /* 中栏：搜索框自适应（min-width:0 允许收缩，避免挤压右侧） */
   .topbar__search {
     display: flex;
-    flex: 1;
+    flex: 1 1 auto;
     gap: 8px;
     align-items: center;
+    min-width: 0;
     max-width: 520px;
     height: 38px;
     padding: 0 12px;
@@ -282,11 +327,59 @@ body.is-sidebar-collapsed {
     outline: none;
   }
 
-  .topbar__user {
+  /* 右栏：消息 + 用户，margin-left:auto 强制贴右 */
+  .topbar__right {
     display: flex;
     flex: none;
+    gap: 16px;
+    align-items: center;
+    margin-left: auto;
+    padding-left: 16px;
+  }
+
+  .topbar__bell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    color: var(--text-sub, #666);
+    text-decoration: none;
+    border-radius: 8px;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .topbar__bell:hover {
+    color: var(--primary, #1890ff);
+    background-color: var(--bg-color, #f5f7fa);
+  }
+
+  .topbar__bell svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .topbar__badge {
+    min-width: 16px;
+    padding: 0 4px;
+    margin-left: -6px;
+    font-size: 10px;
+    font-style: normal;
+    line-height: 16px;
+    color: #fff;
+    text-align: center;
+    background-color: #ff4d4f;
+    border-radius: 999px;
+    transform: translateY(-8px);
+  }
+
+  .topbar__user {
+    display: flex;
     gap: 8px;
     align-items: center;
+    min-width: 0;
     color: var(--text-main, #333);
     text-decoration: none;
     white-space: nowrap;
@@ -294,6 +387,7 @@ body.is-sidebar-collapsed {
 
   .topbar__avatar {
     display: flex;
+    flex: none;
     align-items: center;
     justify-content: center;
     width: 32px;
@@ -306,6 +400,21 @@ body.is-sidebar-collapsed {
   }
 
   .topbar__name {
+    max-width: 120px;
+    overflow: hidden;
     font-size: 14px;
+    text-overflow: ellipsis;
+  }
+}
+
+/* 中等宽度（768–1024）：隐藏品牌与昵称，优先保证搜索框与头像不重叠 */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .topbar__brand,
+  .topbar__name {
+    display: none;
+  }
+
+  .topbar__search {
+    max-width: none;
   }
 }

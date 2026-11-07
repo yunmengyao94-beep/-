@@ -130,6 +130,19 @@ export function mountShell(options = {}) {
     </aside>
 
     <header class="app-topbar" id="app-topbar">
+      <!-- 左：侧边栏折叠 + 品牌 -->
+      <div class="topbar__left">
+        <button class="topbar__toggle" id="topbar-toggle" type="button"
+                aria-label="折叠侧边栏" title="折叠 / 展开侧边栏">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <span class="topbar__brand">易校圈</span>
+      </div>
+
+      <!-- 中：全局搜索（自适应剩余宽度） -->
       <form class="topbar__search" id="topbar-search" role="search">
         <svg class="topbar__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -140,10 +153,22 @@ export function mountShell(options = {}) {
                placeholder="搜索物品 / 楼栋 / 类目" autocomplete="off" aria-label="搜索物品" />
       </form>
 
-      <a class="topbar__user" href="./profile.html" title="个人中心">
-        <span class="topbar__avatar">${user.name.slice(0, 1)}</span>
-        <span class="topbar__name">${user.name}</span>
-      </a>
+      <!-- 右：消息 + 用户（始终贴右） -->
+      <div class="topbar__right">
+        <a class="topbar__bell" href="./notifications.html" title="消息中心" aria-label="消息中心">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Z" />
+            <path d="M10 19a2 2 0 0 0 4 0" />
+          </svg>
+          <b class="topbar__badge hidden" data-unread></b>
+        </a>
+
+        <a class="topbar__user" href="./profile.html" title="个人中心">
+          <span class="topbar__avatar">${user.name.slice(0, 1)}</span>
+          <span class="topbar__name">${user.name}</span>
+        </a>
+      </div>
     </header>
   `;
 
@@ -152,17 +177,22 @@ export function mountShell(options = {}) {
   applyCollapsed(isCollapsed());
 
   /* ---- 折叠 ---- */
+  const toggleCollapse = () => {
+    const next = !document.body.classList.contains('is-sidebar-collapsed');
+    applyCollapsed(next);
+    try {
+      localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
+    } catch {
+      // 忽略
+    }
+  };
+
+  const topbarToggle = document.getElementById('topbar-toggle');
+  if (topbarToggle) topbarToggle.addEventListener('click', toggleCollapse);
+
   const toggle = document.getElementById('sidebar-toggle');
   if (toggle) {
-    toggle.addEventListener('click', () => {
-      const next = !document.body.classList.contains('is-sidebar-collapsed');
-      applyCollapsed(next);
-      try {
-        localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
-      } catch {
-        // 忽略
-      }
-    });
+    toggle.addEventListener('click', toggleCollapse);
   }
 
   /* ---- 顶部搜索 ---- */
