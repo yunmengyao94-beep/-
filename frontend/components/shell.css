@@ -1,0 +1,311 @@
+/* ============================================================================
+ * 26. PC 端壳层（侧边栏 + 顶部栏）—— ≥768px 生效
+ * ========================================================================== */
+
+:root {
+  --sidebar-width: 200px;
+  --topbar-height: 60px;
+}
+
+body.is-sidebar-collapsed {
+  --sidebar-width: 64px;
+}
+
+/* 移动端：壳层整体隐藏 */
+@media (max-width: 767.98px) {
+  .app-sidebar,
+  .app-topbar {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  /* 主内容随侧边栏让位 */
+  body.has-shell {
+    padding-top: var(--topbar-height);
+    padding-left: var(--sidebar-width);
+    transition:
+      padding-left 0.2s ease,
+      padding-top 0.2s ease;
+  }
+
+  /* PC 端不要底部导航和 FAB */
+  body.has-shell .tabbar,
+  body.has-shell .fab {
+    display: none;
+  }
+
+  /* 页面内原来的移动端顶栏 → 变成内容区工具条 */
+  body.has-shell .navbar {
+    position: static;
+    padding: 12px 24px 0;
+    background: transparent;
+    border-bottom: 0;
+    box-shadow: none;
+  }
+
+  /* 标题/返回键与顶部栏重复，隐藏；搜索框统一用顶部栏 */
+  /* 只隐藏与桌面壳层重复的元素；页面标题保留，作为内容区标题 */
+  body.has-shell .navbar__back,
+  body.has-shell .navbar__logo {
+    display: none;
+  }
+
+  body.has-shell .navbar__search {
+    display: none;
+  }
+
+  /* 首页的公寓筛选保留在内容区右侧 */
+  body.has-shell .navbar__filter {
+    margin-left: auto;
+  }
+
+  body.has-shell .page {
+    padding-top: 16px;
+  }
+
+  /* ---------------- 侧边栏 ---------------- */
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 80;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: var(--sidebar-width);
+    height: 100vh;
+    padding: 16px 12px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #1f2a44 0%, #16203a 100%);
+    transition: width 0.2s ease;
+  }
+
+  .sidebar__logo {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    height: 40px;
+    padding: 0 6px;
+    margin-bottom: 8px;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  .sidebar__logo-mark {
+    flex: none;
+    width: 28px;
+    height: 28px;
+  }
+
+  .sidebar__logo-text {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .sidebar__nav {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .sidebar__item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    height: 44px;
+    padding: 0 10px;
+    color: rgba(255, 255, 255, 0.72);
+    white-space: nowrap;
+    text-decoration: none;
+    border-radius: 10px;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .sidebar__item:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .sidebar__item.is-active {
+    color: #fff;
+    background-color: rgba(24, 144, 255, 0.28);
+  }
+
+  .sidebar__icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+  }
+
+  .sidebar__label {
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+  }
+
+  .sidebar__badge {
+    min-width: 18px;
+    padding: 0 5px;
+    margin-left: auto;
+    font-size: 11px;
+    font-style: normal;
+    line-height: 18px;
+    color: #fff;
+    text-align: center;
+    background-color: #ff4d4f;
+    border-radius: 999px;
+  }
+
+  .sidebar__publish {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+    color: #fff;
+    text-decoration: none;
+    white-space: nowrap;
+    background: linear-gradient(135deg, #1890ff, #096dd9);
+    border-radius: 10px;
+    box-shadow: 0 6px 16px rgba(24, 144, 255, 0.32);
+    transition: transform 0.15s ease;
+  }
+
+  .sidebar__publish:hover {
+    transform: translateY(-1px);
+  }
+
+  .sidebar__publish svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+
+  .sidebar__toggle {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    height: 38px;
+    padding: 0;
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .sidebar__toggle:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .sidebar__toggle svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+  }
+
+  /* ---------------- 折叠态 ---------------- */
+  body.is-sidebar-collapsed .sidebar__logo-text,
+  body.is-sidebar-collapsed .sidebar__label,
+  body.is-sidebar-collapsed .sidebar__badge {
+    display: none;
+  }
+
+  body.is-sidebar-collapsed .sidebar__item,
+  body.is-sidebar-collapsed .sidebar__publish,
+  body.is-sidebar-collapsed .sidebar__toggle {
+    justify-content: center;
+    padding: 0;
+  }
+
+  body.is-sidebar-collapsed .sidebar__toggle svg {
+    transform: rotate(180deg);
+  }
+
+  /* ---------------- 顶部栏 ---------------- */
+  .app-topbar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: var(--sidebar-width);
+    z-index: 70;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    height: var(--topbar-height);
+    padding: 0 24px;
+    background-color: rgba(255, 255, 255, 0.92);
+    border-bottom: 1px solid var(--border-color-light, #f0f1f3);
+    backdrop-filter: blur(8px);
+    transition: left 0.2s ease;
+  }
+
+  .topbar__search {
+    display: flex;
+    flex: 1;
+    gap: 8px;
+    align-items: center;
+    max-width: 520px;
+    height: 38px;
+    padding: 0 12px;
+    background-color: var(--bg-color, #f5f7fa);
+    border-radius: 999px;
+  }
+
+  .topbar__search-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    color: var(--text-placeholder, #bfbfbf);
+  }
+
+  .topbar__search-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    font-size: 14px;
+    color: var(--text-main, #333);
+    background: transparent;
+    border: 0;
+    outline: none;
+  }
+
+  .topbar__user {
+    display: flex;
+    flex: none;
+    gap: 8px;
+    align-items: center;
+    color: var(--text-main, #333);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .topbar__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #1890ff, #096dd9);
+    border-radius: 50%;
+  }
+
+  .topbar__name {
+    font-size: 14px;
+  }
+}

@@ -1,5 +1,6 @@
 import { showToast } from '../components/feedback.js';
 import { request, getToken, setToken } from '../utils/request.js';
+import { mountShell } from '../components/shell.js';
 
 /**
  * 应用公共入口
@@ -280,12 +281,37 @@ import { request, getToken, setToken } from '../utils/request.js';
     }
   }
 
+  /* ------------------------------------------- 4.5 PC 端壳层（≥768px） */
+
+  /** 需要侧边栏/顶部栏的页面 → 当前激活项 */
+  const SHELL_PAGES = {
+    'index.html': 'home',
+    'orders.html': 'orders',
+    'notifications.html': 'messages',
+    'profile.html': 'profile',
+    'settings.html': 'profile',
+  };
+
+  /** 挂载 PC 壳层（移动端由 CSS 隐藏） */
+  function setupDesktopShell() {
+    const page = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    const active = SHELL_PAGES[page];
+    if (!active) return;
+
+    try {
+      mountShell({ active });
+    } catch {
+      // 壳层失败不影响主功能
+    }
+  }
+
   /* ------------------------------------------------------------- 启动 */
 
   applyStoredTheme();
   registerServiceWorker();
   setupNetworkBanner();
   setupImageFallback();
+  setupDesktopShell();
   setupLiveReload();
   setupCrossTabSync();
   refreshUnreadBadge();

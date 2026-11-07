@@ -54,6 +54,7 @@ const SHELL_STYLES = [
   './css/reset.css',
   './css/layout.css',
   './components/base.css',
+  './components/shell.css',
   './components/feedback.css',
 ];
 
@@ -66,6 +67,7 @@ const SHELL_SCRIPTS = [
   './js/orders.js',
   './js/settings.js',
   './js/notifications.js',
+  './components/shell.js',
   './js/index.js',
   './js/item.js',
   './js/publish.js',
