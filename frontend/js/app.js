@@ -292,7 +292,7 @@ import { applyFontSize, getFontSizeKey } from '../utils/preferences.js';
     'orders.html': 'orders',
     'notifications.html': 'messages',
     'profile.html': 'profile',
-    'settings.html': 'profile',
+    'settings.html': 'settings',
   };
 
   /** 挂载 PC 壳层（移动端由 CSS 隐藏） */

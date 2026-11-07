@@ -418,3 +418,157 @@ body.is-sidebar-collapsed {
     max-width: none;
   }
 }
+
+/* ============================================================================
+ * 27. PC 多列布局（订单 / 通知 / 个人中心）
+ *     仅 ≥768px 生效，移动端保持单列
+ * ========================================================================== */
+
+/* 移动端：profile 里被去掉行内 margin 的卡片补回间距 */
+.profile-page > .quick-card,
+.profile-page > .my-items-card,
+.profile-page > .settings-entry {
+  margin: 12px 16px 0;
+}
+
+@media (min-width: 768px) {
+  /* ---------------------------------------------------------- 订单双列 */
+  .page--orders {
+    max-width: none;
+    padding: 8px 24px 32px;
+  }
+
+  /* 方向切换 + 状态筛选整条吸顶 */
+  .page--orders .orders-toolbar {
+    position: sticky;
+    top: var(--topbar-height);
+    z-index: 6;
+    padding: 8px 0 4px;
+    margin: 0 0 12px;
+    background-color: var(--bg-color, #f5f7fa);
+  }
+
+  .page--orders .segmented {
+    margin: 4px 0 10px;
+  }
+
+  .page--orders .chip-row {
+    padding: 4px 0 8px;
+    margin: 0;
+  }
+
+  .page--orders #order-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  .page--orders #order-list > * {
+    margin: 0;
+  }
+
+  .page--orders #order-count {
+    margin: 16px 0 0;
+  }
+
+  /* ---------------------------------------------------------- 通知双列 */
+  .page--notifications {
+    max-width: none;
+    padding: 8px 24px 32px;
+  }
+
+  .page--notifications .card {
+    margin-top: 8px;
+  }
+
+  .page--notifications .notice-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 8px 0;
+  }
+
+  .page--notifications .notice-item {
+    padding: 16px;
+    background-color: var(--bg-card, #fff);
+    border: 1px solid var(--border-color-light, #f0f1f3);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition:
+      box-shadow 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .page--notifications .notice-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .page--notifications .notice-item:last-child {
+    border-bottom: 1px solid var(--border-color-light, #f0f1f3);
+  }
+
+  /* ------------------------------------------------- 个人中心 35% / 65% */
+  .profile-page {
+    display: grid;
+    grid-template-columns: minmax(0, 35fr) minmax(0, 65fr);
+    gap: 24px;
+    align-items: start;
+    padding: 8px 24px 32px;
+  }
+
+  /* 左列：用户信息 / 信用大盘 / 快捷入口 / AI 认证 */
+  .profile-page > .profile-hero {
+    grid-row: 1;
+    grid-column: 1;
+    padding-bottom: 32px;
+    margin: 0;
+    border-radius: var(--radius-lg, 12px);
+    box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.06));
+  }
+
+  .profile-page > .credit-card {
+    grid-row: 2;
+    grid-column: 1;
+    margin: 0;
+  }
+
+  .profile-page > .quick-card {
+    grid-row: 3;
+    grid-column: 1;
+    margin: 0;
+  }
+
+  .profile-page > .ai-card {
+    grid-row: 4;
+    grid-column: 1;
+    margin: 0;
+  }
+
+  /* 右列：信用流水，撑满左侧四行的高度 */
+  .profile-page > .log-card {
+    display: flex;
+    flex-direction: column;
+    grid-row: 1 / span 4;
+    grid-column: 2;
+    align-self: stretch;
+    margin: 0;
+  }
+
+  .profile-page > .log-card .log-list {
+    flex: 1;
+  }
+
+  /* 我的发布：整行铺满 */
+  .profile-page > .my-items-card {
+    grid-row: 5;
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  /* 系统设置入口：PC 端统一走侧边栏，隐藏 */
+  .profile-page > .settings-entry {
+    display: none;
+  }
+}
