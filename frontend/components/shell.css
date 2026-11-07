@@ -574,30 +574,47 @@ body.is-sidebar-collapsed {
 }
 
 /* ============================================================================
- * 28. 设置页 PC 多列（左 30% 账号 / 右 70% 其他）
+ * 28. 设置页 PC 布局（自适应 2 列 / 3 列仪表盘）
+ * ----------------------------------------------------------------------------
+ * 设计思路：
+ *   · 账号管理是「身份区」，独立成左侧窄栏，滚动时 sticky 常驻
+ *   · 其余四组按 2×2 / 3 列分布，宽屏留白充足，窄屏自动降为 2 列
+ *   · 每张卡片独立阴影 + hover 微抬升，营造桌面软件的层次感
  * ========================================================================== */
 
 @media (min-width: 768px) {
   .page--settings {
     display: grid;
-    grid-template-columns: minmax(0, 30fr) minmax(0, 70fr);
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
     gap: 24px;
     align-items: start;
-    max-width: none;
-    padding: 8px 24px 32px;
+    max-width: 1080px;
+    padding: 8px 24px 40px;
+    margin: 0 auto;
   }
 
   .page--settings .setting-group {
     margin: 0;
+    border: 1px solid var(--border-color-light, #f0f1f3);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
   }
 
-  /* 左列：账号管理，跨四行 */
+  .page--settings .setting-group:hover {
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+    transform: translateY(-1px);
+  }
+
+  /* 身份区：左侧窄栏 + 吸顶 */
   .page--settings [data-group='account'] {
+    position: sticky;
+    top: calc(var(--topbar-height) + 16px);
     grid-row: 1 / span 4;
     grid-column: 1;
   }
 
-  /* 右列：通用 / 显示 / 帮助 / 关于 */
   .page--settings [data-group='general'] {
     grid-row: 1;
     grid-column: 2;
@@ -618,10 +635,22 @@ body.is-sidebar-collapsed {
     grid-column: 2;
   }
 
-  /* 宽屏下设置项更舒展 */
+  /* 分组标题加一条主色竖条，提升层次 */
   .page--settings .setting-group__title {
-    margin-bottom: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
     font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+
+  .page--settings .setting-group__title::before {
+    width: 3px;
+    height: 12px;
+    background-color: var(--primary, #1890ff);
+    border-radius: 2px;
+    content: '';
   }
 
   .page--settings .setting-row {
@@ -631,5 +660,179 @@ body.is-sidebar-collapsed {
   .page--settings .auth-foot {
     grid-column: 1 / -1;
     margin-top: 8px;
+    text-align: center;
   }
+}
+
+/* 超宽屏：升级为 3 列仪表盘 */
+@media (min-width: 1200px) {
+  .page--settings {
+    grid-template-areas:
+      'account general display'
+      'account help about';
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr) minmax(0, 1fr);
+    max-width: 1280px;
+  }
+
+  .page--settings [data-group='account'] {
+    grid-area: account;
+  }
+
+  .page--settings [data-group='general'] {
+    grid-area: general;
+  }
+
+  .page--settings [data-group='display'] {
+    grid-area: display;
+  }
+
+  .page--settings [data-group='help'] {
+    grid-area: help;
+  }
+
+  .page--settings [data-group='about'] {
+    grid-area: about;
+  }
+}
+
+/* ============================================================================
+ * 29. 发布页 PC 双栏（左侧表单 / 右侧图片与定损）
+ * ========================================================================== */
+
+@media (min-width: 768px) {
+  .page--with-action-bar {
+    max-width: 1180px;
+    padding: 8px 24px 96px;
+    margin: 0 auto;
+  }
+
+  #publish-form {
+    padding: 24px;
+  }
+
+  .publish-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 28px;
+    align-items: start;
+  }
+
+  .publish-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .publish-side {
+    position: sticky;
+    top: calc(var(--topbar-height) + 16px);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  /* 底部操作栏跟随侧边栏让位（fixed 不受 body padding 影响） */
+  body.has-shell .action-bar {
+    right: 0;
+    left: var(--sidebar-width);
+    transition: left 0.2s ease;
+  }
+
+  body.has-shell .action-bar__inner {
+    max-width: 1180px;
+    padding: 0 24px;
+    margin: 0 auto;
+  }
+}
+
+/* ============================================================================
+ * 30. 顶部账号下拉菜单
+ * ========================================================================== */
+
+.topbar__account {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.topbar__user {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 4px 8px;
+  color: var(--text-main, #333);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  transition: background-color 0.15s ease;
+}
+
+.topbar__user:hover {
+  background-color: var(--bg-color, #f5f7fa);
+}
+
+.topbar__chevron {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--text-placeholder, #bfbfbf);
+  transition: transform 0.18s ease;
+}
+
+.topbar__user[aria-expanded='true'] .topbar__chevron {
+  transform: rotate(180deg);
+}
+
+.topbar__menu {
+  position: fixed;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  width: 168px;
+  padding: 6px;
+  background-color: var(--bg-card, #fff);
+  border: 1px solid var(--border-color-light, #f0f1f3);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.16);
+  animation: menu-in 0.16s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.topbar__menu-item {
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--text-main, #333);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.topbar__menu-item:hover {
+  background-color: var(--bg-color, #f5f7fa);
+}
+
+.topbar__menu-item--danger {
+  color: var(--danger, #ff4d4f);
+}
+
+.topbar__menu-item--danger:hover {
+  background-color: rgba(255, 77, 79, 0.08);
 }

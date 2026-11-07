@@ -52,154 +52,170 @@
     <!-- ==================== 表单主体 ==================== -->
     <main class="page page--narrow page--with-action-bar">
       <form class="card flex flex-col gap-4" id="publish-form" novalidate>
-        <!-- 物品标题 -->
-        <div class="input-group">
-          <label class="input-group__label input-group__label--required" for="field-title"
-            >物品标题</label
-          >
-          <input
-            class="input-group__control"
-            id="field-title"
-            name="title"
-            type="text"
-            maxlength="60"
-            placeholder="例如：学士服（L码，含学士帽）"
-          />
-          <span class="input-group__hint">标题会展示在列表卡片上，建议包含规格</span>
-          <p class="field-error hidden" id="err-title"></p>
-        </div>
+        <div class="publish-grid">
+          <div class="publish-main">
+            <!-- 物品标题 -->
+            <div class="input-group">
+              <label class="input-group__label input-group__label--required" for="field-title"
+                >物品标题</label
+              >
+              <input
+                class="input-group__control"
+                id="field-title"
+                name="title"
+                type="text"
+                maxlength="60"
+                placeholder="例如：学士服（L码，含学士帽）"
+              />
+              <span class="input-group__hint">标题会展示在列表卡片上，建议包含规格</span>
+              <p class="field-error hidden" id="err-title"></p>
+            </div>
 
-        <!-- 物品分类：复用自定义下拉 -->
-        <div class="custom-select" data-custom-select>
-          <label class="input-group__label" id="label-category">物品分类</label>
-          <button
-            class="custom-select__control"
-            type="button"
-            aria-haspopup="listbox"
-            aria-expanded="false"
-            aria-labelledby="label-category"
-          >
-            <span class="custom-select__value is-placeholder">请选择分类</span>
-            <span class="custom-select__arrow" aria-hidden="true"></span>
-          </button>
-          <ul class="custom-select__panel" role="listbox" aria-labelledby="label-category">
-            <li class="custom-select__option" role="option" data-value="apparel">服饰</li>
-            <li class="custom-select__option" role="option" data-value="digital">数码</li>
-            <li class="custom-select__option" role="option" data-value="tool">工具</li>
-            <li class="custom-select__option" role="option" data-value="other">其他</li>
-          </ul>
-          <input type="hidden" name="category" value="" />
-        </div>
-        <p class="field-error hidden" id="err-category"></p>
-        <!-- 所在楼栋：默认取当前账号的楼栋 -->
-        <div class="input-group">
-          <label class="input-group__label input-group__label--required" for="field-building"
-            >所在楼栋</label
-          >
-          <select class="input-group__control" id="field-building" name="building_loc">
-            <option value="">请选择楼栋</option>
-            <option value="第1公寓">第1公寓</option>
-            <option value="第2公寓">第2公寓</option>
-            <option value="第3公寓">第3公寓</option>
-            <option value="第4公寓">第4公寓</option>
-            <option value="第5公寓">第5公寓</option>
-            <option value="第6公寓">第6公寓</option>
-            <option value="第7公寓">第7公寓</option>
-            <option value="第8公寓">第8公寓</option>
-            <option value="第9公寓">第9公寓</option>
-            <option value="第10公寓">第10公寓</option>
-            <option value="第11公寓">第11公寓</option>
-          </select>
-          <span class="input-group__hint">借用时同学会按楼栋就近选择</span>
-          <p class="field-error hidden" id="err-building"></p>
-        </div>
+            <!-- 物品分类：复用自定义下拉 -->
+            <div class="custom-select" data-custom-select>
+              <label class="input-group__label" id="label-category">物品分类</label>
+              <button
+                class="custom-select__control"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-labelledby="label-category"
+              >
+                <span class="custom-select__value is-placeholder">请选择分类</span>
+                <span class="custom-select__arrow" aria-hidden="true"></span>
+              </button>
+              <ul class="custom-select__panel" role="listbox" aria-labelledby="label-category">
+                <li class="custom-select__option" role="option" data-value="apparel">服饰</li>
+                <li class="custom-select__option" role="option" data-value="digital">数码</li>
+                <li class="custom-select__option" role="option" data-value="tool">工具</li>
+                <li class="custom-select__option" role="option" data-value="other">其他</li>
+              </ul>
+              <input type="hidden" name="category" value="" />
+            </div>
+            <p class="field-error hidden" id="err-category"></p>
+            <!-- 所在楼栋：默认取当前账号的楼栋 -->
+            <div class="input-group">
+              <label class="input-group__label input-group__label--required" for="field-building"
+                >所在楼栋</label
+              >
+              <select class="input-group__control" id="field-building" name="building_loc">
+                <option value="">请选择楼栋</option>
+                <option value="第1公寓">第1公寓</option>
+                <option value="第2公寓">第2公寓</option>
+                <option value="第3公寓">第3公寓</option>
+                <option value="第4公寓">第4公寓</option>
+                <option value="第5公寓">第5公寓</option>
+                <option value="第6公寓">第6公寓</option>
+                <option value="第7公寓">第7公寓</option>
+                <option value="第8公寓">第8公寓</option>
+                <option value="第9公寓">第9公寓</option>
+                <option value="第10公寓">第10公寓</option>
+                <option value="第11公寓">第11公寓</option>
+              </select>
+              <span class="input-group__hint">借用时同学会按楼栋就近选择</span>
+              <p class="field-error hidden" id="err-building"></p>
+            </div>
 
-        <!-- 要求的信用分 -->
-        <div class="input-group">
-          <label class="input-group__label input-group__label--required" for="field-deposit"
-            >要求的信用分</label
-          >
-          <input
-            class="input-group__control"
-            id="field-deposit"
-            name="deposit_score"
-            type="number"
-            min="0"
-            max="500"
-            step="1"
-            inputmode="numeric"
-            placeholder="借用时需冻结的信用分，例如 20"
-          />
-          <span class="input-group__hint">借用者可用分不足该数值时无法借用</span>
-          <p class="field-error hidden" id="err-deposit"></p>
-        </div>
-
-        <!-- 图片上传 -->
-        <div>
-          <span class="input-group__label">物品图片</span>
-
-          <div
-            class="upload-area"
-            id="upload-area"
-            role="button"
-            tabindex="0"
-            aria-label="点击或拖拽上传图片"
-          >
-            <span class="upload-area__icon" aria-hidden="true">🖼️</span>
-            <span class="upload-area__title">点击上传，或把图片拖到这里</span>
-            <span class="upload-area__hint">支持 jpg / png / webp，可多选</span>
-            <input
-              class="upload-area__input"
-              id="upload-input"
-              type="file"
-              accept="image/*"
-              multiple
-              aria-hidden="true"
-            />
+            <!-- 要求的信用分 -->
+            <div class="input-group">
+              <label class="input-group__label input-group__label--required" for="field-deposit"
+                >要求的信用分</label
+              >
+              <input
+                class="input-group__control"
+                id="field-deposit"
+                name="deposit_score"
+                type="number"
+                min="0"
+                max="500"
+                step="1"
+                inputmode="numeric"
+                placeholder="借用时需冻结的信用分，例如 20"
+              />
+              <span class="input-group__hint">借用者可用分不足该数值时无法借用</span>
+              <p class="field-error hidden" id="err-deposit"></p>
+            </div>
           </div>
 
-          <!-- 缩略图预览（由 js/publish.js 填充） -->
-          <div class="upload-thumbs" id="upload-thumbs"></div>
-          <p class="input-group__hint" id="upload-count">已选 0 张</p>
-          <p class="field-error hidden" id="err-image"></p>
+          <!-- 右栏：图片与定损 -->
+          <div class="publish-side">
+            <!-- 图片上传 -->
+            <div>
+              <span class="input-group__label">物品图片</span>
+
+              <div
+                class="upload-area"
+                id="upload-area"
+                role="button"
+                tabindex="0"
+                aria-label="点击或拖拽上传图片"
+              >
+                <span class="upload-area__icon" aria-hidden="true">🖼️</span>
+                <span class="upload-area__title">点击上传，或把图片拖到这里</span>
+                <span class="upload-area__hint">支持 jpg / png / webp，可多选</span>
+                <input
+                  class="upload-area__input"
+                  id="upload-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  aria-hidden="true"
+                />
+              </div>
+
+              <!-- 缩略图预览（由 js/publish.js 填充） -->
+              <div class="upload-thumbs" id="upload-thumbs"></div>
+              <p class="input-group__hint" id="upload-count">已选 0 张</p>
+              <p class="field-error hidden" id="err-image"></p>
+            </div>
+
+            <!-- 是否高值物品 -->
+            <label class="switch">
+              <input
+                class="switch__input"
+                id="field-high-value"
+                name="is_high_value"
+                type="checkbox"
+              />
+              <span class="switch__track" aria-hidden="true"></span>
+              <span class="switch__text">
+                <span class="switch__label">是否高值物品</span>
+                <span class="switch__hint">高值物品（数码、假发、正装）借用时需双人担保</span>
+              </span>
+            </label>
+
+            <!-- 损坏赔偿明细表：随「高值物品」开关显隐 -->
+            <section
+              class="damage-editor hidden"
+              id="damage-section"
+              aria-labelledby="damage-title"
+            >
+              <div class="damage-editor__head">
+                <h2 class="damage-editor__title" id="damage-title">损坏赔偿明细表</h2>
+                <button class="btn btn--secondary btn--sm" id="add-damage-row" type="button">
+                  + 添加损坏档位
+                </button>
+              </div>
+
+              <div class="damage-editor__scroll">
+                <table class="damage-table damage-editor__table">
+                  <thead>
+                    <tr>
+                      <th scope="col">级别名称</th>
+                      <th scope="col">描述</th>
+                      <th scope="col">扣分</th>
+                      <th scope="col"><span class="hidden">操作</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="damage-rows"></tbody>
+                </table>
+              </div>
+
+              <p class="detail-note">借用即视为同意该赔偿条款</p>
+              <p class="field-error hidden" id="err-damage"></p>
+            </section>
+          </div>
         </div>
-
-        <!-- 是否高值物品 -->
-        <label class="switch">
-          <input class="switch__input" id="field-high-value" name="is_high_value" type="checkbox" />
-          <span class="switch__track" aria-hidden="true"></span>
-          <span class="switch__text">
-            <span class="switch__label">是否高值物品</span>
-            <span class="switch__hint">高值物品（数码、假发、正装）借用时需双人担保</span>
-          </span>
-        </label>
-
-        <!-- 损坏赔偿明细表：随「高值物品」开关显隐 -->
-        <section class="damage-editor hidden" id="damage-section" aria-labelledby="damage-title">
-          <div class="damage-editor__head">
-            <h2 class="damage-editor__title" id="damage-title">损坏赔偿明细表</h2>
-            <button class="btn btn--secondary btn--sm" id="add-damage-row" type="button">
-              + 添加损坏档位
-            </button>
-          </div>
-
-          <div class="damage-editor__scroll">
-            <table class="damage-table damage-editor__table">
-              <thead>
-                <tr>
-                  <th scope="col">级别名称</th>
-                  <th scope="col">描述</th>
-                  <th scope="col">扣分</th>
-                  <th scope="col"><span class="hidden">操作</span></th>
-                </tr>
-              </thead>
-              <tbody id="damage-rows"></tbody>
-            </table>
-          </div>
-
-          <p class="detail-note">借用即视为同意该赔偿条款</p>
-          <p class="field-error hidden" id="err-damage"></p>
-        </section>
       </form>
     </main>
 

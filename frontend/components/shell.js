@@ -1,3 +1,5 @@
+import { request, clearToken } from '../utils/request.js';
+
 /**
  * PC 端壳层（侧边栏 + 顶部栏）
  * ---------------------------------------------------------------------------
@@ -172,10 +174,27 @@ export function mountShell(options = {}) {
           <b class="topbar__badge hidden" data-unread></b>
         </a>
 
-        <a class="topbar__user" href="./profile.html" title="个人中心">
-          <span class="topbar__avatar">${user.name.slice(0, 1)}</span>
-          <span class="topbar__name">${user.name}</span>
-        </a>
+        <div class="topbar__account">
+          <button class="topbar__user" id="topbar-account" type="button"
+                  aria-haspopup="menu" aria-expanded="false" title="账号菜单">
+            <span class="topbar__avatar">${user.name.slice(0, 1)}</span>
+            <span class="topbar__name">${user.name}</span>
+            <svg class="topbar__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+
+          <div class="topbar__menu hidden" id="topbar-menu" role="menu" aria-label="账号菜单">
+            <button class="topbar__menu-item" type="button" role="menuitem" data-action="switch">
+              切换账号
+            </button>
+            <button class="topbar__menu-item topbar__menu-item--danger" type="button"
+                    role="menuitem" data-action="logout">
+              退出登录
+            </button>
+          </div>
+        </div>
       </div>
     </header>
   `;
@@ -203,6 +222,9 @@ export function mountShell(options = {}) {
     toggle.addEventListener('click', toggleCollapse);
   }
 
+  /* ---- 账号下拉菜单 ---- */
+  bindAccountMenu();
+
   /* ---- 顶部搜索 ---- */
   const form = document.getElementById('topbar-search');
   const input = document.getElementById('topbar-search-input');
@@ -222,6 +244,76 @@ export function mountShell(options = {}) {
       window.location.href = `./index.html${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ''}`;
     });
   }
+}
+
+/**
+ * 账号下拉菜单：切换账号 / 退出登录
+ * 菜单用 fixed 定位（项目禁止 absolute），位置由按钮矩形实时计算
+ */
+function bindAccountMenu() {
+  const trigger = document.getElementById('topbar-account');
+  const menu = document.getElementById('topbar-menu');
+  if (!trigger || !menu) return;
+
+  const close = () => {
+    menu.classList.add('hidden');
+    trigger.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', onOutside, true);
+    document.removeEventListener('keydown', onKeydown, true);
+    window.removeEventListener('resize', close);
+    window.removeEventListener('scroll', close, true);
+  };
+
+  const place = () => {
+    const rect = trigger.getBoundingClientRect();
+    const width = 168;
+    const left = Math.max(12, Math.min(window.innerWidth - width - 12, rect.right - width));
+    menu.style.left = `${left}px`;
+    menu.style.top = `${rect.bottom + 8}px`;
+  };
+
+  function onOutside(event) {
+    if (menu.contains(event.target) || trigger.contains(event.target)) return;
+    close();
+  }
+
+  function onKeydown(event) {
+    if (event.key === 'Escape') close();
+  }
+
+  const open = () => {
+    place();
+    menu.classList.remove('hidden');
+    trigger.setAttribute('aria-expanded', 'true');
+
+    document.addEventListener('click', onOutside, true);
+    document.addEventListener('keydown', onKeydown, true);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+  };
+
+  trigger.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (menu.classList.contains('hidden')) open();
+    else close();
+  });
+
+  menu.addEventListener('click', async (event) => {
+    const item = event.target.closest('[data-action]');
+    if (!item) return;
+
+    close();
+
+    // 两种操作都先让服务端拉黑当前 Token（失败也继续本地退出）
+    try {
+      await request('/auth/logout', { method: 'POST' });
+    } catch {
+      // 网络失败不阻塞
+    }
+
+    clearToken();
+    window.location.href = './login.html';
+  });
 }
 
 export default mountShell;
