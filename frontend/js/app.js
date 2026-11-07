@@ -13,6 +13,19 @@
 
   const root = document.documentElement;
 
+  /* -------------------------------------------------------- 0. 主题引导 */
+
+  /** 读取本地主题偏好并应用（深色模式对全站生效） */
+  function applyStoredTheme() {
+    try {
+      if (localStorage.getItem('yxx_theme') === 'dark') {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    } catch {
+      // 存储不可用时保持默认亮色
+    }
+  }
+
   /* ------------------------------------------------------------ 1. SW 注册 */
 
   function registerServiceWorker() {
@@ -151,6 +164,7 @@
 
   /* ------------------------------------------------------------- 启动 */
 
+  applyStoredTheme();
   registerServiceWorker();
   setupNetworkBanner();
   setupImageFallback();

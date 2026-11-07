@@ -95,3 +95,44 @@
   --z-modal: 1110;
   --z-toast: 1120;
 }
+
+/* ============================================================================
+ * 深色主题（Batch 2）
+ * ----------------------------------------------------------------------------
+ * 用法：<html data-theme="dark">，由 js/app.js 依据 localStorage.yxx_theme 设置。
+ * 只覆盖「颜色类」令牌，组件样式无需改动即可跟随。
+ * ========================================================================== */
+:root[data-theme='dark'] {
+  --primary: #3c9cff;
+  --primary-hover: #5cadff;
+  --primary-active: #1e6fd9;
+  --primary-light: #17263c;
+
+  --danger: #ff6b6e;
+  --danger-light: #2b1a1b;
+
+  --success: #5bc236;
+  --success-light: #16240f;
+
+  --warning: #f0b429;
+  --warning-light: #2a2310;
+
+  --text-main: #e6e8eb;
+  --text-sub: #9aa0a6;
+  --text-placeholder: #6b7075;
+  --text-inverse: #0f1115;
+
+  --bg-color: #101216;
+  --bg-card: #1a1d23;
+  --bg-mask: rgba(0, 0, 0, 0.6);
+  --border-color: #2b3038;
+  --border-color-light: #23272e;
+
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+/* 深色下页面底部安全区与滚动条也跟随 */
+:root[data-theme='dark'] body {
+  color-scheme: dark;
+}

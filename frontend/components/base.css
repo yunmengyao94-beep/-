@@ -2128,3 +2128,108 @@ body.keyboard-open .action-bar {
   font-size: var(--font-size-xs, 12px);
   color: var(--text-sub, #888);
 }
+
+/* ============================================================================
+ * 21. 设置页分组与账号切换
+ * ========================================================================== */
+.setting-group {
+  margin: var(--space-3, 12px) var(--space-4, 16px) 0;
+  padding: var(--space-4, 16px);
+  background-color: var(--bg-card, #fff);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.06));
+}
+
+.setting-group__title {
+  margin-bottom: var(--space-2, 8px);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-sub, #888);
+  letter-spacing: 0.4px;
+}
+
+/* 账号切换弹窗中的一行 */
+.account-row {
+  display: flex;
+  gap: var(--space-3, 12px);
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  margin-bottom: var(--space-2, 8px);
+  background-color: var(--bg-color, #f5f7fa);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+}
+
+.account-row:last-child {
+  margin-bottom: 0;
+}
+
+.account-row.is-current {
+  border-color: var(--primary, #1890ff);
+  background-color: var(--primary-light, #e6f7ff);
+}
+
+.account-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.account-row__name {
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.account-row__meta {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+.account-row__check {
+  flex: none;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--primary, #1890ff);
+}
+
+/* 关于页正文 */
+.doc-page {
+  padding: var(--space-4, 16px);
+}
+
+.doc-card {
+  margin: 0 auto;
+  max-width: 720px;
+  padding: var(--space-5, 20px);
+}
+
+.doc-title {
+  margin-bottom: var(--space-3, 12px);
+  font-size: var(--font-size-xl, 22px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.doc-section-title {
+  margin: var(--space-4, 16px) 0 var(--space-2, 8px);
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.doc-p {
+  margin-bottom: var(--space-2, 8px);
+  font-size: var(--font-size-base, 14px);
+  line-height: 1.85;
+  color: var(--text-sub, #888);
+}
+
+.doc-meta {
+  margin-top: var(--space-4, 16px);
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-placeholder, #bfbfbf);
+}

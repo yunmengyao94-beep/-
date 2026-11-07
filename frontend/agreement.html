@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1890ff" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="易校圈" />
+    <link rel="apple-touch-icon" href="./assets/icons/logo-192.png" />
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="description" content="易校圈 · 用户协议与隐私政策" />
+    <title>用户协议与隐私政策 · 易校圈</title>
+
+    <link rel="stylesheet" href="./css/variables.css" />
+    <link rel="stylesheet" href="./css/reset.css" />
+    <link rel="stylesheet" href="./css/layout.css" />
+    <link rel="stylesheet" href="./components/base.css" />
+    <link rel="stylesheet" href="./fonts/fonts.css" />
+    <link rel="stylesheet" href="./components/feedback.css" />
+  </head>
+
+  <body style="background-color: var(--bg-color)">
+    <div id="network-banner" class="network-banner" role="status" aria-live="polite"></div>
+
+    <header class="navbar">
+      <button class="navbar__back" id="back-btn" type="button" aria-label="返回上一页">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M15 5 8 12l7 7" />
+        </svg>
+        <span>返回</span>
+      </button>
+      <span class="navbar__title navbar__title--center">用户协议与隐私政策</span>
+      <span class="navbar__spacer" aria-hidden="true"></span>
+    </header>
+
+    <main class="doc-page">
+      <article class="card doc-card">
+        <h1 class="doc-title">易校圈用户协议与隐私政策</h1>
+        <p class="doc-p">版本：V1.0.0　生效日期：2026 年 11 月 8 日</p>
+
+        <h2 class="doc-section-title">一、服务说明</h2>
+        <p class="doc-p">
+          易校圈是面向校园的信用共享平台，提供物品借用、发布与信用分管理服务。用户须使用真实学号注册，
+          并对账号下的所有操作负责。
+        </p>
+
+        <h2 class="doc-section-title">二、信用分与押金规则</h2>
+        <p class="doc-p">
+          借用物品时会按物品设定的信用分额度冻结账户可用分，归还验收后自动解冻。逾期、损坏将按《损坏赔偿明细表》
+          扣除信用分，扣分记录可在「我的信用流水」中查询。
+        </p>
+
+        <h2 class="doc-section-title">三、端侧 AI 识别与隐私</h2>
+        <p class="doc-p">
+          芝麻信用截图识别<strong>完全在你的设备浏览器内完成</strong>，图片不会上传至服务器。
+          识别引擎（Tesseract.js）与中文语言包随应用打包在本地，可离线运行。
+        </p>
+
+        <h2 class="doc-section-title">四、我们收集的信息</h2>
+        <p class="doc-p">
+          仅收集提供服务所必需的信息：学号、姓名、学院、楼栋、发布与借用记录。上述信息保存在本机
+          localStorage 与 Mock 服务的内存数据集中，不向第三方共享。
+        </p>
+
+        <h2 class="doc-section-title">五、信息存储与删除</h2>
+        <p class="doc-p">
+          你可以随时在「设置 → 清除缓存」中清除离线缓存，或「退出当前账号」清除本地登录凭证。
+          卸载应用或清除浏览器站点数据后，本地信息将被删除且无法恢复。
+        </p>
+
+        <h2 class="doc-section-title">六、用户行为规范</h2>
+        <p class="doc-p">
+          禁止发布违法违规、假冒伪劣、侵犯他人权益的物品；禁止恶意占用、刷分或利用系统漏洞。
+          违规行为将导致信用分扣减直至账号冻结。
+        </p>
+
+        <h2 class="doc-section-title">七、免责声明</h2>
+        <p class="doc-p">
+          物品在借用期间由借用人妥善保管，因借用产生的纠纷由双方协商解决。平台仅提供信息撮合与信用记录服务。
+        </p>
+
+        <h2 class="doc-section-title">八、联系我们</h2>
+        <p class="doc-p">如对本协议有疑问，可通过校学生会权益部或平台内「联系Ta」反馈。</p>
+
+        <p class="doc-meta">本页面为演示文档，不构成正式法律文件。</p>
+      </article>
+    </main>
+
+    <script type="module" src="./js/app.js"></script>
+    <script>
+      document.getElementById('back-btn').addEventListener('click', function () {
+        if (window.history.length > 1) window.history.back();
+        else window.location.href = './settings.html';
+      });
+    </script>
+  </body>
+</html>

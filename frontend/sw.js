@@ -34,6 +34,7 @@ const SHELL_PAGES = [
   './register.html',
   './orders.html',
   './settings.html',
+  './agreement.html',
   './index.html',
   './item.html',
   './profile.html',
@@ -67,6 +68,7 @@ const SHELL_SCRIPTS = [
   './utils/constants.js',
   './utils/format.js',
   './utils/auth.js',
+  './utils/accounts.js',
   './components/custom-select.js',
   './components/feedback.js',
 ];

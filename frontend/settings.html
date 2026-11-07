@@ -46,31 +46,67 @@
       <span class="navbar__spacer" aria-hidden="true"></span>
     </header>
 
-    <main class="page page--narrow">
-      <section class="card" style="margin-top: 12px">
+    <main class="page page--narrow" style="padding-bottom: 24px">
+      <!-- ==================== 账号管理 ==================== -->
+      <section class="setting-group" aria-labelledby="group-account">
+        <h2 class="setting-group__title" id="group-account">账号管理</h2>
+
         <div class="setting-list">
           <div class="setting-row">
             <span>当前账号</span>
-            <span class="setting-row__value" id="account-label">——</span>
+            <span class="setting-row__value" id="current-account">——</span>
           </div>
-          <div class="setting-row">
-            <span>应用版本</span>
-            <span class="setting-row__value">v0.4.0 · Mock</span>
+
+          <div
+            class="setting-row setting-row--action"
+            id="row-switch-account"
+            role="button"
+            tabindex="0"
+          >
+            <span>多账号切换</span>
+            <span class="setting-row__value" id="account-count">0 个账号 →</span>
+          </div>
+
+          <div
+            class="setting-row setting-row--action setting-row--danger"
+            id="row-logout"
+            role="button"
+            tabindex="0"
+          >
+            <span>退出当前账号</span>
+            <span class="setting-row__value">→</span>
           </div>
         </div>
       </section>
 
-      <section class="card" style="margin-top: 12px">
+      <!-- ==================== 通用与隐私 ==================== -->
+      <section class="setting-group" aria-labelledby="group-common">
+        <h2 class="setting-group__title" id="group-common">通用与隐私</h2>
+
         <div class="setting-list">
+          <div class="setting-row">
+            <span>深色模式</span>
+            <label class="switch" style="gap: 0">
+              <input
+                class="switch__input"
+                id="theme-switch"
+                type="checkbox"
+                aria-label="深色模式"
+              />
+              <span class="switch__track" aria-hidden="true"></span>
+            </label>
+          </div>
+
           <div
             class="setting-row setting-row--action"
             id="row-clear-cache"
             role="button"
             tabindex="0"
           >
-            <span>清除离线缓存</span>
+            <span>清除缓存</span>
             <span class="setting-row__value" id="cache-state">检查中…</span>
           </div>
+
           <div
             class="setting-row setting-row--action"
             id="row-clear-orders"
@@ -80,15 +116,28 @@
             <span>清空本地订单记录</span>
             <span class="setting-row__value">仅本机</span>
           </div>
-          <div
-            class="setting-row setting-row--action setting-row--danger"
-            id="row-logout"
-            role="button"
-            tabindex="0"
-          >
-            <span>退出登录</span>
-            <span class="setting-row__value">→</span>
+        </div>
+      </section>
+
+      <!-- ==================== 关于 ==================== -->
+      <section class="setting-group" aria-labelledby="group-about">
+        <h2 class="setting-group__title" id="group-about">关于</h2>
+
+        <div class="setting-list">
+          <div class="setting-row">
+            <span>当前版本</span>
+            <span class="setting-row__value">V1.0.0</span>
           </div>
+
+          <a
+            class="setting-row setting-row--action"
+            id="row-agreement"
+            href="./agreement.html"
+            style="text-decoration: none"
+          >
+            <span>用户协议与隐私政策</span>
+            <span class="setting-row__value">→</span>
+          </a>
         </div>
       </section>
 

@@ -7,6 +7,7 @@
 
 import { request, setToken } from '../utils/request.js';
 import { showToast } from '../components/feedback.js';
+import { upsertAccount } from '../utils/accounts.js';
 
 /** 与 utils/request.js 中的 TOKEN_KEY 保持一致 */
 const TOKEN_KEY = 'yxx_token';
@@ -118,6 +119,15 @@ async function handleLogin(event) {
     } catch {
       // 存储失败不影响登录（守卫会因缺少 token 再次跳回登录页）
     }
+
+    // 记录到多账号列表（Mock 演示用）
+    upsertAccount({
+      student_no: user.student_no || values.studentNo,
+      nickname: user.real_name || '',
+      real_name: user.real_name || '',
+      user_id: user.user_id,
+      token,
+    });
 
     showToast('登录成功，正在进入…', 'success');
     window.location.href = readRedirect();
