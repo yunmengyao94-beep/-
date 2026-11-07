@@ -497,3 +497,262 @@
   content: '✓';
   float: right;
 }
+
+/* ============================================================================
+ * 8. 导航栏业务变体（首页用）：Logo / 搜索框 / 筛选下拉
+ * ========================================================================== */
+.navbar__logo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: var(--primary, #1890ff);
+}
+
+.navbar__logo svg {
+  display: block;
+  width: 28px;
+  height: 28px;
+}
+
+.navbar__search {
+  /* min-width: 0 是关键：不加会让 flex 子项无法收缩，
+     窄屏下搜索框撑破导航栏 → 出现横向滚动 → sticky 定位看起来"错位" */
+  flex: 1;
+  min-width: 0;
+  max-width: 420px;
+  margin: 0 var(--space-3, 12px);
+}
+
+.navbar__filter {
+  flex: none;
+}
+
+/* 搜索框：复用 .input-group 的结构，改成横向胶囊形态 */
+.input-group--search {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  height: 36px;
+  padding: 0 12px;
+  background-color: var(--bg-color, #f5f7fa);
+  border: 1px solid transparent;
+  border-radius: var(--radius-round, 999px);
+  transition:
+    background-color var(--transition-fast, 0.15s) ease,
+    border-color var(--transition-fast, 0.15s) ease,
+    box-shadow var(--transition-fast, 0.15s) ease;
+}
+
+.input-group--search:focus-within {
+  background-color: var(--bg-card, #fff);
+  border-color: var(--primary, #1890ff);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.input-group__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--text-sub, #888);
+}
+
+/* 胶囊内的输入框去掉自身边框与光晕，避免双层描边 */
+.input-group--search .input-group__control {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.input-group--search .input-group__control:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+@media (max-width: 767px) {
+  .navbar__search {
+    max-width: none;
+    margin: 0 var(--space-2, 8px);
+  }
+
+  .navbar__filter .custom-select__value {
+    display: none;
+  }
+
+  /* iOS 聚焦输入框时若字号 < 16px 会自动放大页面，导致滚动后导航栏错位 */
+  .input-group__control {
+    font-size: 16px;
+  }
+
+  .input-group--search .input-group__control {
+    font-size: 16px;
+  }
+}
+
+/* 紧凑版下拉：用于导航栏内的筛选按钮 */
+.custom-select--compact .custom-select__control {
+  width: auto;
+  height: 32px;
+  padding: 0 10px;
+  font-size: var(--font-size-sm, 13px);
+  border-color: var(--border-color, #ebeef5);
+  border-radius: var(--radius-round, 999px);
+}
+
+.custom-select--compact .custom-select__arrow {
+  width: 6px;
+  height: 6px;
+}
+
+/* ============================================================================
+ * 9. 物品卡片 .item-card（列表页）
+ * ----------------------------------------------------------------------------
+ * 结构：
+ *   .card.item-card
+ *     .item-card__media > img.item-card__img
+ *     .item-card__body
+ *       .item-card__title.ellipsis
+ *       .item-card__meta > .item-card__loc + .badge
+ * ========================================================================== */
+.item-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* 图片区：强制 1:1，用 object-fit 裁切而非拉伸 */
+.item-card__media {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background-color: var(--border-color-light, #f2f3f5);
+}
+
+.item-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-base, 0.25s) ease;
+}
+
+@media (hover: hover) {
+  .item-card:hover .item-card__img {
+    transform: scale(1.04);
+  }
+}
+
+/* 按压反馈：手指按下时整卡缩小，抬起 / 滑动 / 取消时复原 */
+.item-card {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.item-card.is-pressed {
+  transform: scale(0.97);
+}
+
+.item-card.is-pressed .item-card__img {
+  transform: scale(1.02);
+}
+
+.item-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  padding: 10px 12px 12px;
+}
+
+.item-card__title {
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-main, #333);
+}
+
+.item-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
+}
+
+.item-card__loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+.item-card__loc-icon {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+/* ============================================================================
+ * 10. 列表页状态（加载更多 / 下拉刷新）
+ * ========================================================================== */
+
+/* 列表底部：加载中 / 没有更多了 */
+.list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-4, 16px) 0 var(--space-2, 8px);
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+.list-footer.is-end {
+  color: var(--text-placeholder, #bfbfbf);
+}
+
+.list-footer .spinner {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+
+/* 触底哨兵：1px 高，只用于 IntersectionObserver 判定 */
+.load-sentinel {
+  height: 1px;
+}
+
+/* 下拉刷新提示条（仅移动端出现） */
+.pull-refresh {
+  position: fixed;
+  top: 58px;
+  left: 50%;
+  z-index: var(--z-toast, 1120);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+  background-color: var(--bg-card, #fff);
+  border-radius: var(--radius-round, 999px);
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.06));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast, 0.15s) ease;
+}
+
+.pull-refresh.is-visible {
+  opacity: 1;
+}
+
+.pull-refresh .spinner {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}

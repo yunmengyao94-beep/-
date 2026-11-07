@@ -260,3 +260,56 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+
+/* ---------- 14. Grid 栅格（列表页主容器） ---------- */
+/* 移动端单列 12px 间距；≥768px 三列 20px；≥1200px 四列 */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3, 12px);
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-5, 20px);
+  }
+}
+
+@media (min-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* 网格里跨满整行（空状态、提示条等） */
+.grid-full {
+  grid-column: 1 / -1;
+}
+
+/* ---------- 15. 页面外壳 ---------- */
+.page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-4, 16px);
+}
+
+.page__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
+  margin-bottom: var(--space-3, 12px);
+}
+
+.page__title {
+  font-size: var(--font-size-lg, 18px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.page__hint {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}

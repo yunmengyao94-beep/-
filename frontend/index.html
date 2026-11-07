@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1890ff" />
+    <meta name="description" content="易校圈 · 校园信用互助与资源共享平台" />
+    <title>易校圈 · 附近物品</title>
+
+    <!-- 样式：令牌 → 重置 → 布局工具类 → 基础组件 → 反馈组件 -->
+    <link rel="stylesheet" href="./css/variables.css" />
+    <link rel="stylesheet" href="./css/reset.css" />
+    <link rel="stylesheet" href="./css/layout.css" />
+    <link rel="stylesheet" href="./components/base.css" />
+    <link rel="stylesheet" href="./components/feedback.css" />
+  </head>
+
+  <body class="page-with-tabbar" style="background-color: var(--bg-color)">
+    <!-- ==================== 顶部导航 ==================== -->
+    <header class="navbar">
+      <!-- 左侧：本地 SVG Logo（内联，随字体色变化、无额外请求） -->
+      <a class="navbar__logo" href="./index.html" aria-label="易校圈首页">
+        <svg viewBox="0 0 32 32" role="img" aria-hidden="true">
+          <rect x="1" y="1" width="30" height="30" rx="9" fill="currentColor" />
+          <path
+            d="M9 11h14M9 16h9M9 21h11"
+            stroke="#fff"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            fill="none"
+          />
+          <circle cx="24" cy="16" r="2.2" fill="#fff" />
+        </svg>
+      </a>
+
+      <!-- 中间：搜索框（复用 .input-group，横向胶囊形态） -->
+      <form class="navbar__search" id="search-form" role="search">
+        <div class="input-group input-group--search">
+          <span class="input-group__icon" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="M16.5 16.5 21 21" />
+            </svg>
+          </span>
+          <input
+            class="input-group__control"
+            id="search-input"
+            type="search"
+            placeholder="搜索物品 / 楼栋 / 类目"
+            autocomplete="off"
+            aria-label="搜索物品"
+          />
+        </div>
+      </form>
+
+      <!-- 右侧：筛选按钮，点击弹出楼栋下拉（.custom-select） -->
+      <div class="custom-select custom-select--compact navbar__filter" data-custom-select>
+        <button
+          class="custom-select__control"
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-label="按楼栋筛选"
+        >
+          <span class="input-group__icon" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linejoin="round"
+            >
+              <path d="M4 5h16l-6 7.2V19l-4 2v-8.8L4 5Z" />
+            </svg>
+          </span>
+          <span class="custom-select__value is-placeholder">全部楼栋</span>
+          <span class="custom-select__arrow" aria-hidden="true"></span>
+        </button>
+        <ul class="custom-select__panel" role="listbox" aria-label="楼栋筛选">
+          <li class="custom-select__option is-selected" role="option" data-value="">全部楼栋</li>
+          <li class="custom-select__option" role="option" data-value="7号楼">7号楼</li>
+          <li class="custom-select__option" role="option" data-value="8号楼">8号楼</li>
+          <li class="custom-select__option" role="option" data-value="9号楼">9号楼</li>
+          <li class="custom-select__option" role="option" data-value="12号楼">12号楼</li>
+        </ul>
+        <input type="hidden" name="building" value="" />
+      </div>
+    </header>
+
+    <!-- ==================== 主内容 ==================== -->
+    <main class="page">
+      <div class="page__head">
+        <h1 class="page__title">附近物品</h1>
+        <span class="page__hint" id="result-count">共 0 件</span>
+      </div>
+
+      <!-- 物品卡片容器（由 js/index.js 的 renderCards 填充） -->
+      <div class="grid" id="item-grid" aria-live="polite"></div>
+
+      <!-- 触底加载状态 -->
+      <div class="list-footer hidden" id="list-footer" aria-live="polite">
+        <span class="spinner" id="footer-spinner" aria-hidden="true"></span>
+        <span id="footer-text">加载中...</span>
+      </div>
+
+      <!-- 触底哨兵：进入视口即请求下一页 -->
+      <div class="load-sentinel" id="load-sentinel" aria-hidden="true"></div>
+    </main>
+
+    <!-- 移动端下拉刷新提示（桌面端不渲染交互） -->
+    <div class="pull-refresh" id="pull-refresh" aria-hidden="true">
+      <span class="spinner" aria-hidden="true"></span>
+      <span id="pull-text">下拉刷新</span>
+    </div>
+
+    <!-- ==================== 底部标签栏 ==================== -->
+    <nav class="tabbar" aria-label="主导航">
+      <a class="tabbar__item is-active" href="./index.html" aria-current="page">
+        <span class="tabbar__icon" aria-hidden="true">🏠</span>
+        <span>首页</span>
+      </a>
+      <a class="tabbar__item" href="./publish.html">
+        <span class="tabbar__icon" aria-hidden="true">➕</span>
+        <span>发布</span>
+      </a>
+      <a class="tabbar__item" href="./profile.html">
+        <span class="tabbar__icon" aria-hidden="true">👤</span>
+        <span>我的</span>
+      </a>
+    </nav>
+
+    <script type="module" src="./js/index.js"></script>
+  </body>
+</html>

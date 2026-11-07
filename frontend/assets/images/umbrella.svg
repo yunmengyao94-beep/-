@@ -1,0 +1,13 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="雨伞">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9fbf2"/>
+      <stop offset="1" stop-color="#c4f0da"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="640" cy="150" r="88" fill="#ffffff" opacity="0.55"/>
+  <circle cx="170" cy="480" r="110" fill="#ffffff" opacity="0.45"/>
+  <text x="400" y="300" font-size="180" text-anchor="middle" dominant-baseline="central">🌂</text>
+  <text x="400" y="470" font-size="34" text-anchor="middle" fill="#1f8a5b" font-family="PingFang SC, Microsoft YaHei, sans-serif">雨伞</text>
+</svg>
