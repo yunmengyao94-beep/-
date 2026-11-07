@@ -8,12 +8,12 @@
 ### 计划中（Sprint 2）
 
 - 前端页面骨架与设计令牌落地（首页、物品列表、订单详情）
-- Mock 服务补齐 API-01 / 05 / 08 / 09 / 12，并接入 `mock_api.json`
+- 本地服务补齐 API-01 / 05 / 08 / 09 / 12，并接入 `api_samples.json`
 - 健康检查与鉴权中间件的自动化测试（Vitest + supertest）
 
 ## [v0.0.1-infra] - 2026-11-07
 
-**完成基础工程目录搭建、规范配置、数据库脚本与 Mock 服务。**
+**完成基础工程目录搭建、规范配置、数据库脚本与 本地服务。**
 
 ### 新增
 
@@ -21,8 +21,8 @@
 - 前端静态资源骨架：`frontend/css/`（设计令牌与 Reset）、`frontend/assets/{fonts,icons,ai}/`
 - 端侧 AI 资源说明与接入约定：[frontend/assets/ai/README.md](../frontend/assets/ai/README.md)
 - 数据库脚本：[sql/init_db.sql](../sql/init_db.sql)（MySQL 8.0，4 表 / 6 外键 / 4 唯一键 / 23 CHECK）
-- Mock 服务：[server/app.js](../server/app.js)（Express 5 + JWT，健康检查、模拟登录、鉴权中间件）
-- 接口样例数据：[mock_api.json](../mock_api.json)（API-04 / 05 / 12，遵循计划书 7.2 统一响应结构）
+- 本地服务：[server/app.js](../server/app.js)（Express 5 + JWT，健康检查、模拟登录、鉴权中间件）
+- 接口样例数据：[api_samples.json](../api_samples.json)（API-04 / 05 / 12，遵循计划书 7.2 统一响应结构）
 - 业务规则配置：[config/credit_rules.json](../config/credit_rules.json)、[config/damage_rules_wig.json](../config/damage_rules_wig.json)
 - 团队文档：[docs/team_roles.md](team_roles.md)
 

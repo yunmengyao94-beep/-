@@ -1,10 +1,10 @@
 'use strict';
 
 /**
- * 易校圈 · Mock 后端（Express）
+ * 易校圈 · 本地服务端（Express）
  * ---------------------------------------------------------------
  * Sprint 1：CORS / JSON 解析 / Morgan / 健康检查 / 假 JWT / 鉴权中间件
- * Sprint 2：mock_db 数据集、通用响应封装、核心业务路由（items / orders / users）、
+ * Sprint 2：seed_db 数据集、通用响应封装、核心业务路由（items / orders / users）、
  *           全局 300ms 网络延迟模拟
  *
  * 契约依据：7.1（协议/鉴权/时间/分页）、7.2（统一响应与错误码）、7.3.1（登录）、
@@ -30,19 +30,19 @@ const itemsRouter = require('./routes/items');
 const ordersRouter = require('./routes/orders');
 const usersRouter = require('./routes/users');
 const { createLiveReload } = require('./live-reload');
-const db = require('./mock_db.json');
+const db = require('./seed_db.json');
 
 const app = express();
 
 /* ---------------------------------------------------------------- 基础配置 */
 
 const PORT = Number(process.env.PORT) || 3000;
-/** 生产必须注入 JWT_SECRET，此处仅为本地 Mock 的兜底值 */
+/** 生产必须注入 JWT_SECRET，此处仅为本地开发的兜底值 */
 const JWT_SECRET = process.env.JWT_SECRET || 'yxx-dev-secret-change-me';
 /** 7.3.2：token 有效期 604800 秒 = 7 天 */
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
-/** mock_db.users 中唯一的模拟用户（张同学） */
-const MOCK_USER_ID = 1;
+/** seed_db.users 中的演示用户 */
+const DEMO_USER_ID = 1;
 /** 白名单：无需 Token 的公开路由（字符串=全方法公开；对象=仅指定方法公开） */
 const PUBLIC_ROUTES = [
   '/api/v1/health',
@@ -52,15 +52,15 @@ const PUBLIC_ROUTES = [
   { path: '/api/v1/items/:id', methods: ['GET'] },
 ];
 
-/** 模拟网络延迟（毫秒）。MOCK_DELAY_MS=0 可关闭，便于压测 */
-const DELAY_MS = process.env.MOCK_DELAY_MS === undefined ? 300 : Number(process.env.MOCK_DELAY_MS);
+/** 模拟网络延迟（毫秒）。NET_DELAY_MS=0 可关闭，便于压测 */
+const DELAY_MS = process.env.NET_DELAY_MS === undefined ? 300 : Number(process.env.NET_DELAY_MS);
 
 /* -------------------------------------------------------------- 全局中间件 */
 
 app.disable('x-powered-by');
 app.set('trust proxy', true);
 
-// 1) CORS：Mock 阶段允许所有源（不携带 Cookie，origin: '*' 安全）
+// 1) CORS：本地开发允许所有源（不携带 Cookie，origin: '*' 安全）
 app.use(
   cors({
     origin: '*',
@@ -92,7 +92,7 @@ const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
 app.use(express.static(FRONTEND_DIR, { extensions: ['html'] }));
 
 // 5.1) 开发热刷新：GET /__live（SSE）
-//      仅本地 Mock 使用；同样放在延迟中间件之前，保证事件即时送达
+//      仅本地开发使用；同样放在延迟中间件之前，保证事件即时送达
 const liveReload = createLiveReload({
   dirs: [FRONTEND_DIR],
   log: (msg) => console.info(msg),
@@ -130,7 +130,7 @@ app.post('/api/v1/auth/login', (req, res) => {
     });
   }
 
-  const user = findUser(MOCK_USER_ID);
+  const user = findUser(DEMO_USER_ID);
   if (!user) {
     return fail(req, res, 500, 50001, '模拟数据缺失：未找到 user_id=1 的用户');
   }
@@ -142,7 +142,7 @@ app.post('/api/v1/auth/login', (req, res) => {
       student_no: studentNo,
       role: 'student',
       role_level: 'L' + user.credit_level,
-      iss: 'yxx-mock',
+      iss: 'yxx',
     },
     JWT_SECRET,
     { expiresIn: TOKEN_TTL_SECONDS }
@@ -187,7 +187,7 @@ app.use((err, req, res, _next) => {
   if (err && (err.type === 'entity.parse.failed' || err instanceof SyntaxError)) {
     return fail(req, res, 400, 40001, '请求体不是合法 JSON');
   }
-  console.error('[yxx-mock] unhandled error:', err);
+  console.error('[yxx] unhandled error:', err);
   return fail(req, res, 500, 50001, '服务端内部错误');
 });
 
@@ -210,9 +210,9 @@ function openBrowser(url) {
 
   try {
     spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore' }).unref();
-    console.info(`[yxx-mock] 已调用系统浏览器打开 ${url}`);
+    console.info(`[yxx] 已调用系统浏览器打开 ${url}`);
   } catch (error) {
-    console.warn(`[yxx-mock] 打开浏览器失败（请手动访问 ${url}）：${error.message}`);
+    console.warn(`[yxx] 打开浏览器失败（请手动访问 ${url}）：${error.message}`);
   }
 }
 
@@ -228,7 +228,7 @@ function listen(port, remaining = PORT_RETRY) {
     server.once('listening', () => resolve({ server, port }));
     server.once('error', (error) => {
       if (error.code === 'EADDRINUSE' && remaining > 0) {
-        console.warn(`[yxx-mock] 端口 ${port} 被占用，自动改用 ${port + 1} …`);
+        console.warn(`[yxx] 端口 ${port} 被占用，自动改用 ${port + 1} …`);
         resolve(listen(port + 1, remaining - 1));
         return;
       }
@@ -241,17 +241,17 @@ if (require.main === module) {
   listen(PORT)
     .then(({ port }) => {
       const url = `http://localhost:${port}`;
-      console.info(`[yxx-mock] 服务已启动：${url}（延迟 ${DELAY_MS}ms）`);
+      console.info(`[yxx] 服务已启动：${url}（延迟 ${DELAY_MS}ms）`);
       console.info(
-        `[yxx-mock] 数据规模：users=${db.users.length} items=${db.items.length} credit_logs=${db.credit_logs.length}`
+        `[yxx] 数据规模：users=${db.users.length} items=${db.items.length} credit_logs=${db.credit_logs.length}`
       );
-      console.info(`[yxx-mock] 首页：${url}/index.html | 热刷新：已开启（改文件后浏览器自动刷新）`);
+      console.info(`[yxx] 首页：${url}/index.html | 热刷新：已开启（改文件后浏览器自动刷新）`);
 
       liveReload.start();
       if (SHOULD_OPEN) openBrowser(`${url}/index.html`);
     })
     .catch((error) => {
-      console.error(`[yxx-mock] 启动失败：${error.message}`);
+      console.error(`[yxx] 启动失败：${error.message}`);
       process.exit(1);
     });
 }

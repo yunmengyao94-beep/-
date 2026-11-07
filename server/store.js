@@ -3,12 +3,12 @@
 /**
  * 内存数据仓
  * ---------------------------------------------------------------
- * 以 server/mock_db.json 为初始数据（require 后即进程内单例），
+ * 以 server/seed_db.json 为初始数据（require 后即进程内单例），
  * 借用等写操作只改内存，不回写文件——重启即复位，便于反复演示。
  * 真实实现中这些函数对应 repository / service 层与数据库事务。
  */
 
-const db = require('./mock_db.json');
+const db = require('./seed_db.json');
 
 /** 订单号自增起点：首次借用返回 30001（与接口约定一致） */
 const ORDER_ID_SEED = 30001;

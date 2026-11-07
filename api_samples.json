@@ -1,5 +1,5 @@
 {
-  "mock_version": "1.0.1",
+  "sample_version": "1.0.1",
   "project": "Project-YXX / 易校圈",
   "source_document": "易校圈_Project-YXX_商业级项目计划书_V1.0.0.md",
   "source_sections": [
@@ -45,7 +45,7 @@
       "sort": "created_at DESC, id DESC",
       "cursor_format": "base64url(JSON) → {\"created_at\":\"...\",\"id\":...}，无填充字符 =，客户端不得解析其内容",
       "shape": "data = { list: [...], pagination: { limit, has_more, next_cursor, sort } }",
-      "note": "7.1 仅约定 cursor + limit，未定义外层信封；list/pagination 为本次 mock 约定，接口评审时需固化"
+      "note": "7.1 仅约定 cursor + limit，未定义外层信封；list/pagination 为本次约定的，接口评审时需固化"
     },
     "masking": {
       "student_no": "按 6.5 脱敏为 2599****20（L4 敏感个人信息）",
@@ -54,7 +54,7 @@
     },
     "credit_formula": {
       "available": "credit_score - credit_frozen - in_flight_frozen（5.4.3）",
-      "frozen_scope": "credit_frozen 已含在途订单的冻结分；in_flight_frozen 仅统计尚未落入 frozen 的占用，本 mock 取 0，避免公式重复扣减",
+      "frozen_scope": "credit_frozen 已含在途订单的冻结分；in_flight_frozen 仅统计尚未落入 frozen 的占用，此处取 0，避免公式重复扣减",
       "reconciliation": "SUM(sys_credit_log.delta) == credit_score - 100（6.3.4）；冻结/解冻 delta 记 0，否则恒等式必破"
     },
     "derived_fields": [

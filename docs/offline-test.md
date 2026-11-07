@@ -5,9 +5,9 @@
 
 ## 前置条件
 
-1. Mock 服务已启动：`npm run server`（默认 `http://localhost:3000`）
+1. 本地服务已启动：`npm run server`（默认 `http://localhost:3000`）
 2. 用静态服务打开首页（**不要用 `file://` 直接双击**，ES Module 会被 CORS 拦截）：
-   - 方式 A：直接访问 `http://localhost:3000/index.html`（Mock 服务已托管 `frontend/`）
+   - 方式 A：直接访问 `http://localhost:3000/index.html`（本地服务已托管 `frontend/`）
    - 方式 B：VS Code Live Server 打开 `frontend/index.html`
 
 ## 测试步骤（Chrome / Edge）

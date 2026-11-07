@@ -151,7 +151,7 @@ function writeJson(key, value) {
   }
 }
 
-/** 当前用户（本地 mock，缺省初始化一个张同学） */
+/** 当前用户（本地缓存，缺省初始化一个同学） */
 function loadUser() {
   const stored = readJson(USER_STORAGE_KEY, null);
   if (stored && typeof stored === 'object') return stored;

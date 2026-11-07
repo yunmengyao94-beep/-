@@ -49,7 +49,7 @@ router.get('/', (req, res) => {
  * POST /api/v1/items/publish（计划书 7.3.3）
  * 请求：{ title, category, image_hash, deposit_score, damage_rules, building_loc, is_high_value }
  * 处理：鉴权（网关已拦）→ 基础校验 → 写入内存 biz_item → 返回物品 ID 与曝光序号
- * 说明：Mock 阶段不做敏感词复检与图片落盘，仅校验字段结构与必填项。
+ * 说明：演示阶段不做敏感词复检与图片落盘，仅校验字段结构与必填项。
  */
 router.post('/publish', (req, res) => {
   const body = req.body || {};

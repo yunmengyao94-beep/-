@@ -19,7 +19,7 @@
 
 - **高值类目**：`digital`、`wig`（假发）、`formal_wear`（正装）受 5.4.1 / 5.4.5 的借用限制约束，
   与 `is_high_value = 1` 标记配合使用；类目本身不等于高值判定。
-- **数据现状差异**：`server/mock_db.json` 中另有 5 条 `teaching_aid`（教具——显微镜、化学实验箱等），
+- **数据现状差异**：`server/seed_db.json` 中另有 5 条 `teaching_aid`（教具——显微镜、化学实验箱等），
   该值来自 6.3.2 的「教具」类目，但不在本次约定的 4 个枚举内。
   前端在 `constants.js` 中以 `CATEGORY_EXTRA` 单独承载，映射为「教具」，
   待产品确认后决定是并入正式枚举还是迁移数据。
@@ -39,7 +39,7 @@
 ### 补充说明
 
 - **补充状态**：6.3.3 还定义了 `4` = 已取消（超时未交接或主动取消），
-  当前 Mock 流程未产生该状态，前端以 `ORDER_STATE_EXTRA` 承载，映射为「已取消」，
+  当前 演示流程未产生该状态，前端以 `ORDER_STATE_EXTRA` 承载，映射为「已取消」，
   展示为灰色标签、不提供操作入口。
 - **状态与操作映射**（建议）：`0` → 交接、取消；`1` → 归还、申请延期；
   `2` → 评价、再次借用；`3` → 仅查看；`4` → 仅查看。
@@ -64,6 +64,6 @@ CATEGORY_LIST.forEach(({ value, label }) => {
 
 ## 4. 维护约定
 
-1. 新增枚举值必须同时改：`docs/data_dictionary.md`、`frontend/utils/constants.js`、`server/mock_db.json`。
+1. 新增枚举值必须同时改：`docs/data_dictionary.md`、`frontend/utils/constants.js`、`server/seed_db.json`。
 2. 中文标签变更视为**接口契约变更**，需在群里同步前后端与测试。
 3. 枚举值一律小写下划线（`teaching_aid`）或整数，禁止用中文作为取值。

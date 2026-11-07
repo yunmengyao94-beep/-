@@ -1,7 +1,7 @@
 /**
  * 个人中心页
  * ---------------------------------------------------------------------------
- * 数据：GET /api/v1/users/me（需要 Token → 先静默换取 mock JWT）
+ * 数据：GET /api/v1/users/me（需要 Token，未登录时由路由守卫拦截）
  * 展示：头像 / 昵称 / 掩码学号 / 学院与楼栋、环形信用分、可用分与冻结分、升级提示
  * 环形进度用 SVG viewBox 绘制，随容器缩放，任何 DPI 下都不会模糊。
  */
@@ -437,9 +437,6 @@ export async function initOCR() {
     // 本地缺失/损坏（例如未执行 fetch 脚本）：回退 CDN，保证点击不报错
     ocrWorker = await create(OCR_CDN_PATHS);
   }
-
-  // eslint-disable-next-line no-console
-  console.log('OCR 引擎已就绪');
   return ocrWorker;
 }
 

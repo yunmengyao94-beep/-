@@ -6,26 +6,26 @@
 
 ## 技术栈
 
-| 层   | 选型                                             | 说明                                          |
-| ---- | ------------------------------------------------ | --------------------------------------------- |
-| 前端 | **纯原生 HTML / CSS / JavaScript（ES Modules）** | 不引入框架，零构建，浏览器直接运行            |
-| 后端 | **Node.js Mock Server**                          | 仅用于联调，返回 `mock_api.json` 中的固定数据 |
-| 数据 | MySQL 8.0 脚本 + JSON 规则配置                   | `sql/init_db.sql`、`config/*.json`            |
-| 规范 | ESLint + Prettier + Husky + lint-staged          | 提交前自动校验                                |
+| 层   | 选型                                             | 说明                                             |
+| ---- | ------------------------------------------------ | ------------------------------------------------ |
+| 前端 | **纯原生 HTML / CSS / JavaScript（ES Modules）** | 不引入框架，零构建，浏览器直接运行               |
+| 后端 | **Node.js 演示 Server**                          | 仅用于联调，返回 `api_samples.json` 中的固定数据 |
+| 数据 | MySQL 8.0 脚本 + JSON 规则配置                   | `sql/init_db.sql`、`config/*.json`               |
+| 规范 | ESLint + Prettier + Husky + lint-staged          | 提交前自动校验                                   |
 
 ## 目录结构
 
 ```
 .
 ├── frontend/               # 前端页面与静态资源（原生 HTML/CSS/JS）
-├── server/                 # Node.js Mock 后端（Express + JWT）
+├── server/                 # Node.js 本地后端（Express + JWT）
 ├── assets/                 # 图片、图标、字体等静态资源
 ├── docs/                   # 项目文档（团队分工、接口约定等）
 ├── sql/                    # 数据库脚本（init_db.sql）
 ├── scripts/                # 构建与校验脚本
 ├── config/                 # 业务规则配置（信用分、定损表）
 ├── eslint-rules/           # 自定义 ESLint 规则（no-absolute-position）
-├── mock_api.json           # 接口 Mock 数据（API-04 / 05 / 12）
+├── api_samples.json           # 接口 演示数据（API-04 / 05 / 12）
 ├── .eslintrc.json          # ESLint 配置
 ├── .prettierrc             # Prettier 配置
 └── .husky/pre-commit       # 提交前钩子 → lint-staged
@@ -39,7 +39,7 @@ npm install
 # 或
 pnpm install
 
-# 2. 启动 Mock 后端（默认 http://localhost:3000）
+# 2. 启动 本地后端（默认 http://localhost:3000）
 npm run server        # 等价于 node server/app.js
 
 # 3. 冒烟自检
@@ -74,7 +74,7 @@ npm run format        # Prettier 格式化
 - [数据字典 · 前端枚举](docs/data_dictionary.md)
 - [更新日志](docs/changelog.md)
 - [数据库初始化脚本](sql/init_db.sql)
-- [接口 Mock 数据](mock_api.json)
+- [接口 演示数据](api_samples.json)
 - [信用规则配置](config/credit_rules.json)
 
 ## 备注

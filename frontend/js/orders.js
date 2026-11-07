@@ -80,7 +80,7 @@ function createOrderCard(order) {
   card.className = 'order-card';
   card.dataset.orderId = String(order.order_id);
 
-  // 左侧图片区（Mock 无真实图片时用标题首字占位）
+  // 左侧图片区（无真实图片时用标题首字占位）
   const media = document.createElement('div');
   media.className = 'order-card__media';
 

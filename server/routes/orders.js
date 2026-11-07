@@ -60,7 +60,7 @@ function toDto(order, viewerId) {
     item: {
       id: order.item_id,
       title: snapshot.title || (item ? item.title : `物品 #${order.item_id}`),
-      image: null, // Mock 数据只有 image_hash，没有真实图片地址
+      image: null, // 数据只有 image_hash，没有真实图片地址
       deposit_score: snapshot.deposit_score ?? (item ? item.deposit_score : 0),
     },
     counterparty: {

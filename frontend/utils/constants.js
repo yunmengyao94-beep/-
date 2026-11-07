@@ -5,7 +5,7 @@
  *   1. 页面里禁止写死中文映射，一律引用本文件
  *   2. 主字典只放「已确认」的枚举；数据中已出现但未定稿的取值放 *_EXTRA，
  *      由 xxxLabel() 统一兜底，避免页面出现 undefined
- *   3. 修改枚举须同步 docs/data_dictionary.md 与 server/mock_db.json
+ *   3. 修改枚举须同步 docs/data_dictionary.md 与后端数据字典
  *
  * 依据：计划书 6.3.2（biz_item.category）、6.3.3（biz_order.state）
  */
@@ -31,7 +31,7 @@ export const ORDER_STATE = Object.freeze({
   3: '仲裁中',
 });
 
-/** 订单状态 · 补充字典：6.3.3 定义的 4 = 已取消，当前 Mock 流程未产生 */
+/** 订单状态 · 补充字典：6.3.3 定义的 4 = 已取消，当前产品流程未产生 */
 export const ORDER_STATE_EXTRA = Object.freeze({
   4: '已取消',
 });

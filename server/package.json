@@ -2,7 +2,7 @@
   "name": "yxx-server",
   "version": "0.1.0",
   "private": true,
-  "description": "易校圈 Mock 后端（Express + JWT）",
+  "description": "易校圈 · 本地服务端",
   "main": "app.js",
   "type": "commonjs",
   "engines": {

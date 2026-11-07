@@ -6,7 +6,7 @@
  * 作用：监听 frontend/ 目录的文件变化，通过 SSE 通知浏览器刷新页面。
  * 端点：GET /__live（text/event-stream）
  * 说明：
- *   · 仅用于本地 Mock 开发，生产环境不会启用（由 server/app.js 按需挂载）
+ *   · 仅用于本地开发，生产环境不会启用（由 server/app.js 按需挂载）
  *   · 事件名 `reload`，数据为时间戳；前端收到后清空 Cache Storage 再 reload，
  *     避免 Service Worker 的 Cache First 策略把旧文件喂给页面
  */

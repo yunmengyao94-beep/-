@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "9f2a7c41-8b3d-4e6a-9c15-2d7f0b4a6e83",
-    "name": "易校圈 Mock API（Project-YXX）",
-    "description": "Sprint 2 核心接口集合，对接本地 Mock 服务 http://localhost:3000。\n\n使用步骤：\n1. 终端执行 `npm run server` 启动服务（默认 3000 端口，所有接口含 300ms 模拟延迟）\n2. 先跑「02 模拟登录」，脚本会自动把 token 写入集合变量 {{token}}\n3. 其余受保护接口通过 Bearer {{token}} 自动鉴权\n\n响应统一遵循计划书 7.2：code / msg / data / timestamp / trace_id / server_time。\n\n公开接口（无需 Token）：GET /items、GET /items/:id、GET /health、POST /auth/login；其余接口需 Bearer Token。",
+    "name": "易校圈 本地 API（Project-YXX）",
+    "description": "Sprint 2 核心接口集合，对接本地 本地服务 http://localhost:3000。\n\n使用步骤：\n1. 终端执行 `npm run server` 启动服务（默认 3000 端口，所有接口含 300ms 模拟延迟）\n2. 先跑「02 模拟登录」，脚本会自动把 token 写入集合变量 {{token}}\n3. 其余受保护接口通过 Bearer {{token}} 自动鉴权\n\n响应统一遵循计划书 7.2：code / msg / data / timestamp / trace_id / server_time。\n\n公开接口（无需 Token）：GET /items、GET /items/:id、GET /health、POST /auth/login；其余接口需 Bearer Token。",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
