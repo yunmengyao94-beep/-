@@ -8,9 +8,26 @@
 const express = require('express');
 const { ok, fail } = require('../utils/http');
 const { parseLimit, encodeCursor, decodeCursor } = require('../utils/pagination');
-const { db, findItem } = require('../store');
+const { db, findItem, findUser, persistDb } = require('../store');
+const { maskName } = require('../utils/mask');
 
 const router = express.Router();
+
+/** 补充出借人信息（昵称脱敏 + 信用等级），避免前端写死兜底 */
+function withOwner(item) {
+  if (!item) return item;
+  const owner = findUser(item.owner_id);
+
+  return {
+    ...item,
+    owner: {
+      id: item.owner_id,
+      nickname: owner ? maskName(owner.real_name) : '同学',
+      credit_level: owner ? owner.credit_level : 0,
+      building_loc: owner ? owner.building_loc : '',
+    },
+  };
+}
 
 /**
  * GET /api/v1/items
@@ -35,7 +52,7 @@ router.get('/', (req, res) => {
   const hasMore = rest.length > limit;
 
   return ok(req, res, {
-    list: page,
+    list: page.map(withOwner),
     pagination: {
       limit,
       has_more: hasMore,
@@ -83,18 +100,27 @@ router.post('/publish', (req, res) => {
     `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
     `T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}+08:00`;
 
+  const buildingLoc = typeof body.building_loc === 'string' ? body.building_loc.trim() : '';
+  if (!buildingLoc) {
+    return fail(req, res, 400, 40001, '参数校验失败：building_loc 必填', { field: 'building_loc' });
+  }
+
+  const owner = findUser(req.user && req.user.user_id);
+  if (!owner) {
+    return fail(req, res, 401, 40101, '未登录或 Token 失效，请重新登录');
+  }
+
   const itemId = db.items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
   const item = {
     id: itemId,
-    owner_id: 1,
+    owner_id: owner.id,
     title,
     category,
     image_hash: typeof body.image_hash === 'string' ? body.image_hash : '',
     image_list: Array.isArray(body.image_list) ? body.image_list : [],
     deposit_score: deposit,
     damage_rules: damageRules,
-    building_loc:
-      typeof body.building_loc === 'string' && body.building_loc ? body.building_loc : '7号楼',
+    building_loc: buildingLoc,
     is_high_value: isHighValue,
     status: 0,
     expire_at: null,
@@ -102,6 +128,7 @@ router.post('/publish', (req, res) => {
   };
 
   db.items.push(item);
+  persistDb();
 
   return ok(req, res, {
     item_id: item.id,
@@ -126,7 +153,7 @@ router.get('/:id', (req, res) => {
     return fail(req, res, 404, 40401, '资源不存在');
   }
 
-  return ok(req, res, item);
+  return ok(req, res, withOwner(item));
 });
 
 module.exports = router;

@@ -21,10 +21,6 @@ const ITEMS_ENDPOINT = '/items';
  * 且 /users/me 需要 Token（详情页是公开页，不能强制登录），
  * 因此按 owner_id 做本地兜底，待服务端补字段后自动切换真实数据。
  */
-const OWNER_FALLBACK = {
-  1: { nickname: '张同学', level: 4 },
-};
-
 /** 信用等级 → 名称（对齐计划书 5.4.1） */
 const LEVEL_NAME = {
   0: '冻结',
@@ -88,11 +84,11 @@ function resolveOwner(item) {
     };
   }
 
-  const fallback = OWNER_FALLBACK[item.owner_id] || {};
+  // 接口未返回出借人信息时的中性兜底（不含任何写死的姓名）
   return {
     id: item.owner_id,
-    nickname: fallback.nickname || '校园用户',
-    level: fallback.level ?? 4,
+    nickname: '校园用户',
+    level: 4,
   };
 }
 
@@ -156,15 +152,14 @@ function loadUser() {
   const stored = readJson(USER_STORAGE_KEY, null);
   if (stored && typeof stored === 'object') return stored;
 
-  const seed = {
-    user_id: 1,
-    nickname: '张同学',
+  // 未登录/本地被清空：返回中性占位，不写死任何姓名，也不落盘伪造用户
+  return {
+    user_id: null,
+    nickname: '校园用户',
     credit_score: 100,
     credit_available: 100,
     credit_level: 4,
   };
-  writeJson(USER_STORAGE_KEY, seed);
-  return seed;
 }
 
 /** 从服务端同步可用信用分（借用成功后冻结分变化） */
@@ -355,9 +350,19 @@ function handleContact() {
  * @returns {{enabled: boolean, label: string}}
  */
 function resolveBorrowState(item) {
+  // 自己的物品不允许借用（与服务端 40902 保持一致）
+  if (isOwnItem(item)) return { enabled: false, label: '自己的物品', reason: 'own' };
   if (item.status === 0) return { enabled: true, label: '申请借用' };
   if (item.status === 1) return { enabled: false, label: '已被借出' };
   return { enabled: false, label: '不可借用' };
+}
+
+/** 当前浏览者是否就是出借人 */
+function isOwnItem(item) {
+  const user = loadUser();
+  const myId = user && user.user_id;
+  if (!myId || !item) return false;
+  return Number(item.owner_id) === Number(myId);
 }
 
 /** 移除已有操作栏 */

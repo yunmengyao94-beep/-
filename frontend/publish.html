@@ -89,6 +89,28 @@
           <input type="hidden" name="category" value="" />
         </div>
         <p class="field-error hidden" id="err-category"></p>
+        <!-- 所在楼栋：默认取当前账号的楼栋 -->
+        <div class="input-group">
+          <label class="input-group__label input-group__label--required" for="field-building"
+            >所在楼栋</label
+          >
+          <select class="input-group__control" id="field-building" name="building_loc">
+            <option value="">请选择楼栋</option>
+            <option value="第1公寓">第1公寓</option>
+            <option value="第2公寓">第2公寓</option>
+            <option value="第3公寓">第3公寓</option>
+            <option value="第4公寓">第4公寓</option>
+            <option value="第5公寓">第5公寓</option>
+            <option value="第6公寓">第6公寓</option>
+            <option value="第7公寓">第7公寓</option>
+            <option value="第8公寓">第8公寓</option>
+            <option value="第9公寓">第9公寓</option>
+            <option value="第10公寓">第10公寓</option>
+            <option value="第11公寓">第11公寓</option>
+          </select>
+          <span class="input-group__hint">借用时同学会按楼栋就近选择</span>
+          <p class="field-error hidden" id="err-building"></p>
+        </div>
 
         <!-- 要求的信用分 -->
         <div class="input-group">

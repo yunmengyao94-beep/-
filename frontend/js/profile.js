@@ -686,7 +686,7 @@ function grantCreditBonus(points, reason) {
 function persistCredit(credit) {
   try {
     const raw = localStorage.getItem(USER_STORAGE_KEY);
-    const user = raw ? JSON.parse(raw) : { user_id: 1, nickname: '张同学' };
+    const user = raw ? JSON.parse(raw) : { user_id: null, nickname: '校园用户' };
     user.credit_score = credit.score;
     user.credit_available = credit.available;
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));

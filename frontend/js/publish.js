@@ -24,8 +24,8 @@ const WEBP_QUALITY = 0.7;
 const MIN_DAMAGE_ROWS = 1;
 /** 提交按钮最短 Loading 时长（配合 300ms 网络延迟，视觉上约 1 秒） */
 const SUBMIT_MIN_MS = 1000;
-/** 本批未做楼栋选择，默认取登录用户常驻楼栋 */
-const DEFAULT_BUILDING = '7号楼';
+/** 楼栋取值：优先当前账号的楼栋，未知则留空要求用户选择 */
+const DEFAULT_BUILDING = '';
 
 /** 已选图片：{ id, name, dataUrl, originalBytes, compressedBytes } */
 const selectedImages = [];
@@ -45,6 +45,7 @@ const addRowBtn = document.getElementById('add-damage-row');
 const publishBtn = document.getElementById('publish-btn');
 const titleInput = document.getElementById('field-title');
 const depositInput = document.getElementById('field-deposit');
+const buildingSelect = document.getElementById('field-building');
 const categoryRoot = document.querySelector('[data-custom-select]');
 const categoryValueEl = categoryRoot ? categoryRoot.querySelector('input[type="hidden"]') : null;
 
@@ -54,6 +55,7 @@ const ERROR_NODES = {
   category: document.getElementById('err-category'),
   deposit: document.getElementById('err-deposit'),
   image: document.getElementById('err-image'),
+  building: document.getElementById('err-building'),
   damage: document.getElementById('err-damage'),
 };
 
@@ -182,6 +184,7 @@ function removeImage(id) {
     if (node && node.parentNode) node.remove();
   }
 
+  applyAccountBuilding();
   updateCount();
 }
 
@@ -379,6 +382,9 @@ export function validateForm() {
     errors.deposit = '信用分必须是大于 0 的整数';
   }
 
+  const building = buildingSelect ? String(buildingSelect.value || '').trim() : '';
+  if (!building) errors.building = '请选择所在楼栋';
+
   if (selectedImages.length === 0) errors.image = '请至少上传一张图片';
 
   let damageRules = null;
@@ -407,7 +413,7 @@ export function validateForm() {
   return {
     valid: Object.keys(errors).length === 0,
     errors,
-    values: { title, category, deposit, isHighValue, damageRules },
+    values: { title, category, deposit, building, isHighValue, damageRules },
   };
 }
 
@@ -443,7 +449,7 @@ function buildPayload(values) {
     image_count: selectedImages.length,
     deposit_score: values.deposit,
     damage_rules: values.damageRules,
-    building_loc: DEFAULT_BUILDING,
+    building_loc: values.building,
     is_high_value: values.isHighValue,
   };
 }
@@ -650,6 +656,24 @@ function bindForm() {
 }
 
 /* ------------------------------------------------------------------ 启动 */
+
+/** 用当前账号的楼栋预选 */
+function applyAccountBuilding() {
+  if (!buildingSelect) return;
+
+  let building = DEFAULT_BUILDING;
+  try {
+    const raw = localStorage.getItem('yxx_user');
+    const user = raw ? JSON.parse(raw) : null;
+    building = (user && user.building_loc) || '';
+  } catch {
+    building = '';
+  }
+
+  if (building && Array.from(buildingSelect.options).some((opt) => opt.value === building)) {
+    buildingSelect.value = building;
+  }
+}
 
 function init() {
   bindBack();

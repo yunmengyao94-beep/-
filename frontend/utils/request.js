@@ -14,7 +14,14 @@
  *   const { list, pagination } = await request('/items?limit=10');
  */
 
-export const BASE_URL = 'http://localhost:3000/api/v1';
+/**
+ * 接口基地址：默认同源相对路径 /api/v1（前端与服务端同域部署，如 http://host:port/）
+ * 打包成 App / 桌面端时，可在页面 head 内先注入 window.__YXX_API_ORIGIN__
+ * （例如 'https://api.yxx.edu.cn'），即可跨域指向远端接口。
+ */
+const API_ORIGIN = (typeof window !== 'undefined' && window.__YXX_API_ORIGIN__) || '';
+
+export const BASE_URL = `${API_ORIGIN}/api/v1`;
 
 import { showToast } from '../components/feedback.js';
 

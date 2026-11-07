@@ -22,6 +22,7 @@ const {
   buildOrderNo,
   addOrder,
   appendCreditLog,
+  persistDb,
 } = require('../store');
 
 const router = express.Router();
@@ -182,6 +183,8 @@ router.patch('/:id/state', (req, res) => {
     }
   }
 
+  persistDb();
+
   return ok(req, res, {
     order_id: order.id,
     state: order.state,
@@ -215,6 +218,11 @@ router.post('/create', (req, res) => {
 
   if (item.status === 1) {
     return fail(req, res, 409, 40901, '物品已被借出');
+  }
+
+  // 不能借用自己发布的物品（否则等于自己给自己刷信用）
+  if (item.owner_id === (req.user && req.user.user_id)) {
+    return fail(req, res, 409, 40902, '不能借用自己发布的物品');
   }
 
   const borrower = findUser(req.user && req.user.user_id);
@@ -282,6 +290,8 @@ router.post('/create', (req, res) => {
     reason: `借用「${item.title}」冻结信用分 ${item.deposit_score}`,
     created_at: now,
   });
+
+  persistDb();
 
   return ok(req, res, {
     order_id: order.id,

@@ -108,7 +108,13 @@ async function handleLogin(event) {
   try {
     const data = await request('/auth/login', {
       method: 'POST',
-      body: { student_no: account.studentNo, password: values.password },
+      body: {
+        student_no: account.studentNo,
+        password: values.password,
+        name: account.name,
+        college: account.college,
+        building: account.building,
+      },
     });
 
     const token = data && data.token;

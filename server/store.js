@@ -1,20 +1,69 @@
 'use strict';
 
 /**
- * 内存数据仓
+ * 数据仓（内存 + 落盘）
  * ---------------------------------------------------------------
- * 以 server/seed_db.json 为初始数据（require 后即进程内单例），
- * 借用等写操作只改内存，不回写文件——重启即复位，便于反复演示。
+ * 启动顺序：
+ *   1. 优先读 server/db.json（上次运行写下的真实数据）
+ *   2. 不存在或损坏 → 回退 server/seed_db.json（初始种子）
+ * 写入：
+ *   任何写操作（发布物品 / 创建订单 / 订单状态流转）后调用 persistDb()，
+ *   先写临时文件再 rename，避免进程中断产生半截 JSON。
  * 真实实现中这些函数对应 repository / service 层与数据库事务。
  */
 
-const db = require('./seed_db.json');
+const fs = require('fs');
+const path = require('path');
+
+const DATA_DIR = path.join(__dirname);
+const DB_FILE = path.join(DATA_DIR, 'db.json');
+const SEED_FILE = path.join(DATA_DIR, 'seed_db.json');
+
+/** 读取 JSON 文件，失败返回 null */
+function readJson(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/** 规范化数据结构 */
+function normalize(source) {
+  const data = source || {};
+  if (!Array.isArray(data.users)) data.users = [];
+  if (!Array.isArray(data.items)) data.items = [];
+  if (!Array.isArray(data.orders)) data.orders = [];
+  if (!Array.isArray(data.credit_logs)) data.credit_logs = [];
+  return data;
+}
+
+const db = normalize(readJson(DB_FILE) || readJson(SEED_FILE));
 
 /** 订单号自增起点：首次借用返回 30001（与接口约定一致） */
 const ORDER_ID_SEED = 30001;
-let orderSeq = ORDER_ID_SEED;
+let orderSeq = Math.max(
+  ORDER_ID_SEED,
+  db.orders.reduce((max, order) => Math.max(max, Number(order.id) || 0), 0) + 1
+);
 
-if (!Array.isArray(db.orders)) db.orders = [];
+/** 落盘：先写临时文件再 rename，避免半截 JSON */
+function persistDb() {
+  const tmp = `${DB_FILE}.tmp`;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(db, null, 2), 'utf8');
+    fs.renameSync(tmp, DB_FILE);
+    return true;
+  } catch (error) {
+    console.error('[yxx] 数据落盘失败:', error.message);
+    try {
+      if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
+    } catch {
+      // 忽略清理失败
+    }
+    return false;
+  }
+}
 
 /**
  * 按 id 查用户
@@ -23,6 +72,17 @@ if (!Array.isArray(db.orders)) db.orders = [];
  */
 function findUser(id) {
   return db.users.find((u) => u.id === Number(id)) || null;
+}
+
+/**
+ * 按学号查用户（登录时用于账号 → user_id 映射）
+ * @param {string} studentNo
+ * @returns {object|null}
+ */
+function findUserByStudentNo(studentNo) {
+  const no = String(studentNo || '').trim();
+  if (!no) return null;
+  return db.users.find((u) => u.student_no === no) || null;
 }
 
 /**
@@ -142,10 +202,55 @@ function listOrders(userId, filter = {}) {
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 }
 
+/**
+ * 按学号取用户，不存在则创建（账号即身份：每个学号一份信用记录）
+ * @param {string} studentNo
+ * @param {{name?: string, college?: string, building?: string}} [profile]
+ * @returns {{user: object, created: boolean}}
+ */
+function ensureUserForStudent(studentNo, profile = {}) {
+  const no = String(studentNo || '').trim();
+  const existing = findUserByStudentNo(no);
+  if (existing) return { user: existing, created: false };
+
+  const nextId = db.users.reduce((max, u) => Math.max(max, Number(u.id) || 0), 0) + 1;
+  const now = new Date(Date.now() + 8 * 3600 * 1000).toISOString().replace('Z', '+08:00');
+
+  const user = {
+    id: nextId,
+    student_no: no,
+    real_name: profile.name || '同学',
+    college_code: profile.college || '',
+    major_code: '',
+    credit_score: 100,
+    credit_frozen: 0,
+    credit_available: 100,
+    credit_level: 4,
+    device_fp: `device-${nextId}`,
+    invite_code: `YXX${String(nextId).padStart(4, '0')}`,
+    invited_by: null,
+    webauthn_pubkey: `demo-pubkey-user-${nextId}`,
+    building_loc: profile.building || '',
+    status: 1,
+    created_at: now,
+    updated_at: now,
+  };
+
+  db.users.push(user);
+  persistDb();
+
+  return { user, created: true };
+}
+
 module.exports = {
   db,
+  DB_FILE,
+  SEED_FILE,
+  persistDb,
   ORDER_ID_SEED,
   findUser,
+  findUserByStudentNo,
+  ensureUserForStudent,
   findItem,
   findOrder,
   availableOf,

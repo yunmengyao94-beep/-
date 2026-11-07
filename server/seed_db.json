@@ -2,7 +2,7 @@
   "users": [
     {
       "id": 1,
-      "student_no": "2599080110120",
+      "student_no": "2508080110101",
       "real_name": "张同学",
       "college_code": "0801",
       "major_code": "080901",
@@ -14,14 +14,14 @@
       "invite_code": "YXX3P7Q9",
       "invited_by": null,
       "webauthn_pubkey": "demo-pubkey-user-1",
-      "building_loc": "7号楼",
+      "building_loc": "第7公寓",
       "status": 1,
       "created_at": "2026-09-01T08:30:00+08:00",
       "updated_at": "2026-11-07T09:08:00+08:00"
     },
     {
       "id": 2,
-      "student_no": "2599080110088",
+      "student_no": "2508080110102",
       "real_name": "李同学",
       "college_code": "0801",
       "major_code": "080901",
@@ -33,10 +33,29 @@
       "invite_code": "YXX8H2M6",
       "invited_by": null,
       "webauthn_pubkey": "demo-pubkey-user-2",
-      "building_loc": "5号楼",
+      "building_loc": "第5公寓",
       "status": 1,
       "created_at": "2026-09-03T10:12:00+08:00",
       "updated_at": "2026-11-06T16:40:00+08:00"
+    },
+    {
+      "id": 3,
+      "student_no": "2408080110103",
+      "real_name": "王同学",
+      "college_code": "0802",
+      "major_code": "080902",
+      "credit_score": 100,
+      "credit_frozen": 0,
+      "credit_available": 100,
+      "credit_level": 4,
+      "device_fp": "demo-device-fp-user-3",
+      "invite_code": "YXX3W9K2",
+      "invited_by": null,
+      "webauthn_pubkey": "demo-pubkey-user-3",
+      "building_loc": "第3公寓",
+      "status": 1,
+      "created_at": "2026-09-05T09:00:00+08:00",
+      "updated_at": "2026-11-07T12:00:00+08:00"
     }
   ],
   "items": [],

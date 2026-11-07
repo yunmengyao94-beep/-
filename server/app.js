@@ -25,12 +25,11 @@ const jwt = require('jsonwebtoken');
 const { ok, fail } = require('./utils/http');
 const { maskStudentNo, maskName } = require('./utils/mask');
 const auth = require('./middlewares/auth');
-const { findUser } = require('./store');
+const { ensureUserForStudent, db: dataStore } = require('./store');
 const itemsRouter = require('./routes/items');
 const ordersRouter = require('./routes/orders');
 const usersRouter = require('./routes/users');
 const { createLiveReload } = require('./live-reload');
-const db = require('./seed_db.json');
 
 const app = express();
 
@@ -41,8 +40,6 @@ const PORT = Number(process.env.PORT) || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'yxx-dev-secret-change-me';
 /** 7.3.2：token 有效期 604800 秒 = 7 天 */
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
-/** seed_db.users 中的演示用户 */
-const DEMO_USER_ID = 1;
 /** 白名单：无需 Token 的公开路由（字符串=全方法公开；对象=仅指定方法公开） */
 const PUBLIC_ROUTES = [
   '/api/v1/health',
@@ -130,9 +127,17 @@ app.post('/api/v1/auth/login', (req, res) => {
     });
   }
 
-  const user = findUser(DEMO_USER_ID);
+  const body = req.body || {};
+  const profile = {
+    name: typeof body.name === 'string' ? body.name.trim().slice(0, 20) : '',
+    college: typeof body.college === 'string' ? body.college.trim().slice(0, 20) : '',
+    building: typeof body.building === 'string' ? body.building.trim().slice(0, 20) : '',
+  };
+
+  // 账号即身份：按学号找用户，首次登录自动建档（各账号独立信用分与订单）
+  const { user } = ensureUserForStudent(studentNo, profile);
   if (!user) {
-    return fail(req, res, 500, 50001, '模拟数据缺失：未找到 user_id=1 的用户');
+    return fail(req, res, 500, 50001, '账号初始化失败，请稍后重试');
   }
 
   const token = jwt.sign(
@@ -243,7 +248,7 @@ if (require.main === module) {
       const url = `http://localhost:${port}`;
       console.info(`[yxx] 服务已启动：${url}（延迟 ${DELAY_MS}ms）`);
       console.info(
-        `[yxx] 数据规模：users=${db.users.length} items=${db.items.length} credit_logs=${db.credit_logs.length}`
+        `[yxx] 数据规模：users=${dataStore.users.length} items=${dataStore.items.length} orders=${dataStore.orders.length} credit_logs=${dataStore.credit_logs.length}`
       );
       console.info(`[yxx] 首页：${url}/index.html | 热刷新：已开启（改文件后浏览器自动刷新）`);
 

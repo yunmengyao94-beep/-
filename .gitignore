@@ -54,3 +54,7 @@ frontend/assets/ai/*.wasm.js
 frontend/assets/ai/*.js
 !frontend/assets/ai/README.md
 frontend/fonts/*.otf
+
+# ---------- 运行时数据（服务端落盘）----------
+server/db.json
+server/db.json.tmp
