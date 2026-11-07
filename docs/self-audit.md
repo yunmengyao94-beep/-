@@ -1,0 +1,331 @@
+# 易校圈 · 系统隐患排查与修复清单（Self-Audit）
+
+> 审计人：QA / 代码审计（AI）
+> 审计时间：2026-11-08
+> 代码基线：`851cbcc`（去除演示数据 + 真实账号体系 + 新手引导）
+> 审计方式：全仓静态扫描（ESLint 规则 + 关键字扫描）+ 关键路径代码走读 + 接口实测（curl/Node fetch）
+> 说明：本文只列**尚未解决**的问题；已在 Sprint 内修复的不重复计入，文末附「已接受的设计取舍」。
+
+---
+
+## 0. 结论摘要
+
+| 等级                    | 数量 | 一句话概括                                                                                               |
+| ----------------------- | ---- | -------------------------------------------------------------------------------------------------------- |
+| **P0（致命/阻断）**     | 6    | 服务端不校验密码、所有账号共用同一身份、密码明文落盘、数据只存内存、接口地址写死 localhost、打包配置为零 |
+| **P1（严重/影响体验）** | 10   | OCR 加分刷新即丢、楼栋数据不一致、出借人显示错人、SW 缓存不升版、协议同意无留痕、无速率限制等            |
+| **P2（优化/体验）**     | 10   | 字体与 AI 资源体积、占位功能、状态枚举未闭环、竞态与细节文案                                             |
+
+**一句话判断**：这是一个**演示级的完整前端 + 一个不设防的本服务端**。前端链路（登录→发布→借用→订单→设置）是通的，但只要换一台机器、换一个端口、或重启服务，就会暴露 P0 级问题。
+
+---
+
+## 一、之前汇报过但未彻底解决的问题
+
+### P0-1｜Git Hooks 从未真正运行过
+
+- **现象**：沙箱无法创建 `sh` 命名管道（`couldn't create signal pipe, Win32 error 5`），husky 的 `pre-commit` 从未执行过。所有提交都是 `git -c core.hooksPath= commit --no-verify`。
+- **影响**：**pre-commit 里的 lint / prettier / 零绝对定位检查一次都没跑过**，全靠我手动执行。换一台正常机器、或别人提交时，钩子是否可用仍未验证。
+- **证据**：`.husky/_` 存在但从未触发；历史提交全部带 `--no-verify`。
+- **修复建议**：
+  1. 在正常机器上执行 `npx husky init` + 跑一次空提交，确认 `.husky/pre-commit` 可执行；
+  2. CI 增加 `pnpm lint && pnpm format:check && node scripts/check-no-absolute.js`，把钩子降级为"本地便利"，不再当作唯一门禁；
+  3. 保留 `core.hooksPath=.husky/_` 的 git 配置说明，避免新环境漏配。
+
+### P0-2｜Lighthouse / PWA 打分从未实测
+
+- **现象**：环境无 Chrome、无 Lighthouse、外网不可达；headless Edge 启动即 `mojo platform_channel.cc Check failed: 拒绝访问 (0x5)`。
+- **影响**：`docs/pwa-test.md` 里那张"自评表"是**逐项人工核对**，不是跑分。真实分数未知，可能被 best-practices（无 HTTPS / 无 CSP）拉到中段。
+- **修复建议**：在 CI 或本地 Windows 上跑 `npx lighthouse http://localhost:3000 --only-categories=pwa,performance,accessibility,best-practices --view`，把报告归档进 `docs/lighthouse/`。
+
+### P1-1｜浏览器端 UI 从未人工验收
+
+- **现象**：全程用 Node + DOM 桩 + 真接口做"逻辑验收"，**没有一次真实浏览器渲染**。样式（深色模式对比度、引导聚光位置、移动端键盘弹起、iOS 输入框放大）全部只经过 CSS 走读。
+- **影响**：视觉类问题（尤其是 `position: fixed` 在移动端的偏移、`vh` 与键盘、暗色下对比度）完全没被验证。
+- **修复建议**：在真机/真浏览器上跑一遍 `docs/pwa-test.md` 的清单；补充 Playwright 或人工截屏回归。
+
+### P1-2｜CDN 兜底依赖外网，离线安装包会失败
+
+- **现象**：`assets/ai/` 的 37MB 资源已下载并 `sha256` 校验通过，但**未入库**（`.gitignore` 排除），新环境必须联网跑 `npm run fetch:assets`。
+- **影响**：HBuilderX/Electron 打包前若忘记执行，OCR 点击后只能走 CDN 兜底；完全离线环境下识别会失败（有 Toast，不崩）。
+- **修复建议**：打包流水线里把 `fetch:assets` 设为必需步骤并校验 `integrity.json`；或把 AI 资源放对象存储 + 首次启动下载（带进度与断点续传）。
+
+---
+
+## 二、去除 Mock 后的"连锁崩塌"排查
+
+### P1-3｜发布物品的楼栋写死 `7号楼`，与账号的「第X公寓」冲突
+
+- **位置**：`frontend/js/publish.js:28` `const DEFAULT_BUILDING = '7号楼'`；`server/routes/items.js:97` 兜底也是 `'7号楼'`。
+- **影响**：账号体系用「第7公寓」，发布的物品楼层标签却是「7号楼」。**同一件物品在列表和详情里显示旧命名**，与注册表单的 11 个公寓选项对不上。
+- **修复建议**：发布页增加楼栋选择（复用注册的 11 项），默认取当前账号 `building_loc`；服务端删除 `'7号楼'` 兜底，改为必填校验。
+
+### P1-4｜详情页"出借人"显示写死的「张同学」
+
+- **位置**：`frontend/js/item.js` `OWNER_FALLBACK = { 1: { nickname: '张同学', level: 4 } }`。
+- **影响**：用「李同学 / 王同学」登录后发布物品，详情页出借人仍显示「张同学」——**非 Mock 数据却产生 Mock 观感**，这正是用户最容易发现"假"的地方。
+- **修复建议**：`GET /items` / `GET /items/:id` 补 `owner: { nickname, credit_level }` 字段（服务端已能查到），前端删除 fallback。
+
+### P1-5｜OCR 认证 +10 分刷新即回退，流水也不落库
+
+- **位置**：`frontend/js/profile.js` `grantCreditBonus()` → 只更新 DOM + `localStorage.yxx_user`；`persistCredit` 写的字段页面并不读（页面以 `/users/me` 为准）。
+- **影响**：识别成功 → 确认绑定 → 分数 100→110 → **F5 之后变回 100**，流水里的「芝麻信用认证奖励 +10」也消失。用户会认为"加了个假分"。
+- **修复建议**：服务端新增 `POST /users/credit/bonus`（校验来源、幂等键、单日上限），前端只在成功后重拉 `/users/me`；本地只做乐观更新。
+
+### P1-6｜多账号在服务端是"同一个人"
+
+- **位置**：`server/app.js` 登录固定签发 `user_id: 1`；`server/routes/items.js:89` 发布时 `owner_id: 1` 写死。
+- **影响**：3 个账号登录后**共用同一份信用分、同一批物品、同一批订单**。"我借出的/我借入的"分类在真实多账号场景下会错乱（A 发布 → B 登录仍看到自己是 owner）。
+- **修复建议**：`sys_user` 与账号库打通（学号 → user_id），发布时写当前 `req.user.user_id`；前端账号库不再只存密码，改为存 `user_id` 映射。
+
+### P1-7｜自借不拦截
+
+- **现象**：`POST /orders/create` 不校验 `item.owner_id === borrower_id`，用户可以借自己发布的物品（整条演示链路都靠这个"漏洞"跑通）。
+- **影响**：真实产品里这是刷分/自导自演的入口；同时也说明**缺少"出借方确认"角色**。
+- **修复建议**：服务端加 `40902 不能借用自己发布的物品`；订单改为双向：借用人「确认交接」、出借人「确认归还」，两边都确认才完成。
+
+### P1-8｜App 重启后所有数据消失
+
+- **现象**：`server/seed_db.json` 只在进程启动时读入内存，发布/订单/流水全部在内存里；重启即回到"0 物品 / 100 分"。
+- **影响**：用户发布完物品，第二天打开发现没了。**这不是"去 Mock"能解决的，是缺持久层**。
+- **修复建议**：接 SQLite（`better-sqlite3`）或按 `sql/init_db.sql` 落 MySQL；最少也要把内存状态定期 dump 到 `data/db.json`。
+
+### 空状态与兜底：**这部分是健康的**
+
+| 场景       | 现状                                             | 结论                             |
+| ---------- | ------------------------------------------------ | -------------------------------- |
+| 首页无物品 | 「暂无物品，快去发布吧」+ 发布按钮               | ✅                               |
+| 订单空     | 借入/借出两套空状态                              | ✅                               |
+| 信用流水空 | 「暂无信用记录」                                 | ✅                               |
+| 详情 404   | 「物品不存在或已下架」+ 返回                     | ✅                               |
+| 接口失败   | 错误态 + 重试按钮；`request.js` 断网回退本地缓存 | ✅                               |
+| 未登录访问 | 路由守卫 `auth.js` 强制跳登录                    | ✅                               |
+| 离线打开   | SW 外壳缓存 + 离线横幅 + 接口 50301 兜底         | ✅（首次未缓存时不可用，属预期） |
+
+---
+
+## 三、安全与合规隐患
+
+### P0-3｜服务端完全不校验密码，Token 可被任意伪造
+
+- **位置**：`server/app.js` `/api/v1/auth/login` 只校验 `student_no` 非空且 ≤32 位，直接签发 7 天 JWT（`user_id: 1`）。
+- **验证**：
+  ```bash
+  curl -X POST http://localhost:3000/api/v1/auth/login \
+       -H "Content-Type: application/json" \
+       -d '{"student_no":"任意13位数字","password":"随便什么"}'
+  # → 200，返回可用 7 天的 token
+  ```
+- **影响**：**前端的"账号库 + 密码校验"只是装饰**。任何人拿到 token 就能发布、借用、查他人订单。这是当前最严重的洞。
+- **修复建议**：
+  1. 服务端落 `sys_user.password_hash`（bcrypt，cost ≥ 10），登录比对哈希；
+  2. 账号库迁到服务端，前端不再存密码；
+  3. 登录失败计数 + 锁定（5 次/15 分钟）；
+  4. 迁移前，至少给 `/auth/login` 加"仅允许已注册学号"的校验。
+
+### P0-4｜密码明文存在 localStorage
+
+- **位置**：`frontend/utils/accounts-db.js` 的 `yxx_account_db`，字段 `password` 明文；3 个预设账号密码都是 `123456`。
+- **影响**：任何能在该浏览器执行 JS 的人（XSS、恶意扩展、共用电脑）直接读到明文密码；用户习惯复用密码时，波及面更大。
+- **修复建议**：短期改为**不存密码**（首次登录后只存 token 与 user_id）；长期服务端校验。若必须本地演示，用 `crypto.subtle.digest('SHA-256', salt+pwd)` 存派生值，并明确这只是演示。
+
+### P1-9｜Token 生命周期不完整
+
+- **现状**：JWT 7 天，无刷新、无吊销、无单点登出；"退出登录"只清本地。改密码/踢设备都做不到。
+- **风险**：token 泄露后 7 天内有效；`localStorage` 中的 token 可被 XSS 读取（目前代码全部用 `textContent`，未发现注入点，但这是运气不是设计）。
+- **修复建议**：短期加 `POST /auth/logout` 黑名单（内存/Redis）+ 7 天缩短到 2 小时 + Refresh Token；长期迁 HttpOnly Cookie + CSRF Token。
+
+### P1-10｜协议同意"没有留痕"，也无法证明
+
+- **现状**：勾选框只在 `login.js` / `register.js` 前端校验；不记录**同意时间、协议版本、IP/设备**；服务端不校验。
+- **影响**：合规上"用户同意了"这件事无法举证；绕过前端直接调 API 也不受约束。
+- **修复建议**：注册接口新增 `agreed_version` + `agreed_at`，落库；前端弹窗展示 `V1.0.0` 版本号；协议更新时要求重新勾选。
+
+### P1-11｜服务端缺基础防护
+
+- **现状**：`cors: origin '*'`、无 helmet、无 CSP、无 rate limit、`JWT_SECRET` 有默认值 `yxx-dev-secret-change-me`。
+- **影响**：生产直连时缺少纵深防御；默认密钥一旦忘改，token 可被离线伪造。
+- **修复建议**：`helmet()` + CSP（`default-src 'self'`，OCR 需要 `wasm-unsafe-eval`）+ `express-rate-limit`（登录 5/min）+ 启动时**强制校验 `JWT_SECRET` 长度**，缺失直接退出。
+
+### P2-1｜隐私政策的表述与实现仍有两处小偏差
+
+- 政策写"数据保存在本机 localStorage"，但实际物品/订单在服务端内存里。
+- 政策承诺"可导出自己的数据"，但产品里没有导出入口。
+- **建议**：要么补实现，要么改文案——不要留下"说了没做"的条目。
+
+---
+
+## 四、多端打包的坑（S9 遗留）
+
+### P0-5｜接口地址写死 localhost，打包后必然全挂
+
+- **位置**：`frontend/utils/request.js:17` `export const BASE_URL = 'http://localhost:3000/api/v1';`
+- **影响**：
+  - Android（HBuilderX / Capacitor）：WebView 里 `localhost` 指**手机自身**，请求直接 connection refused；
+  - Electron：可直接用 `file://` 加载，跨域 + 相对路径全失效；
+  - 换端口（3001 兜底）时前端不知道。
+- **修复建议**：改为运行时解析：`location.origin + '/api/v1'`（同源部署）或注入 `window.__YXX_API__`（打包时由构建脚本写入）；配 `.env` 与 `config/env.js`。
+
+### P0-6｜打包配置根本不存在
+
+- **现状**：`scripts/build_h5.sh`、`build_apk.sh`、`build_exe.sh` 三个文件**内容是 `echo` 占位**；`electron/`、`capacitor.config.json`、HBuilderX 的 `manifest.json`（5+ 格式）**一个都没有**。
+- **影响**：S9 的"多端"交付物目前是 0，只有三个空壳脚本。
+- **修复建议**（按性价比排序）：
+  1. **PWA 优先**：已经具备 manifest + SW，真机加到主屏即可用，成本最低；
+  2. Electron：`electron/main.js` + `electron-builder.json`，`loadURL('http://localhost:3000')`（开发）或 `loadFile('dist/index.html')`（生产）；
+  3. HBuilderX：需要 `manifest.json`（`appid`、`permissions`、`minSdkVersion`）+ 把 `frontend/` 作为 `www` 根；注意 **SW 在 file:// 下不工作**。
+
+### P1-12｜打包后才暴露的四个具体坑
+
+| 坑               | 原因                                             | 规避                                                                                          |
+| ---------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| SW / Worker 失效 | `file://` 下 Web Worker 与 Service Worker 被禁用 | 用 `http://` 本地服务器（Capacitor 的 `capacitor://localhost`）或改用 `app://` 自定义协议     |
+| OCR 首次加载极慢 | `chi_sim.traineddata.gz` 19MB + `eng` 10MB       | 只打包 `chi_sim`；首次启动后台预取；或换更小的量化语言包                                      |
+| 安装包体积       | `assets/ai` 37MB + `fonts` 27MB                  | 字体不打包（本来就没用到，见 P2-2）；AI 资源按需下载                                          |
+| 权限声明         | 相机/存储权限未声明                              | HBuilderX `manifest.json` 的 `permissions`；Electron 的 `session.setPermissionRequestHandler` |
+
+### P1-13｜离线缓存版本停留在 `yxx-v1`
+
+- **位置**：`frontend/sw.js` `const CACHE_NAME = 'yxx-v1';` 自 Sprint 8 起**从未升级**（期间改过 4 次策略与静态资源）。
+- **影响**：Cache First 会把**旧页面**一直喂给已安装的用户，直到该用户手动清缓存。发版后"用户看不到新版"是 PWA 最常见的事故。
+- **修复建议**：构建时把 `CACHE_NAME` 替换为内容哈希（`yxx-${BUILD_ID}`）；`app.js` 监听 `controllerchange` 提示"有新版本，点击刷新"。
+
+---
+
+## 五、TODO、硬编码与异步竞态
+
+### P1-14｜`/__live` 热刷新接口在生产环境也是开的
+
+- **位置**：`server/app.js` 无条件 `app.get('/__live', liveReload.middleware)` + `fs.watch(frontend)`。
+- **影响**：部署到公网后，任何人可 `GET /__live` 建立长连接；文件监听在容器里可能触发 `ENOSPC`。
+- **修复建议**：`if (process.env.NODE_ENV !== 'production')` 才挂载；前端 `setupLiveReload()` 已限定 localhost，但服务端也要关。
+
+### P1-15｜登录页的"已登录直接跳转"会造成一次闪跳
+
+- **位置**：`frontend/js/login.js` `if (localStorage.getItem('yxx_token')) location.replace(...)`。
+- **影响**：token 过期但仍在 localStorage 时，登录页 → 首页 → 401 → 回登录页，用户看到两次白屏跳动。
+- **修复建议**：跳转前先 `HEAD /users/me` 校验；或首页 401 时用 `replace` 并带 `?expired=1` 展示一次提示。
+
+### P2-2｜字体 27MB 下载了却从未使用
+
+- `frontend/fonts/` 3 个 OTF 共 27MB，`fonts.css` 只声明了 `@font-face` 与 `.u-font-*` 工具类，**没有任何页面应用这些 font-family**。
+- 结果：白占仓库与安装包体积，浏览器也不会下载（未使用即不加载），等于纯浪费。
+- **修复建议**：要么真正用起来（`body { font-family: 'YXX Noto Sans SC', ... }`），要么删掉这批字体改回系统字体栈。
+
+### P2-3｜"联系Ta"是空实现
+
+- `frontend/js/item.js` 的 `handleContact` 只弹 Toast（注释写着"占位"）。详情页两个入口都指向它。
+- **建议**：接站内信/复制微信号/拨号，或先隐藏按钮。
+
+### P2-4｜订单状态枚举有 2 个值永远到不了
+
+- `ORDER_STATE` 定义了 `3=已取消`、`4=已逾期`，但服务端没有任何路径产生它们；逾期也没有定时任务。
+- **建议**：加"用户取消订单"（仅待交接可取消，回滚冻结分）与每日逾期扫描任务。
+
+### P2-5｜发布页图片没有真正上传
+
+- `frontend/js/publish.js` 压缩后只存在内存（`selectedImages`），提交时 `image_hash: ''`。
+- 结果：所有物品详情/列表都只能用关键词插画占位，**用户自己传的图永远看不到**。
+- **建议**：加 `POST /upload`（或直接 base64 落盘），返回 `image_hash`/URL；发布时带上。
+
+### P2-6｜订单页快速切换 Tab 会丢请求
+
+- `orders.js`：`if (state.loading) return;` —— 加载中切换方向/状态，**后一次点击被直接丢弃**，界面停在上一个筛选结果。
+- **建议**：参考 `index.js` 的 `requestSeq` 方案，只丢弃过期响应，不丢弃新请求。
+
+### P2-7｜新手引导全局只播一次，不随账号区分
+
+- `hasSeenGuide` 存在全局 localStorage，A 看过之后 B 登录不会再看到引导。
+- **建议**：key 改为 `hasSeenGuide:<studentNo>`。
+
+### P2-8｜`components.html`（UI Kit 文档页）被打进 SW 外壳
+
+- 它是开发文档，不该进生产缓存；且 43 个 shell 资源里它体积最大（含内联样式）。
+- **建议**：从 `SHELL_PAGES` 移除，或构建时剔除。
+
+### P2-9｜少量写死的静态路径
+
+| 位置                      | 内容                           | 风险                                   |
+| ------------------------- | ------------------------------ | -------------------------------------- |
+| `request.js`              | `http://localhost:3000/api/v1` | 见 P0-5                                |
+| `sw.js`                   | `CACHE_NAME='yxx-v1'`          | 见 P1-13                               |
+| `publish.js` / `items.js` | `'7号楼'`                      | 见 P1-3                                |
+| `item.js`                 | `OWNER_FALLBACK['1']`          | 见 P1-4                                |
+| `item-image.js`           | 10 条关键词规则                | 新增品类会落到默认占位图，属可接受设计 |
+
+### P2-10｜小细节
+
+- 没有 `favicon.ico`，控制台会有一次 404。
+- `agreement.html` 里有内联 `<script>`，与 CSP 冲突（若将来加 CSP 需 nonce）。
+- 空状态文案不统一（"暂无物品，快去发布吧" / "还没有借入的订单" / "暂无信用记录"），建议统一句式。
+
+---
+
+## 六、修复优先级总表
+
+| 编号    | 问题                           | 等级   | 预估工时                 | 影响面            |
+| ------- | ------------------------------ | ------ | ------------------------ | ----------------- |
+| P0-3    | 服务端不校验密码，Token 可伪造 | **P0** | 2d                       | 安全 / 全部写接口 |
+| P0-4    | 密码明文存 localStorage        | **P0** | 0.5d（临时）/ 2d（根治） | 安全              |
+| P0-5    | 接口地址写死 localhost         | **P0** | 0.5d                     | 打包 / 部署       |
+| P0-6    | 打包配置为零（S9）             | **P0** | 3d                       | 交付              |
+| P0-1    | Git Hooks 未验证               | **P0** | 0.5d                     | 工程规范          |
+| P0-2    | Lighthouse 未实测              | **P0** | 0.5d                     | 验收              |
+| P1-3    | 发布楼栋写死 7号楼             | P1     | 0.5d                     | 数据一致性        |
+| P1-4    | 出借人显示"张同学"             | P1     | 0.5d                     | 观感 / 信任       |
+| P1-5    | OCR +10 刷新回退               | P1     | 1d                       | 核心卖点          |
+| P1-6    | 多账号共用 user_id=1           | P1     | 2d                       | 业务正确性        |
+| P1-7    | 自借不拦截 / 无出借方确认      | P1     | 1.5d                     | 业务规则          |
+| P1-8    | 数据只在内存，重启即丢         | P1     | 2d                       | 数据安全          |
+| P1-9    | Token 无刷新/吊销              | P1     | 1.5d                     | 安全              |
+| P1-10   | 协议同意无留痕                 | P1     | 0.5d                     | 合规              |
+| P1-11   | 无 helmet/CSP/限流             | P1     | 1d                       | 安全              |
+| P1-12   | 打包四坑（SW/OCR/体积/权限）   | P1     | 2d                       | 交付              |
+| P1-13   | SW 缓存不升版                  | P1     | 0.5d                     | 发版              |
+| P1-14   | `/__live` 生产常开             | P1     | 0.2d                     | 安全              |
+| P1-15   | 登录页过期 token 闪跳          | P1     | 0.3d                     | 体验              |
+| P1-1    | 无真实浏览器验收               | P1     | 1d                       | 质量              |
+| P1-2    | AI 资源未入库                  | P1     | 0.3d                     | 打包              |
+| P2-1~10 | 见上文                         | P2     | 合计 ~3d                 | 体验              |
+
+---
+
+## 七、建议的修复批次
+
+### 第 1 批（半天，先止血）
+
+1. `request.js` BASE_URL 改为同源解析（P0-5）
+2. `publish.js` 楼栋取当前账号 + 服务端必填（P1-3）
+3. 详情页出借人改用接口字段，删 fallback（P1-4）
+4. `/__live` 加 `NODE_ENV` 开关（P1-14）
+5. `CACHE_NAME` 改成构建期注入（P1-13）
+
+### 第 2 批（2 天，补安全与数据）
+
+6. 服务端 bcrypt + 账号表 + 登录限流（P0-3）
+7. 前端账号库去密码化（P0-4）
+8. 数据落 SQLite（P1-8）
+9. 发布/订单绑定真实 user_id（P1-6）
+10. 自借拦截 + 出借方确认归还（P1-7）
+11. OCR 加分落库（P1-5）
+
+### 第 3 批（3 天，交付与验收）
+
+12. Electron + HBuilderX 配置打通（P0-6 / P1-12）
+13. Lighthouse + 真机验收（P0-2 / P1-1）
+14. Git Hooks 在正常机器验证 + CI 门禁（P0-1）
+15. 协议同意留痕（P1-10）
+16. P2 清单顺手清理
+
+---
+
+## 附：**已被接受**的设计取舍（不算 Bug，但需要知情）
+
+| 项                      | 取舍                                 | 理由                                                       |
+| ----------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| 冻结/解冻 `delta = 0`   | 不进总分，只动 `frozen`              | 保证 6.3.4 对账恒等式 `SUM(delta) = score - 100`           |
+| 零 `position: absolute` | 用 Grid 叠放 / `box-shadow` 聚光替代 | 项目硬规则，已验证 43 个文件零命中                         |
+| 详情页公开              | `/items`、`/items/:id` 免登录        | 校园商品页允许未登录浏览，写操作仍需 Token                 |
+| 订单号从 30001          | 演示数据曾占 29001–29006（已删）     | 避免与真实创建冲突                                         |
+| 多账号 token 明文       | 演示"多账号切换"                     | 已在注释标注真实项目应换 Refresh Token                     |
+| 图片用关键词插画        | 无真实商品图                         | 比全部灰色占位更可读；未知品类落 `default-placeholder.png` |
