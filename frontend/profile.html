@@ -10,6 +10,9 @@
     <meta name="apple-mobile-web-app-title" content="易校圈" />
     <link rel="apple-touch-icon" href="./assets/icons/logo-192.png" />
     <link rel="manifest" href="./manifest.json" />
+
+    <!-- 路由守卫：无 Token 直接跳登录页（必须在业务脚本之前） -->
+    <script src="./js/auth.js"></script>
     <meta name="description" content="易校圈 · 我的" />
     <title>我的 · 易校圈</title>
 
@@ -68,6 +71,28 @@
         <div class="credit-footer">
           <span class="level-chip level-chip--l4" id="credit-level">L4 良好</span>
           <p class="upgrade-hint" id="upgrade-hint">距离升级至 L5 还差 —— 分</p>
+        </div>
+      </section>
+
+      <!-- 快捷入口 -->
+      <section class="card" style="margin: 12px 16px 0" aria-label="快捷入口">
+        <div class="setting-list">
+          <a
+            class="setting-row setting-row--action"
+            href="./orders.html"
+            style="text-decoration: none"
+          >
+            <span>我的订单</span>
+            <span class="setting-row__value">查看借用记录 →</span>
+          </a>
+          <a
+            class="setting-row setting-row--action"
+            href="./settings.html"
+            style="text-decoration: none"
+          >
+            <span>设置</span>
+            <span class="setting-row__value">账号与缓存 →</span>
+          </a>
         </div>
       </section>
 

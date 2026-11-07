@@ -30,6 +30,10 @@ const OFFLINE_PAYLOAD = {
 
 /** 页面外壳 */
 const SHELL_PAGES = [
+  './login.html',
+  './register.html',
+  './orders.html',
+  './settings.html',
   './index.html',
   './item.html',
   './profile.html',
@@ -48,7 +52,12 @@ const SHELL_STYLES = [
 
 /** 核心脚本 */
 const SHELL_SCRIPTS = [
+  './js/auth.js',
   './js/app.js',
+  './js/login.js',
+  './js/register.js',
+  './js/orders.js',
+  './js/settings.js',
   './js/index.js',
   './js/item.js',
   './js/publish.js',

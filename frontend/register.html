@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1890ff" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="易校圈" />
+    <link rel="apple-touch-icon" href="./assets/icons/logo-192.png" />
+    <link rel="manifest" href="./manifest.json" />
+
+    <meta name="description" content="易校圈 · 注册" />
+    <title>注册 · 易校圈</title>
+
+    <!-- 公共样式 -->
+    <link rel="stylesheet" href="./css/variables.css" />
+    <link rel="stylesheet" href="./css/reset.css" />
+    <link rel="stylesheet" href="./css/layout.css" />
+    <link rel="stylesheet" href="./components/base.css" />
+    <link rel="stylesheet" href="./fonts/fonts.css" />
+    <link rel="stylesheet" href="./components/feedback.css" />
+
+    <!-- 注意：注册页同样不引入路由守卫 -->
+  </head>
+
+  <body>
+    <div id="network-banner" class="network-banner" role="status" aria-live="polite"></div>
+
+    <main class="auth-page">
+      <section class="card auth-card">
+        <div class="auth-brand">
+          <img
+            class="auth-brand__logo"
+            src="./assets/icons/logo-192.png"
+            alt="易校圈"
+            width="64"
+            height="64"
+          />
+          <h1 class="auth-brand__title">注册账号</h1>
+          <p class="auth-brand__sub">填写校园信息，加入信用共享</p>
+        </div>
+
+        <form id="register-form" novalidate>
+          <div class="input-group">
+            <label class="input-group__label input-group__label--required" for="reg-student-no"
+              >学号</label
+            >
+            <input
+              class="input-group__control"
+              id="reg-student-no"
+              name="student_no"
+              type="text"
+              inputmode="numeric"
+              maxlength="20"
+              placeholder="请输入学号"
+              autocomplete="username"
+            />
+            <p class="field-error hidden" id="err-reg-student-no"></p>
+          </div>
+
+          <div class="input-group">
+            <label class="input-group__label input-group__label--required" for="reg-name"
+              >姓名</label
+            >
+            <input
+              class="input-group__control"
+              id="reg-name"
+              name="real_name"
+              type="text"
+              maxlength="20"
+              placeholder="请输入真实姓名"
+              autocomplete="name"
+            />
+            <p class="field-error hidden" id="err-reg-name"></p>
+          </div>
+
+          <div class="input-group">
+            <label class="input-group__label input-group__label--required" for="reg-college"
+              >学院</label
+            >
+            <input
+              class="input-group__control"
+              id="reg-college"
+              name="college"
+              type="text"
+              maxlength="30"
+              placeholder="例如：计算机学院"
+            />
+            <p class="field-error hidden" id="err-reg-college"></p>
+          </div>
+
+          <div class="input-group">
+            <label class="input-group__label input-group__label--required" for="reg-building"
+              >楼栋</label
+            >
+            <select class="input-group__control" id="reg-building" name="building_loc">
+              <option value="">请选择楼栋</option>
+              <option value="1号楼">1号楼</option>
+              <option value="2号楼">2号楼</option>
+              <option value="3号楼">3号楼</option>
+              <option value="4号楼">4号楼</option>
+              <option value="5号楼">5号楼</option>
+              <option value="6号楼">6号楼</option>
+              <option value="7号楼">7号楼</option>
+              <option value="8号楼">8号楼</option>
+            </select>
+            <p class="field-error hidden" id="err-reg-building"></p>
+          </div>
+
+          <div class="input-group">
+            <label class="input-group__label input-group__label--required" for="reg-password"
+              >密码</label
+            >
+            <input
+              class="input-group__control"
+              id="reg-password"
+              name="password"
+              type="password"
+              maxlength="32"
+              placeholder="至少 6 位"
+              autocomplete="new-password"
+            />
+            <p class="field-error hidden" id="err-reg-password"></p>
+          </div>
+
+          <div class="auth-actions">
+            <button class="btn btn--primary btn--block" id="register-btn" type="submit">
+              注册
+            </button>
+            <p class="auth-link">已有账号？<a href="./login.html">返回登录</a></p>
+          </div>
+        </form>
+
+        <p class="auth-foot">Mock 环境：注册信息仅本地模拟，不会写入服务器</p>
+      </section>
+    </main>
+
+    <script type="module" src="./js/register.js"></script>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>

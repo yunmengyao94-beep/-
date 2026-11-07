@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1890ff" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="易校圈" />
+    <link rel="apple-touch-icon" href="./assets/icons/logo-192.png" />
+    <link rel="manifest" href="./manifest.json" />
+
+    <meta name="description" content="易校圈 · 登录" />
+    <title>登录 · 易校圈</title>
+
+    <!-- 公共样式 -->
+    <link rel="stylesheet" href="./css/variables.css" />
+    <link rel="stylesheet" href="./css/reset.css" />
+    <link rel="stylesheet" href="./css/layout.css" />
+    <link rel="stylesheet" href="./components/base.css" />
+    <link rel="stylesheet" href="./fonts/fonts.css" />
+    <link rel="stylesheet" href="./components/feedback.css" />
+
+    <!-- 注意：登录页不引入 js/auth.js（路由守卫），否则会死循环 -->
+  </head>
+
+  <body>
+    <div id="network-banner" class="network-banner" role="status" aria-live="polite"></div>
+
+    <main class="auth-page">
+      <section class="card auth-card">
+        <div class="auth-brand">
+          <img
+            class="auth-brand__logo"
+            src="./assets/icons/logo-192.png"
+            alt="易校圈"
+            width="64"
+            height="64"
+          />
+          <h1 class="auth-brand__title">易校圈</h1>
+          <p class="auth-brand__sub">校园信用共享 · 凭信用分免押借用</p>
+        </div>
+
+        <form id="login-form" novalidate>
+          <div class="input-group">
+            <label class="input-group__label input-group__label--required" for="login-student-no"
+              >学号</label
+            >
+            <input
+              class="input-group__control"
+              id="login-student-no"
+              name="student_no"
+              type="text"
+              inputmode="numeric"
+              maxlength="32"
+              placeholder="请输入学号"
+              autocomplete="username"
+            />
+            <p class="field-error hidden" id="err-student-no"></p>
+          </div>
+
+          <div class="input-group">
+            <label class="input-group__label input-group__label--required" for="login-password"
+              >密码</label
+            >
+            <input
+              class="input-group__control"
+              id="login-password"
+              name="password"
+              type="password"
+              maxlength="32"
+              placeholder="请输入密码"
+              autocomplete="current-password"
+            />
+            <p class="field-error hidden" id="err-password"></p>
+          </div>
+
+          <div class="auth-actions">
+            <button class="btn btn--primary btn--block" id="login-btn" type="submit">登录</button>
+            <p class="auth-link">还没有账号？<a href="./register.html">去注册</a></p>
+          </div>
+        </form>
+
+        <p class="auth-foot">Mock 环境：任意学号 + 任意密码均可登录</p>
+      </section>
+    </main>
+
+    <script type="module" src="./js/login.js"></script>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>

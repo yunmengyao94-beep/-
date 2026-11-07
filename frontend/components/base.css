@@ -1990,3 +1990,141 @@ body.keyboard-open .action-bar {
   background-color: var(--border-color-light, #f2f3f5);
   object-fit: contain;
 }
+
+/* ============================================================================
+ * 20. 账号认证（登录 / 注册）与设置、订单页
+ * ========================================================================== */
+
+.auth-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-8, 32px) var(--space-5, 20px);
+  background-image: linear-gradient(165deg, #eaf3ff 0%, #f5f7fa 42%, #ffffff 100%);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  padding: var(--space-5, 20px);
+}
+
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  margin-bottom: var(--space-5, 20px);
+  text-align: center;
+}
+
+.auth-brand__logo {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.24);
+}
+
+.auth-brand__title {
+  font-size: var(--font-size-xl, 22px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.auth-brand__sub {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  margin-top: var(--space-2, 8px);
+}
+
+.auth-link {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-sub, #888);
+  text-align: center;
+}
+
+.auth-link a {
+  color: var(--primary, #1890ff);
+  text-decoration: none;
+}
+
+.auth-foot {
+  margin-top: var(--space-4, 16px);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-placeholder, #bfbfbf);
+  text-align: center;
+}
+
+/* 设置页行 */
+.setting-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-row {
+  display: flex;
+  gap: var(--space-3, 12px);
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  font-size: var(--font-size-base, 14px);
+  color: var(--text-main, #333);
+  border-bottom: 1px solid var(--border-color-light, #f2f3f5);
+}
+
+.setting-row:last-child {
+  border-bottom: 0;
+}
+
+.setting-row--action {
+  cursor: pointer;
+}
+
+.setting-row--danger {
+  color: var(--danger, #ff4d4f);
+}
+
+.setting-row__value {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-sub, #888);
+}
+
+/* 订单列表项 */
+.order-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--space-3, 12px) 0;
+  border-bottom: 1px solid var(--border-color-light, #f2f3f5);
+}
+
+.order-item:last-child {
+  border-bottom: 0;
+}
+
+.order-item__head {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.order-item__title {
+  font-size: var(--font-size-base, 14px);
+  font-weight: var(--font-weight-bold, 600);
+  color: var(--text-main, #333);
+}
+
+.order-item__meta {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-sub, #888);
+}
