@@ -212,6 +212,17 @@ export function renderCards(data) {
   gridEl.appendChild(fragment);
   gridEl.classList.remove('hidden');
   updateCount(list.length);
+
+  // 从详情页返回：给上次查看的卡片挂上共享元素名，实现「收缩回去」
+  try {
+    const lastId = sessionStorage.getItem('yxx_last_item');
+    if (lastId) {
+      const target = gridEl.querySelector(`.item-card[data-id="${lastId}"]`);
+      if (target) target.style.viewTransitionName = 'item-hero';
+    }
+  } catch {
+    // 忽略
+  }
 }
 
 /** 6 张骨架卡片（头像 + 三行文本） */
@@ -706,6 +717,14 @@ function bindCardClick() {
     const target = event.target;
     const card = target && target.closest ? target.closest('.item-card') : null;
     if (!card || !card.dataset.id) return;
+
+    // 共享元素转场：让卡片「原地放大」成详情页大图
+    try {
+      card.style.viewTransitionName = 'item-hero';
+    } catch {
+      // 旧浏览器忽略
+    }
+
     window.location.href = `./item.html?id=${card.dataset.id}`;
   });
 }

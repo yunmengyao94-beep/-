@@ -494,6 +494,14 @@ function renderDetail(item) {
   const gallery = document.createElement('div');
   gallery.className = 'detail-gallery';
 
+  // 与列表卡片配对：共享元素转场的落点
+  try {
+    gallery.style.viewTransitionName = 'item-hero';
+    sessionStorage.setItem('yxx_last_item', String(item.id));
+  } catch {
+    // 忽略
+  }
+
   images.forEach((src) => {
     const slide = document.createElement('div');
     slide.className = 'detail-gallery__slide';

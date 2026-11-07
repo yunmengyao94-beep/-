@@ -79,9 +79,9 @@ body.is-sidebar-collapsed {
     overflow: hidden;
     background: linear-gradient(180deg, #1f2a44 0%, #16203a 100%);
     transition:
-      width 0.3s ease,
-      opacity 0.3s ease,
-      transform 0.3s ease;
+      width 0.45s cubic-bezier(0.22, 0.9, 0.3, 1),
+      opacity 0.45s cubic-bezier(0.22, 0.9, 0.3, 1),
+      transform 0.45s cubic-bezier(0.22, 0.9, 0.3, 1);
   }
 
   .sidebar__logo {
@@ -220,8 +220,18 @@ body.is-sidebar-collapsed {
   }
 
   /* ---------------- 折叠态 ---------------- */
+  .sidebar__label,
+  .sidebar__logo-text {
+    transition: opacity 0.2s ease;
+  }
+
   body.is-sidebar-collapsed .sidebar__logo-text,
-  body.is-sidebar-collapsed .sidebar__label,
+  body.is-sidebar-collapsed .sidebar__label {
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+  }
+
   body.is-sidebar-collapsed .sidebar__badge {
     display: none;
   }
@@ -253,8 +263,8 @@ body.is-sidebar-collapsed {
     border-bottom: 1px solid var(--border-color-light, #f0f1f3);
     backdrop-filter: blur(8px);
     transition:
-      left 0.3s ease,
-      opacity 0.3s ease;
+      left 0.45s cubic-bezier(0.22, 0.9, 0.3, 1),
+      opacity 0.45s cubic-bezier(0.22, 0.9, 0.3, 1);
   }
 
   /* 左栏：折叠按钮 + 品牌（固定宽度，不参与伸缩） */
@@ -579,26 +589,28 @@ body.is-sidebar-collapsed {
 }
 
 /* ============================================================================
- * 28. 设置页 PC 布局（自适应 2 列 / 3 列仪表盘）
- * ----------------------------------------------------------------------------
- * 设计思路：
- *   · 账号管理是「身份区」，独立成左侧窄栏，滚动时 sticky 常驻
- *   · 其余四组按 2×2 / 3 列分布，宽屏留白充足，窄屏自动降为 2 列
- *   · 每张卡片独立阴影 + hover 微抬升，营造桌面软件的层次感
+ * 28. 设置页 PC 网格（2 列 · 账号整行 · 等高卡片）
  * ========================================================================== */
 
 @media (min-width: 768px) {
   .page--settings {
     display: grid;
-    grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
-    align-items: start;
-    max-width: 1080px;
+    align-items: stretch;
+    max-width: 980px;
     padding: 8px 24px 40px;
     margin: 0 auto;
   }
 
+  /* 账号管理占满整行 */
+  .page--settings [data-group='account'] {
+    grid-column: 1 / -1;
+  }
+
   .page--settings .setting-group {
+    display: flex;
+    flex-direction: column;
     margin: 0;
     border: 1px solid var(--border-color-light, #f0f1f3);
     box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
@@ -612,35 +624,12 @@ body.is-sidebar-collapsed {
     transform: translateY(-1px);
   }
 
-  /* 身份区：左侧窄栏 + 吸顶 */
-  .page--settings [data-group='account'] {
-    position: sticky;
-    top: calc(var(--topbar-height) + 16px);
-    grid-row: 1 / span 4;
-    grid-column: 1;
+  /* 卡片等高：内容区撑开剩余空间，底部对齐 */
+  .page--settings .setting-list {
+    flex: 1;
+    justify-content: flex-start;
   }
 
-  .page--settings [data-group='general'] {
-    grid-row: 1;
-    grid-column: 2;
-  }
-
-  .page--settings [data-group='display'] {
-    grid-row: 2;
-    grid-column: 2;
-  }
-
-  .page--settings [data-group='help'] {
-    grid-row: 3;
-    grid-column: 2;
-  }
-
-  .page--settings [data-group='about'] {
-    grid-row: 4;
-    grid-column: 2;
-  }
-
-  /* 分组标题加一条主色竖条，提升层次 */
   .page--settings .setting-group__title {
     display: flex;
     gap: 8px;
@@ -666,37 +655,6 @@ body.is-sidebar-collapsed {
     grid-column: 1 / -1;
     margin-top: 8px;
     text-align: center;
-  }
-}
-
-/* 超宽屏：升级为 3 列仪表盘 */
-@media (min-width: 1200px) {
-  .page--settings {
-    grid-template-areas:
-      'account general display'
-      'account help about';
-    grid-template-columns: minmax(0, 320px) minmax(0, 1fr) minmax(0, 1fr);
-    max-width: 1280px;
-  }
-
-  .page--settings [data-group='account'] {
-    grid-area: account;
-  }
-
-  .page--settings [data-group='general'] {
-    grid-area: general;
-  }
-
-  .page--settings [data-group='display'] {
-    grid-area: display;
-  }
-
-  .page--settings [data-group='help'] {
-    grid-area: help;
-  }
-
-  .page--settings [data-group='about'] {
-    grid-area: about;
   }
 }
 
@@ -738,11 +696,10 @@ body.is-sidebar-collapsed {
     min-width: 0;
   }
 
-  /* 底部操作栏跟随侧边栏让位（fixed 不受 body padding 影响） */
   body.has-shell .action-bar {
     right: 0;
     left: var(--sidebar-width);
-    transition: left 0.2s ease;
+    transition: left 0.45s cubic-bezier(0.22, 0.9, 0.3, 1);
   }
 
   body.has-shell .action-bar__inner {
@@ -753,7 +710,7 @@ body.is-sidebar-collapsed {
 }
 
 /* ============================================================================
- * 30. 顶部账号下拉菜单
+ * 30. 顶部账号下拉菜单（灵动岛式弹出）
  * ========================================================================== */
 
 .topbar__account {
@@ -773,11 +730,17 @@ body.is-sidebar-collapsed {
   background: transparent;
   border: 0;
   border-radius: 999px;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .topbar__user:hover {
   background-color: var(--bg-color, #f5f7fa);
+}
+
+.topbar__user:active {
+  transform: scale(0.96);
 }
 
 .topbar__chevron {
@@ -785,7 +748,7 @@ body.is-sidebar-collapsed {
   width: 14px;
   height: 14px;
   color: var(--text-placeholder, #bfbfbf);
-  transition: transform 0.18s ease;
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .topbar__user[aria-expanded='true'] .topbar__chevron {
@@ -803,18 +766,19 @@ body.is-sidebar-collapsed {
   border: 1px solid var(--border-color-light, #f0f1f3);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(16, 24, 40, 0.16);
-  animation: menu-in 0.16s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  transform-origin: top right;
+  animation: island-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-@keyframes menu-in {
+@keyframes island-in {
   from {
     opacity: 0;
-    transform: translateY(-6px) scale(0.98);
+    transform: scale(0.8) translateY(-4px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1) translateY(0);
   }
 }
 
@@ -827,11 +791,17 @@ body.is-sidebar-collapsed {
   background: transparent;
   border: 0;
   border-radius: 8px;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.12s ease;
 }
 
 .topbar__menu-item:hover {
   background-color: var(--bg-color, #f5f7fa);
+}
+
+.topbar__menu-item:active {
+  transform: scale(0.96);
 }
 
 .topbar__menu-item--danger {

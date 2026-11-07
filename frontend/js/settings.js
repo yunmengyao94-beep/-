@@ -13,7 +13,7 @@ import { resetGuide } from '../components/onboarding.js';
 import { clearItemImages } from '../utils/item-images.js';
 import {
   FONT_SIZE_MAP,
-  FONT_SIZE_KEY,
+  getFontSizeKey,
   applyFontSize as applyFontSizePreference,
 } from '../utils/preferences.js';
 
@@ -348,25 +348,35 @@ function applyFontSize(key) {
   }
 }
 
-/** 绑定字号选项 */
+/** 字号滑块：0=小 1=标准 2=大 */
+const FONT_SIZE_KEYS = ['small', 'standard', 'large'];
+
+/** 绑定字号滑块（拖动实时改 CSS 变量，松手提示） */
 function bindFontSize() {
-  const group = document.getElementById('font-size-options');
-  if (!group) return;
+  const range = document.getElementById('font-size-range');
+  if (!range) return;
 
-  let current = 'standard';
-  try {
-    current = localStorage.getItem(FONT_SIZE_KEY) || 'standard';
-  } catch {
-    current = 'standard';
-  }
+  const current = getFontSizeKey();
+  const startIndex = Math.max(0, FONT_SIZE_KEYS.indexOf(current));
 
+  const paint = (index) => {
+    const ratio = index / 2;
+    range.style.setProperty('--slider-fill', `${ratio * 100}%`);
+  };
+
+  range.value = String(startIndex);
+  paint(startIndex);
   applyFontSize(current);
 
-  group.addEventListener('click', (event) => {
-    const btn = event.target.closest('[data-size]');
-    if (!btn) return;
-    applyFontSize(btn.dataset.size);
-    showToast('字体大小已更新', 'success');
+  range.addEventListener('input', () => {
+    const index = Math.min(2, Math.max(0, Number(range.value)));
+    applyFontSize(FONT_SIZE_KEYS[index]);
+    paint(index);
+  });
+
+  range.addEventListener('change', () => {
+    const index = Math.min(2, Math.max(0, Number(range.value)));
+    showToast(`字体大小：${['小', '标准', '大'][index]}`, 'success');
   });
 }
 

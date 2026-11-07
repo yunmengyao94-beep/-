@@ -227,3 +227,62 @@ html.has-vt main {
     transform: none;
   }
 }
+
+/* ============================================================================
+ * 共享元素转场（列表卡片 → 详情大图）
+ * ========================================================================== */
+
+::view-transition-group(item-hero) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+::view-transition-old(item-hero) {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+}
+
+::view-transition-new(item-hero) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+/* ============================================================================
+ * 图标级微交互（TabBar / 侧边栏 / 按钮）
+ * ========================================================================== */
+
+.tabbar__icon {
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tabbar__item:active .tabbar__icon {
+  transform: scale(0.82);
+}
+
+.tabbar__item.is-active .tabbar__icon {
+  transform: translateY(-2px) scale(1.08);
+}
+
+.sidebar__icon {
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sidebar__item:active .sidebar__icon {
+  transform: scale(0.85);
+}
+
+.sidebar__item.is-active .sidebar__icon {
+  transform: scale(1.08);
+}
+
+.btn {
+  transition:
+    transform 0.12s ease,
+    opacity 0.12s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn:active {
+  opacity: 0.92;
+}

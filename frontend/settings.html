@@ -139,12 +139,22 @@
         <div class="setting-list">
           <div class="setting-row setting-row--stack">
             <span>字体大小</span>
-            <div class="segmented" id="font-size-options" role="group" aria-label="字体大小">
-              <button class="segmented__item" data-size="small" type="button">小</button>
-              <button class="segmented__item is-active" data-size="standard" type="button">
-                标准
-              </button>
-              <button class="segmented__item" data-size="large" type="button">大</button>
+            <div class="font-slider">
+              <input
+                class="font-slider__range"
+                id="font-size-range"
+                type="range"
+                min="0"
+                max="2"
+                step="1"
+                value="1"
+                aria-label="字体大小"
+              />
+              <div class="font-slider__labels" aria-hidden="true">
+                <span>小</span>
+                <span>标准</span>
+                <span>大</span>
+              </div>
             </div>
           </div>
         </div>
