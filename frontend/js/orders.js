@@ -9,6 +9,7 @@
 import { request } from '../utils/request.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
 import { formatTime } from '../utils/format.js';
+import { resolveItemImage } from '../utils/item-image.js';
 import { ensureToken } from '../utils/auth.js';
 
 const listEl = document.getElementById('order-list');
@@ -84,14 +85,11 @@ function createOrderCard(order) {
   media.className = 'order-card__media';
 
   const title = (order.item && order.item.title) || '物品';
-  if (order.item && order.item.image) {
-    const img = document.createElement('img');
-    img.src = order.item.image;
-    img.alt = title;
-    media.appendChild(img);
-  } else {
-    media.textContent = title.slice(0, 1);
-  }
+  const img = document.createElement('img');
+  img.src = resolveItemImage({ title, image: order.item && order.item.image });
+  img.alt = title;
+  img.loading = 'lazy';
+  media.appendChild(img);
 
   // 右侧内容
   const body = document.createElement('div');

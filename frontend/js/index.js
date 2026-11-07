@@ -10,6 +10,7 @@
 import { request } from '../utils/request.js';
 import { debounce } from '../utils/utils.js';
 import { categoryLabel } from '../utils/constants.js';
+import { resolveItemImage, DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
 import { initCustomSelect } from '../components/custom-select.js';
 import { showToast } from '../components/feedback.js';
 
@@ -22,14 +23,6 @@ const SEARCH_DEBOUNCE_MS = 300;
 const PULL_THRESHOLD = 64;
 const PULL_MAX_DISTANCE = 90;
 const MOBILE_MAX_WIDTH = 768;
-const PLACEHOLDER_IMAGE = './assets/images/placeholder.svg';
-
-/** 类目 → 本地插图（服务端只下发 image_hash，这里用本地插图占位） */
-const CATEGORY_IMAGE = {
-  apparel: './assets/images/gown.svg',
-  wig: './assets/images/wig.svg',
-  other: './assets/images/umbrella.svg',
-};
 
 /* ------------------------------------------------------------------ 状态 */
 
@@ -103,7 +96,7 @@ function toCardModel(item) {
     ownerCredit: Number.isFinite(item.owner_credit)
       ? item.owner_credit
       : 80 + (Number(item.owner_id || 0) % 21),
-    image: CATEGORY_IMAGE[item.category] || PLACEHOLDER_IMAGE,
+    image: resolveItemImage(item),
   };
 }
 
@@ -151,7 +144,7 @@ function createCard(item) {
     () => {
       if (img.dataset.fallback === '1') return;
       img.dataset.fallback = '1';
-      img.src = PLACEHOLDER_IMAGE;
+      img.src = DEFAULT_ITEM_IMAGE;
     },
     { once: true }
   );

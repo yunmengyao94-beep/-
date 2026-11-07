@@ -16,13 +16,15 @@
 
 export const BASE_URL = 'http://localhost:3000/api/v1';
 
+import { showToast } from '../components/feedback.js';
+
 /** localStorage 中 token 的键名 */
 export const TOKEN_KEY = 'yxx_token';
 
 /** Token 失效时派发的全局事件，页面可监听后跳转登录 */
 export const AUTH_EXPIRED_EVENT = 'yxx:auth-expired';
 
-/** 自定义「请重新登录」提示（默认 window.alert） */
+/** 自定义「请重新登录」提示（默认使用自研 Toast + 自动跳登录页） */
 let unauthorizedHandler = null;
 
 /* ------------------------------------------------------------ 离线缓存 */
@@ -144,15 +146,31 @@ export function setUnauthorizedHandler(handler) {
 }
 
 /** 通知业务层「需要重新登录」 */
+/** 登录态失效：带 redirect 参数跳回登录页（已在登录页则不跳，避免死循环） */
+function redirectToLogin() {
+  try {
+    if (typeof window === 'undefined' || !window.location) return;
+    const path = String(window.location.pathname || '');
+    if (path.endsWith('login.html') || path.endsWith('register.html')) return;
+
+    const redirect = path + (window.location.search || '');
+    setTimeout(() => {
+      window.location.replace('./login.html?redirect=' + encodeURIComponent(redirect));
+    }, 900);
+  } catch {
+    // 跳转失败不阻塞抛错
+  }
+}
+
 function notifyAuthExpired() {
   try {
     if (typeof unauthorizedHandler === 'function') {
       unauthorizedHandler();
       return;
     }
-    if (typeof window !== 'undefined' && typeof window.alert === 'function') {
-      window.alert('登录已过期，请重新登录');
-    }
+    // 原生 alert 已移除：统一走自研 Toast + 自动回登录页
+    showToast('登录已过期，请重新登录', 'error');
+    redirectToLogin();
   } catch {
     // 提示本身失败不影响抛出错误
   }

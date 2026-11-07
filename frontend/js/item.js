@@ -9,19 +9,12 @@ import { request } from '../utils/request.js';
 import { debounce } from '../utils/utils.js';
 import { ensureToken } from '../utils/auth.js';
 import { categoryLabel } from '../utils/constants.js';
+import { resolveItemImage, DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
 
 /* ------------------------------------------------------------------ 常量 */
 
 const ITEMS_ENDPOINT = '/items';
-const PLACEHOLDER_IMAGE = './assets/images/placeholder.svg';
-
-/** 类目 → 本地插图（服务端只下发 image_hash） */
-const CATEGORY_IMAGE = {
-  apparel: './assets/images/gown.svg',
-  wig: './assets/images/wig.svg',
-  other: './assets/images/umbrella.svg',
-};
 
 /**
  * 出借人兜底信息：/items 暂未下发出借人昵称与信用等级，
@@ -482,7 +475,7 @@ function renderDetail(item) {
   if (!rootEl) return;
   rootEl.textContent = '';
 
-  const image = CATEGORY_IMAGE[item.category] || PLACEHOLDER_IMAGE;
+  const image = resolveItemImage(item);
   const owner = resolveOwner(item);
   const levelName = LEVEL_NAME[owner.level] || '良好';
 
@@ -503,7 +496,7 @@ function renderDetail(item) {
     () => {
       if (img.dataset.fallback === '1') return;
       img.dataset.fallback = '1';
-      img.src = PLACEHOLDER_IMAGE;
+      img.src = DEFAULT_ITEM_IMAGE;
     },
     { once: true }
   );
