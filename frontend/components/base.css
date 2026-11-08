@@ -1,5 +1,5 @@
 /* ============================================================================
- * 易校圈 · 基础展示与表单组件（Sprint 3 Batch 2）
+ * 庆师易校圈 · 基础展示与表单组件（Sprint 3 Batch 2）
  * ----------------------------------------------------------------------------
  * 依赖：variables.css（令牌）、reset.css。每个 var() 都带兜底值。
  * 约束：不使用绝对定位。吸顶用 sticky，吸底用 fixed，下拉浮层用 fixed + JS 定位，
@@ -3064,4 +3064,48 @@ body.shell-entering .app-topbar {
   50% {
     opacity: 0.55;
   }
+}
+
+/* ============================================================================
+ * 33. 登录 / 注册页开发者署名（低调、居中、不抢焦点）
+ * ========================================================================== */
+
+.auth-credit {
+  padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+}
+
+.auth-credit__team,
+.auth-credit__meta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #888;
+  opacity: 0.6;
+}
+
+.auth-credit__meta {
+  margin-top: 2px;
+}
+
+@media (max-width: 360px) {
+  .auth-credit__team {
+    font-size: 11px;
+  }
+}
+
+/* 登录/注册整页竖向布局：表单居中，署名胜任底部 */
+.auth-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.auth-body .auth-page {
+  flex: 1;
+  min-height: 0;
+}
+
+.auth-body .auth-credit {
+  flex: none;
 }

@@ -608,7 +608,7 @@ function renderDetail(item) {
   rootEl.appendChild(ownerCard);
 
   renderActionBar(item);
-  document.title = `${item.title} · 易校圈`;
+  document.title = `${item.title} · 庆师易校圈`;
 }
 
 /** 错误态：提示 + 返回首页（网络类错误额外给重试） */
@@ -656,7 +656,7 @@ function renderError(message, { withRetry = false } = {}) {
 
   wrap.append(icon, text, desc, actions);
   rootEl.appendChild(wrap);
-  document.title = '物品详情 · 易校圈';
+  document.title = '物品详情 · 庆师易校圈';
 }
 
 /* ------------------------------------------------------------------ 加载 */

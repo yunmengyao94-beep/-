@@ -1,4 +1,4 @@
-# PWA 测试手册（易校圈）
+# PWA 测试手册（庆师易校圈）
 
 > 适用版本：Sprint 8 完成后的 `frontend/`（Service Worker `yxx-v1`）
 > 测试环境：Chrome / Edge（Chromium 内核），页面通过 `http://localhost:3000` 访问
@@ -27,7 +27,7 @@
 
 **Application → Manifest**
 
-- Name：`易校圈`；Short name：`易校圈`
+- Name：`庆师易校圈`；Short name：`庆师易校圈`
 - Start URL：`./index.html`；Display：`standalone`
 - Theme color：`#1890ff`；Background：`#f5f7fa`
 - Icons：应列出 4 个（192/512 普通 + 192/512 maskable）
@@ -91,7 +91,7 @@
 1. 用 `http://localhost:3000/index.html` 打开应用
 2. 地址栏右侧出现 **安装图标**（显示器 + 下箭头），点击 → **安装**
    - 也可用菜单：⋮ → **保存并分享 / 应用** → **将此站点作为应用安装**
-3. 安装完成后会以**独立窗口**打开（无地址栏），开始菜单/桌面会有「易校圈」图标
+3. 安装完成后会以**独立窗口**打开（无地址栏），开始菜单/桌面会有「庆师易校圈」图标
 4. 右键任务栏图标可 **固定**；也可在 `chrome://apps` 中管理
 
 **验收点**：
@@ -99,11 +99,11 @@
 - [ ] 独立窗口打开，不显示浏览器地址栏
 - [ ] 任务栏/程序坞图标为蓝色渐变书本图标（非默认网页图标）
 - [ ] 断网后从桌面启动，仍能打开缓存页面
-- [ ] 窗口标题为「易校圈 · 附近物品」（`start_url` 指向的页面）
+- [ ] 窗口标题为「庆师易校圈 · 附近物品」（`start_url` 指向的页面）
 
 ### 卸载
 
-- Chrome：`chrome://apps` → 右键「易校圈」→ **从 Chrome 中移除**
+- Chrome：`chrome://apps` → 右键「庆师易校圈」→ **从 Chrome 中移除**
 - Edge：`edge://apps` → 右键 → **卸载**
 
 ### 移动端
@@ -131,7 +131,7 @@
 | --------------------------------------------- | ---- | ------------------------------------------------- |
 | 由安全源提供（localhost/HTTPS）               | ✅   | localhost 视为安全上下文                          |
 | 有 manifest 且可访问                          | ✅   | `/manifest.json` 返回 200，`application/json`     |
-| `name` / `short_name`                         | ✅   | 均为「易校圈」                                    |
+| `name` / `short_name`                         | ✅   | 均为「庆师易校圈」                                |
 | `start_url` / `scope`                         | ✅   | `./index.html` / `./`                             |
 | `display` 为 standalone                       | ✅   | `standalone` + `display_override`                 |
 | 192×192 与 512×512 图标                       | ✅   | `logo-192.png` / `logo-512.png`，实测尺寸校验通过 |

@@ -116,7 +116,7 @@ export function mountShell(options = {}) {
           <path d="M9 11h14M9 16h9M9 21h11" stroke="#fff" stroke-width="2.4"
                 stroke-linecap="round" fill="none" />
         </svg>
-        <span class="sidebar__logo-text">易校圈</span>
+        <span class="sidebar__logo-text">庆师易校圈</span>
       </div>
 
       <nav class="sidebar__nav">${navHtml}</nav>
@@ -149,7 +149,7 @@ export function mountShell(options = {}) {
             <path d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <span class="topbar__brand">易校圈</span>
+        <span class="topbar__brand">庆师易校圈</span>
       </div>
 
       <!-- 中：全局搜索（自适应剩余宽度） -->

@@ -753,7 +753,7 @@ function buildGuideSteps() {
     {
       target: null,
       title: '准备好了吗？',
-      desc: '开始体验易校圈的信用共享吧，祝你好借好还。',
+      desc: '开始体验庆师易校圈的信用共享吧，祝你好借好还。',
       action: '开始体验',
     },
   ];

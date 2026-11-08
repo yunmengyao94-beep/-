@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * 易校圈 Service Worker
+ * 庆师易校圈 Service Worker
  * ---------------------------------------------------------------------------
  * · install：把应用外壳（页面 / 核心 CSS / 核心 JS / 图标 / manifest）写入 yxx-v1
  * · activate：清理非 yxx-v1 的旧缓存，并 clients.claim() 立即接管页面
@@ -17,8 +17,8 @@
  */
 
 /** 缓存版本：发版时递增（v2 起改为「版本号 + 构建日期」，便于定位线上版本） */
-const CACHE_VERSION = 'v3';
-const BUILD_DATE = '2026-11-08.3';
+const CACHE_VERSION = 'v4';
+const BUILD_DATE = '2026-11-08.4';
 const CACHE_NAME = `yxx-${CACHE_VERSION}`;
 
 // 构建日期仅用于排查线上版本（可在 DevTools 的 Cache Storage 中看到）

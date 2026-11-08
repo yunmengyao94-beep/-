@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * 易校圈 · 本地服务端（Express）
+ * 庆师易校圈 · 本地服务端（Express）
  * ---------------------------------------------------------------
  * Sprint 1：CORS / JSON 解析 / Morgan / 健康检查 / 假 JWT / 鉴权中间件
  * Sprint 2：seed_db 数据集、通用响应封装、核心业务路由（items / orders / users）、

@@ -195,7 +195,7 @@ function renderProfile(data) {
   renderLevel(score);
   renderLogs(user.credit_logs);
 
-  document.title = `${nickname} · 易校圈`;
+  document.title = `${nickname} · 庆师易校圈`;
 }
 
 /* ------------------------------------------------------------ 信用流水 */

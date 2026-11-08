@@ -7,13 +7,13 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="易校圈" />
+    <meta name="apple-mobile-web-app-title" content="庆师易校圈" />
     <link rel="apple-touch-icon" href="./assets/icons/logo-192.png" />
     <link rel="manifest" href="./manifest.json" />
     <link rel="icon" href="./favicon.ico" sizes="any" />
 
-    <meta name="description" content="易校圈 · 登录" />
-    <title>登录 · 易校圈</title>
+    <meta name="description" content="庆师易校圈 · 登录" />
+    <title>登录 · 庆师易校圈</title>
 
     <!-- 公共样式 -->
     <link rel="stylesheet" href="./css/variables.css" />
@@ -27,7 +27,7 @@
     <!-- 注意：登录页不引入 js/auth.js（路由守卫），否则会死循环 -->
   </head>
 
-  <body>
+  <body class="auth-body">
     <div id="network-banner" class="network-banner" role="status" aria-live="polite"></div>
 
     <main class="auth-page">
@@ -36,11 +36,11 @@
           <img
             class="auth-brand__logo"
             src="./assets/icons/logo-192.png"
-            alt="易校圈"
+            alt="庆师易校圈"
             width="64"
             height="64"
           />
-          <h1 class="auth-brand__title">易校圈</h1>
+          <h1 class="auth-brand__title">庆师易校圈</h1>
           <p class="auth-brand__sub">校园信用共享 · 凭信用分免押借用</p>
         </div>
 
@@ -102,6 +102,12 @@
         </p>
       </section>
     </main>
+
+    <!-- 开发者与版权信息（低调展示，不抢表单焦点） -->
+    <footer class="auth-credit">
+      <p class="auth-credit__team">Developed by 陈宇 · 班慧灵 · 刘婧 · 周艳荣 · 陈家康</p>
+      <p class="auth-credit__meta">© 2026 庆师易校圈项目组 · 内部测试版 v1.0.0</p>
+    </footer>
 
     <script type="module" src="./js/login.js"></script>
     <script type="module" src="./js/app.js"></script>

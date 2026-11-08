@@ -2,7 +2,7 @@
   "name": "yxx-campus",
   "version": "0.1.0",
   "private": true,
-  "description": "易校圈 · 本地服务端（Express + JWT）",
+  "description": "庆师易校圈 · 本地服务端（Express + JWT）",
   "license": "UNLICENSED",
   "type": "commonjs",
   "main": "server/app.js",
