@@ -63,3 +63,7 @@ server/db.json.tmp
 
 # 内网穿透工具二进制（体积大，不入库）
 tools/
+
+# Python 缓存
+__pycache__/
+*.pyc
