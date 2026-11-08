@@ -60,3 +60,6 @@ server/db.json
 server/db.backup.json
 server/.yxx.lock
 server/db.json.tmp
+
+# 内网穿透工具二进制（体积大，不入库）
+tools/
