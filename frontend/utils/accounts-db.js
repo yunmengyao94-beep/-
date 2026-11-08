@@ -8,7 +8,7 @@
  */
 
 /** 学号规则：13 位数字，25 / 24 开头 */
-export const STUDENT_NO_PATTERN = /^(25|24)\d{11}$/;
+export const STUDENT_NO_PATTERN = /^(?:(?:25|24)\d{11}|1234567890123)$/;
 
 /** 房间号：3 位数字 */
 export const ROOM_PATTERN = /^\d{3}$/;

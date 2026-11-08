@@ -55,8 +55,7 @@ function validate() {
   const errors = {};
 
   if (!studentNo) errors.studentNo = '请输入学号';
-  else if (!isValidStudentNo(studentNo))
-    errors.studentNo = '学号需为 13 位数字，且以 25 或 24 开头';
+  else if (!isValidStudentNo(studentNo)) errors.studentNo = '学号格式不正确，请核对后重试';
 
   if (!name) errors.name = '请输入姓名';
   else if (name.length < 2) errors.name = '姓名至少 2 个字符';

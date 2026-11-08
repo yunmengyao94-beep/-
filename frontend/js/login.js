@@ -54,7 +54,7 @@ function validateFormat() {
     setError(errStudentNo, '请输入学号');
     ok = false;
   } else if (!isValidStudentNo(studentNo)) {
-    setError(errStudentNo, '学号需为 13 位数字，且以 25 或 24 开头');
+    setError(errStudentNo, '学号格式不正确，请核对后重试');
     ok = false;
   } else {
     setError(errStudentNo, '');

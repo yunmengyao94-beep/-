@@ -30,8 +30,8 @@ const {
 /** 试点统一学院（白名单固定，注册时不再让用户选择） */
 const COLLEGE_NAME = '计算机科学与信息技术学院';
 
-/** 学号规则：13 位数字，25 / 24 开头 */
-const STUDENT_NO_PATTERN = /^(25|24)\d{11}$/;
+/** 学号规则：13 位数字，25 / 24 开头；另放行内部超级测试账号 1234567890123 */
+const STUDENT_NO_PATTERN = /^(?:(?:25|24)\d{11}|1234567890123)$/;
 
 /** 房间号：3 位数字 */
 const ROOM_PATTERN = /^\d{3}$/;
@@ -94,7 +94,7 @@ function createAuthRouter(options) {
     }
 
     if (!STUDENT_NO_PATTERN.test(studentNo)) {
-      return fail(req, res, 400, 40001, '参数校验失败：学号需为 13 位数字且以 25/24 开头', {
+      return fail(req, res, 400, 40001, '参数校验失败：学号格式不正确，请核对后重试', {
         field: 'student_no',
       });
     }
@@ -144,7 +144,7 @@ function createAuthRouter(options) {
       const room = typeof body.room === 'string' ? body.room.trim() : '';
 
       if (!STUDENT_NO_PATTERN.test(studentNo)) {
-        return fail(req, res, 400, 40001, '参数校验失败：学号需为 13 位数字且以 25/24 开头', {
+        return fail(req, res, 400, 40001, '参数校验失败：学号格式不正确，请核对后重试', {
           field: 'student_no',
         });
       }

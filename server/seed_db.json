@@ -99,6 +99,26 @@
       "status": 1,
       "created_at": "2026-11-08T09:00:00+08:00",
       "updated_at": "2026-11-08T09:00:00+08:00"
+    },
+    {
+      "id": 6,
+      "student_no": "1234567890123",
+      "real_name": "测试账号",
+      "college_code": "",
+      "college_name": "计算机科学与信息技术学院",
+      "major_code": "",
+      "credit_score": 100,
+      "credit_frozen": 0,
+      "credit_available": 100,
+      "credit_level": 4,
+      "device_fp": null,
+      "invite_code": "YXX00006",
+      "invited_by": null,
+      "webauthn_pubkey": null,
+      "building_loc": "第1公寓",
+      "status": 1,
+      "created_at": "2026-11-08T20:00:00+08:00",
+      "updated_at": "2026-11-08T20:00:00+08:00"
     }
   ],
   "accounts": [
@@ -146,6 +166,15 @@
       "building": "",
       "room": "",
       "created_at": "2026-11-08T09:00:00+08:00"
+    },
+    {
+      "student_no": "1234567890123",
+      "password": "scrypt$a106762021e245f2da1f60aa4b441901$2cb6e9b5673c2abbe40b5cfb2bf7a79793d689131986f1b95e135f967d5fb05c69bd87220e84203d0fecf5cbd89d43e6cecbfcf1faecadfcf583babbef6dd0ce",
+      "name": "测试账号",
+      "college": "计算机科学与信息技术学院",
+      "building": "第1公寓",
+      "room": "101",
+      "created_at": "2026-11-08T20:00:00+08:00"
     }
   ],
   "items": [],
