@@ -169,6 +169,36 @@ function loadUser() {
   };
 }
 
+/**
+ * 从本地用户缓存解析「可用信用分」
+ * 兼容三种历史数据：
+ *   1. 正常：credit_available 有值
+ *   2. 旧缓存只有 credit_score / credit_frozen
+ *   3. 字段完全缺失（返回 null，交由服务端判定，绝不误报不足）
+ * @param {object} user
+ * @returns {number|null}
+ */
+function resolveAvailableScore(user) {
+  if (!user || typeof user !== 'object') return null;
+
+  const direct = Number(user.credit_available);
+  if (
+    user.credit_available !== undefined &&
+    user.credit_available !== null &&
+    Number.isFinite(direct)
+  ) {
+    return Math.max(0, direct);
+  }
+
+  const score = Number(user.credit_score);
+  if (Number.isFinite(score)) {
+    const frozen = Number(user.credit_frozen);
+    return Math.max(0, score - (Number.isFinite(frozen) ? frozen : 0));
+  }
+
+  return null;
+}
+
 /** 从服务端同步可用信用分（借用成功后冻结分变化） */
 async function syncUserFromServer() {
   const data = await request('/users/me');
@@ -284,11 +314,28 @@ async function submitBorrow(item, dueDate, btn) {
 
   const deposit = Number(item.deposit_score ?? 0);
   const user = loadUser();
-  const available = Number(user.credit_available ?? 0);
 
-  // 信用分不足：直接拦在前端，不打扰服务端
-  if (available < deposit) {
-    showToast('信用分不足', 'error');
+  // 自己的物品：明确提示，避免落到「信用分不足」的错误文案
+  if (isOwnItem(item)) {
+    showToast('不能借用自己发布的物品', 'error');
+    return;
+  }
+
+  let available = resolveAvailableScore(user);
+
+  // 本地缓存缺信用字段（旧版本登录写入的数据）：先向服务端要一次
+  if (available === null) {
+    try {
+      const synced = await syncUserFromServer();
+      available = resolveAvailableScore(synced);
+    } catch {
+      available = null;
+    }
+  }
+
+  // 只有确实拿到数值且不足时才拦截；未知则交给服务端权威判断
+  if (available !== null && available < deposit) {
+    showToast(`信用分不足（可用 ${available} 分，需冻结 ${deposit} 分）`, 'error');
     return;
   }
 
@@ -329,7 +376,15 @@ async function submitBorrow(item, dueDate, btn) {
     const message = (error && error.message) || '提交失败';
 
     if (code === 40301) {
-      showToast('信用分不足', 'error');
+      const info = (error && error.data) || {};
+      const need = info.required_score ?? deposit;
+      const have = info.current_available;
+      showToast(
+        have === undefined ? '信用分不足' : `信用分不足（可用 ${have} 分，需冻结 ${need} 分）`,
+        'error'
+      );
+    } else if (code === 40902) {
+      showToast('不能借用自己发布的物品', 'error');
     } else {
       showToast(`提交失败：${message}`, 'error');
     }

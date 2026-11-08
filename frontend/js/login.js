@@ -103,7 +103,11 @@ async function handleLogin(event) {
     setToken(token);
 
     const serverUser = (data && data.user) || {};
+
+    // 关键：保留服务端返回的信用字段（credit_score / credit_available / credit_level），
+    // 否则详情页借用前的本地校验会因为字段缺失而误判「信用分不足」。
     const user = {
+      ...serverUser,
       user_id: serverUser.user_id,
       student_no: serverUser.student_no || values.studentNo,
       nickname: serverUser.nickname || '同学',
@@ -111,6 +115,15 @@ async function handleLogin(event) {
       college_code: serverUser.college_code || '',
       building_loc: serverUser.building_loc || '',
       room_no: serverUser.room_no || '',
+      credit_score: Number.isFinite(Number(serverUser.credit_score))
+        ? Number(serverUser.credit_score)
+        : 100,
+      credit_available: Number.isFinite(Number(serverUser.credit_available))
+        ? Number(serverUser.credit_available)
+        : 100,
+      credit_level: Number.isFinite(Number(serverUser.credit_level))
+        ? Number(serverUser.credit_level)
+        : 4,
     };
 
     try {
