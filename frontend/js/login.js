@@ -131,8 +131,21 @@ async function handleLogin(event) {
     window.location.href = readRedirect();
   } catch (error) {
     const message = (error && error.message) || '登录失败，请稍后重试';
-    showToast(message === '学号或密码错误' ? message : `登录失败：${message}`, 'error');
-    setError(errPassword, error && error.code === 40102 ? '学号或密码错误' : '');
+
+    if (error && error.code === 40303) {
+      // 白名单用户尚未激活：直接把用户引到注册页
+      showToast(message, 'error');
+      setError(errStudentNo, message);
+
+      const toRegister = document.getElementById('go-register');
+      if (toRegister) {
+        toRegister.classList.add('is-highlight');
+        toRegister.focus();
+      }
+    } else {
+      showToast(message === '学号或密码错误' ? message : `登录失败：${message}`, 'error');
+      setError(errPassword, error && error.code === 40102 ? '学号或密码错误' : '');
+    }
 
     submitting = false;
     if (submitBtn) {

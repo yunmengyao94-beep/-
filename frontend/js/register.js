@@ -15,7 +15,6 @@ import { checkThrottle, markThrottle } from '../utils/rate-limit.js';
 const form = document.getElementById('register-form');
 const studentNoInput = document.getElementById('reg-student-no');
 const nameInput = document.getElementById('reg-name');
-const collegeInput = document.getElementById('reg-college');
 const buildingSelect = document.getElementById('reg-building');
 const roomInput = document.getElementById('reg-room');
 const passwordInput = document.getElementById('reg-password');
@@ -24,7 +23,6 @@ const submitBtn = document.getElementById('register-btn');
 const ERROR_NODES = {
   studentNo: document.getElementById('err-reg-student-no'),
   name: document.getElementById('err-reg-name'),
-  college: document.getElementById('err-reg-college'),
   building: document.getElementById('err-reg-building'),
   room: document.getElementById('err-reg-room'),
   password: document.getElementById('err-reg-password'),
@@ -50,7 +48,6 @@ function clearErrors() {
 function validate() {
   const studentNo = studentNoInput ? studentNoInput.value.trim() : '';
   const name = nameInput ? nameInput.value.trim() : '';
-  const college = collegeInput ? collegeInput.value.trim() : '';
   const building = buildingSelect ? buildingSelect.value : '';
   const room = roomInput ? roomInput.value.trim() : '';
   const password = passwordInput ? passwordInput.value : '';
@@ -63,8 +60,6 @@ function validate() {
 
   if (!name) errors.name = '请输入姓名';
   else if (name.length < 2) errors.name = '姓名至少 2 个字符';
-
-  if (!college) errors.college = '请输入学院';
 
   if (!building) errors.building = '请选择楼栋';
 
@@ -80,7 +75,7 @@ function validate() {
 
   if (Object.keys(errors).length > 0) return null;
 
-  return { studentNo, name, college, building, room, password };
+  return { studentNo, name, building, room, password };
 }
 
 async function handleRegister(event) {
@@ -120,7 +115,6 @@ async function handleRegister(event) {
         student_no: values.studentNo,
         password: values.password,
         name: values.name,
-        college: values.college,
         building: values.building,
         room: values.room,
       },

@@ -13,16 +13,22 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 
-const { ok, fail } = require('../utils/http');
+const { ok, fail, isoWithOffset } = require('../utils/http');
 const { createRateLimit } = require('../middlewares/rate-limit');
 const { revoke } = require('../services/token-blacklist');
 const {
   findUser,
+  findUserByStudentNo,
   findAccountByStudentNo,
   verifyPassword,
+  hashPassword,
   createAccount,
   ensureUserForStudent,
+  persistDb,
 } = require('../store');
+
+/** 试点统一学院（白名单固定，注册时不再让用户选择） */
+const COLLEGE_NAME = '计算机科学与信息技术学院';
 
 /** 学号规则：13 位数字，25 / 24 开头 */
 const STUDENT_NO_PATTERN = /^(25|24)\d{11}$/;
@@ -94,6 +100,13 @@ function createAuthRouter(options) {
     }
 
     const account = findAccountByStudentNo(studentNo);
+    const whitelistUser = findUserByStudentNo(studentNo);
+
+    // 白名单内但还没设置密码 → 引导去注册页激活
+    if ((account && !account.password) || (!account && whitelistUser)) {
+      return fail(req, res, 403, 40303, '账号尚未激活，请先前往注册页完成身份核验与密码设置');
+    }
+
     if (!account || !verifyPassword(password, account.password)) {
       return fail(req, res, 401, 40102, '学号或密码错误');
     }
@@ -115,7 +128,8 @@ function createAuthRouter(options) {
 
   /**
    * POST /api/v1/auth/register
-   * 请求：{ student_no, password, name, college, building, room }
+   * 请求：{ student_no, name, password, building, room }
+   * 规则：只允许试点白名单内的「学号 + 姓名」注册；已激活的账号拒绝重复注册
    */
   router.post(
     '/register',
@@ -126,7 +140,6 @@ function createAuthRouter(options) {
       const studentNo = typeof body.student_no === 'string' ? body.student_no.trim() : '';
       const password = typeof body.password === 'string' ? body.password : '';
       const name = typeof body.name === 'string' ? body.name.trim() : '';
-      const college = typeof body.college === 'string' ? body.college.trim() : '';
       const building = typeof body.building === 'string' ? body.building.trim() : '';
       const room = typeof body.room === 'string' ? body.room.trim() : '';
 
@@ -135,37 +148,75 @@ function createAuthRouter(options) {
           field: 'student_no',
         });
       }
+
+      if (!name) {
+        return fail(req, res, 400, 40001, '参数校验失败：姓名必填', { field: 'name' });
+      }
+
       if (password.length < 6) {
         return fail(req, res, 400, 40001, '参数校验失败：密码至少 6 位', { field: 'password' });
       }
-      if (name.length < 2) {
-        return fail(req, res, 400, 40001, '参数校验失败：姓名至少 2 个字符', { field: 'name' });
-      }
-      if (!college) {
-        return fail(req, res, 400, 40001, '参数校验失败：学院必填', { field: 'college' });
-      }
+
       if (!building) {
-        return fail(req, res, 400, 40001, '参数校验失败：楼栋必填', { field: 'building' });
+        return fail(req, res, 400, 40001, '参数校验失败：公寓必填', { field: 'building' });
       }
+
       if (!ROOM_PATTERN.test(room)) {
         return fail(req, res, 400, 40001, '参数校验失败：房间号需为 3 位数字', { field: 'room' });
       }
 
-      const result = createAccount({
-        student_no: studentNo,
-        password,
-        name,
-        college,
-        building,
-        room,
-      });
-
-      if (!result.ok) {
-        return fail(req, res, 409, 40902, '该学号已注册，请直接登录', { field: 'student_no' });
+      // 1) 白名单核验：学号必须是试点用户
+      const whitelistUser = findUserByStudentNo(studentNo);
+      if (!whitelistUser) {
+        return fail(req, res, 403, 40302, '身份核验失败，您不在本次试点名单内');
       }
 
+      // 2) 姓名必须与白名单完全一致
+      if (String(whitelistUser.real_name || '').trim() !== name) {
+        return fail(req, res, 403, 40302, '身份核验失败，您不在本次试点名单内');
+      }
+
+      // 3) 已激活则拒绝重复注册
+      const existing = findAccountByStudentNo(studentNo);
+      if (existing && existing.password) {
+        return fail(req, res, 409, 40902, '该账号已激活，请直接登录', { field: 'student_no' });
+      }
+
+      // 4) 激活：写入密码 / 公寓 / 房间号
+      let account = existing;
+
+      if (!account) {
+        const created = createAccount({
+          student_no: studentNo,
+          password,
+          name,
+          college: COLLEGE_NAME,
+          building,
+          room,
+        });
+
+        if (!created.ok) {
+          return fail(req, res, 409, 40902, '该账号已激活，请直接登录', { field: 'student_no' });
+        }
+
+        account = created.account;
+      } else {
+        account.password = hashPassword(password);
+        account.building = building;
+        account.room = room;
+        if (!account.college) account.college = COLLEGE_NAME;
+      }
+
+      // 5) 同步用户档案
+      whitelistUser.real_name = name;
+      if (!whitelistUser.college_name) whitelistUser.college_name = COLLEGE_NAME;
+      whitelistUser.building_loc = building;
+      whitelistUser.updated_at = isoWithOffset();
+
+      persistDb();
+
       return ok(req, res, {
-        user_id: result.user.id,
+        user_id: whitelistUser.id,
         student_no: studentNo,
         name,
       });
