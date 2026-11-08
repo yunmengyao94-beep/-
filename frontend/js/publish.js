@@ -51,6 +51,8 @@ const damageRowsEl = document.getElementById('damage-rows');
 const addRowBtn = document.getElementById('add-damage-row');
 const publishBtn = document.getElementById('publish-btn');
 const titleInput = document.getElementById('field-title');
+const descInput = document.getElementById('field-description');
+const descCount = document.getElementById('desc-count');
 const depositInput = document.getElementById('field-deposit');
 const buildingSelect = document.getElementById('field-building');
 const categoryRoot = document.querySelector('[data-custom-select]');
@@ -477,6 +479,7 @@ export function validateForm() {
   const errors = {};
 
   const title = titleInput ? titleInput.value.trim() : '';
+  const description = descInput ? descInput.value.trim().slice(0, 200) : '';
   if (!title) {
     errors.title = '请填写物品标题';
   } else if (title.length <= 2) {
@@ -525,7 +528,7 @@ export function validateForm() {
   return {
     valid: Object.keys(errors).length === 0,
     errors,
-    values: { title, category, deposit, building, isHighValue, damageRules },
+    values: { title, description, category, deposit, building, isHighValue, damageRules },
   };
 }
 
@@ -557,6 +560,7 @@ function buildPayload(values) {
   return {
     title: values.title,
     category: values.category,
+    description: values.description,
     image_hash: '',
     // 首图缩略图随发布一起上传，换设备也能看到图
     image_data: selectedImages.length > 0 ? selectedImages[0].dataUrl : '',
@@ -827,6 +831,14 @@ function init() {
   bindKeyboardGuard();
   if (addRowBtn) addRowBtn.addEventListener('click', addDamageRow);
   if (publishBtn) publishBtn.addEventListener('click', handleSubmit);
+
+  if (descInput && descCount) {
+    const updateDescCount = () => {
+      descCount.textContent = `${descInput.value.length} / 200`;
+    };
+    descInput.addEventListener('input', updateDescCount);
+    updateDescCount();
+  }
   initCustomSelect();
   updateCount();
 }

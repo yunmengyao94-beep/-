@@ -12,6 +12,7 @@ import { categoryLabel } from '../utils/constants.js';
 import { resolveItemImage, DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
 import { getItemImages } from '../utils/item-images.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
+import { openChat } from './chat.js';
 
 /* ------------------------------------------------------------------ 常量 */
 
@@ -39,6 +40,11 @@ const backBtn = document.getElementById('back-btn');
 
 /** 当前挂在 body 上的底部操作栏（重绘 / 错误态时需移除） */
 let actionBarEl = null;
+/** 当前详情上下文（聊天需要） */
+let currentItem = null;
+let currentOwner = null;
+/** PC 端操作栏插槽 */
+let detailActionsSlot = null;
 /** 底部「申请借用」按钮，成功后需要改成「已申请，待交接」 */
 let borrowBtnEl = null;
 /** 提交中标记：防重复提交的第二道闸（第一道是 debounce leading） */
@@ -341,7 +347,7 @@ async function submitBorrow(item, dueDate, btn) {
 
 /** 联系出借人（占位） */
 function handleContact() {
-  showToast('联系出借人功能即将上线', 'success');
+  openChat({ item: currentItem, owner: currentOwner });
 }
 
 /**
@@ -474,6 +480,77 @@ function renderActionBar(item) {
   if (state.enabled && hasPendingOrder(item.id)) markApplied('已申请，待交接');
 }
 
+/** 《物品简介》：旧数据没有 description 时优雅降级 */
+function renderDescriptionCard(item) {
+  const card = document.createElement('section');
+  card.className = 'detail-card detail-desc';
+
+  const title = document.createElement('h2');
+  title.className = 'detail-card__title';
+  title.textContent = '物品简介';
+
+  const text = document.createElement('p');
+  text.className = 'detail-desc__text';
+
+  const description = typeof item.description === 'string' ? item.description.trim() : '';
+  text.textContent = description || '卖家很懒，暂无简介';
+  if (!description) card.classList.add('detail-desc--empty');
+
+  card.append(title, text);
+  return card;
+}
+
+/** 多图缩略图条：点击切换大图，滚动时高亮 */
+function renderThumbs(images, gallery) {
+  if (images.length <= 1) return null;
+
+  const strip = document.createElement('div');
+  strip.className = 'detail-thumbs';
+
+  const buttons = images.map((src, index) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `detail-thumb${index === 0 ? ' is-active' : ''}`;
+    btn.setAttribute('aria-label', `查看第 ${index + 1} 张图片`);
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    img.loading = 'lazy';
+    btn.appendChild(img);
+
+    btn.addEventListener('click', () => {
+      gallery.scrollTo({ left: gallery.clientWidth * index, behavior: 'smooth' });
+    });
+
+    strip.appendChild(btn);
+    return btn;
+  });
+
+  gallery.addEventListener(
+    'scroll',
+    () => {
+      const width = gallery.clientWidth || 1;
+      const index = Math.round(gallery.scrollLeft / width);
+      buttons.forEach((btn, i) => btn.classList.toggle('is-active', i === index));
+    },
+    { passive: true }
+  );
+
+  return strip;
+}
+
+/** 把操作栏放到 PC 右栏 / 移动端 body（fixed） */
+function placeActionBar() {
+  if (!actionBarEl) return;
+
+  const isPc = window.matchMedia('(min-width: 768px)').matches;
+  const target = isPc && detailActionsSlot ? detailActionsSlot : document.body;
+
+  if (actionBarEl.parentNode !== target) target.appendChild(actionBarEl);
+  actionBarEl.classList.toggle('action-bar--inline', Boolean(isPc && detailActionsSlot));
+}
+
 /* ------------------------------------------------------------------ 渲染 */
 
 /** 渲染详情 */
@@ -489,6 +566,9 @@ function renderDetail(item) {
       : [item.has_thumb ? apiUrl(`/items/${item.id}/thumb`) : resolveItemImage(item)];
   const owner = resolveOwner(item);
   const levelName = LEVEL_NAME[owner.level] || '良好';
+
+  currentItem = item;
+  currentOwner = owner;
 
   /* ---- 大图（scroll-snap 容器，当前仅一张） ---- */
   const gallery = document.createElement('div');
@@ -602,12 +682,35 @@ function renderDetail(item) {
   ownerRow.append(avatar, ownerInfo, contactBtn);
   ownerCard.appendChild(ownerRow);
 
-  rootEl.append(gallery, infoCard);
+  /* ---- 左栏：大图 + 缩略图 ---- */
+  const media = document.createElement('div');
+  media.className = 'detail-media';
+  media.append(gallery);
+
+  const thumbs = renderThumbs(images, gallery);
+  if (thumbs) media.appendChild(thumbs);
+
+  /* ---- 右栏：文字信息 ---- */
+  const side = document.createElement('div');
+  side.className = 'detail-side';
+
+  detailActionsSlot = document.createElement('div');
+  detailActionsSlot.className = 'detail-actions';
+
+  side.append(infoCard, renderDescriptionCard(item));
   const damageCard = renderDamageCard(item.damage_rules);
-  if (damageCard) rootEl.appendChild(damageCard);
-  rootEl.appendChild(ownerCard);
+  if (damageCard) side.appendChild(damageCard);
+  side.append(ownerCard, detailActionsSlot);
+
+  rootEl.append(media, side);
 
   renderActionBar(item);
+  placeActionBar();
+
+  if (!window.__yxxDetailResizeBound) {
+    window.__yxxDetailResizeBound = true;
+    window.addEventListener('resize', () => placeActionBar());
+  }
   document.title = `${item.title} · 庆师易校圈`;
 }
 

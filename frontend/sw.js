@@ -72,6 +72,7 @@ const SHELL_SCRIPTS = [
   './components/shell.js',
   './js/index.js',
   './js/item.js',
+  './js/chat.js',
   './js/publish.js',
   './js/profile.js',
   './utils/request.js',

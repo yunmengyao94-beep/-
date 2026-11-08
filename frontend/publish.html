@@ -72,6 +72,20 @@
               <p class="field-error hidden" id="err-title"></p>
             </div>
 
+            <!-- 物品简介 -->
+            <div class="input-group">
+              <label class="input-group__label" for="field-description">物品简介</label>
+              <textarea
+                class="input-group__control publish-desc"
+                id="field-description"
+                name="description"
+                rows="3"
+                maxlength="200"
+                placeholder="补充物品成色、使用情况、配件是否齐全等（选填，最多 200 字）"
+              ></textarea>
+              <span class="input-group__hint" id="desc-count">0 / 200</span>
+            </div>
+
             <!-- 物品分类：复用自定义下拉 -->
             <div class="custom-select" data-custom-select>
               <label class="input-group__label" id="label-category">物品分类</label>

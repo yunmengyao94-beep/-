@@ -169,6 +169,9 @@ router.post(
     const deposit = Number(body.deposit_score);
 
     // 服务端缩略图（可选）：解决「换设备/清缓存后图片丢失」
+    const description =
+      typeof body.description === 'string' ? body.description.trim().slice(0, 200) : '';
+
     const imageData = typeof body.image_data === 'string' ? body.image_data.trim() : '';
     if (imageData) {
       if (!/^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(imageData)) {
@@ -214,6 +217,7 @@ router.post(
       id: itemId,
       owner_id: owner.id,
       title,
+      description,
       category,
       image_hash: typeof body.image_hash === 'string' ? body.image_hash : '',
       image_thumb: imageData,
