@@ -4023,3 +4023,22 @@ body.shell-entering .app-topbar {
     transform: translateY(0);
   }
 }
+
+/* ============================================================================
+ * 42. 客户端模块：仅移动端竖屏展示（PC 端隐藏）
+ * ========================================================================== */
+
+.setting-group[data-group='client'] {
+  display: none;
+}
+
+@media (max-width: 767.98px) and (orientation: portrait) {
+  .setting-group[data-group='client'] {
+    display: block;
+  }
+}
+
+/* 客户端环境（EXE / APK）：动态渲染的入口也一并隐藏 */
+html[data-client] [data-download-client] {
+  display: none !important;
+}

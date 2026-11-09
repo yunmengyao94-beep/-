@@ -217,6 +217,16 @@ export function mountShell(options = {}) {
 
   document.body.insertAdjacentHTML('afterbegin', html);
   document.body.classList.add('has-shell');
+
+  // 账号菜单挂到 body：顶栏的 backdrop-filter 会形成包含块，fixed 子元素可能被裁剪
+  teleportAccountMenu();
+
+  // 客户端环境下，动态渲染出来的下载入口也要标记隐藏
+  if (document.documentElement.dataset.client) {
+    document.querySelectorAll('[data-download-client]').forEach((el) => {
+      el.hidden = true;
+    });
+  }
   applyCollapsed(isCollapsed());
 
   /* ---- 折叠 ---- */
@@ -259,6 +269,16 @@ export function mountShell(options = {}) {
 
       window.location.href = `./index.html${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ''}`;
     });
+  }
+}
+
+/**
+ * 把账号下拉菜单移到 body 下，避免被顶栏的 backdrop-filter / overflow 裁剪
+ */
+function teleportAccountMenu() {
+  const menu = document.getElementById('topbar-menu');
+  if (menu && menu.parentElement !== document.body) {
+    document.body.appendChild(menu);
   }
 }
 
