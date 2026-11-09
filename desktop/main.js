@@ -98,6 +98,9 @@ function createWindow() {
   const ua = `${mainWindow.webContents.getUserAgent()} YXX-Client/1.0.0`;
   mainWindow.webContents.setUserAgent(ua);
 
+  // 锁定 3:2 宽高比：拖拽缩放时只能等比，避免 UI 拉伸
+  mainWindow.setAspectRatio(1200 / 800);
+
   mainWindow.once('ready-to-show', () => mainWindow.show());
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

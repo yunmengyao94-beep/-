@@ -23,7 +23,16 @@
     },
     "files": [
       "main.js",
-      "package.json"
+      "package.json",
+      "!**/*.md",
+      "!**/*.map",
+      "!**/docs/**",
+      "!**/*.log",
+      "!**/db.json",
+      "!**/db.backup.json",
+      "!**/.git/**",
+      "!**/screenshots/**",
+      "!**/test-results/**"
     ],
     "win": {
       "target": [
@@ -38,14 +47,16 @@
     },
     "nsis": {
       "oneClick": false,
-      "perMachine": false,
+      "perMachine": true,
+      "allowElevation": true,
       "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true,
+      "runAfterFinish": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "庆师易校圈",
       "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "allowElevation": true
+      "uninstallerIcon": "build/icon.ico"
     },
     "npmRebuild": false,
     "buildDependenciesFromSource": false,
@@ -56,10 +67,22 @@
         "from": "../frontend",
         "to": "frontend",
         "filter": [
-          "**/*"
+          "**/*",
+          "!**/*.md",
+          "!**/*.map",
+          "!**/docs/**",
+          "!**/*.log",
+          "!**/db.json",
+          "!**/db.backup.json",
+          "!fonts/NotoSerifSC-Regular.otf"
         ]
       }
     ],
-    "asar": true
+    "asar": true,
+    "compression": "maximum",
+    "electronLanguages": [
+      "zh-CN",
+      "en-US"
+    ]
   }
 }
