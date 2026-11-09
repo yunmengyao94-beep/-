@@ -24,7 +24,7 @@ const {
   hashPassword,
   createAccount,
   ensureUserForStudent,
-  persistDb,
+  commitDb,
 } = require('../store');
 
 /** 试点统一学院（白名单固定，注册时不再让用户选择） */
@@ -213,7 +213,7 @@ function createAuthRouter(options) {
       whitelistUser.building_loc = building;
       whitelistUser.updated_at = isoWithOffset();
 
-      persistDb();
+      commitDb();
 
       return ok(req, res, {
         user_id: whitelistUser.id,

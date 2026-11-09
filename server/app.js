@@ -24,7 +24,7 @@ const morgan = require('morgan');
 
 const { fail } = require('./utils/http');
 const auth = require('./middlewares/auth');
-const { db: dataStore, backupDb, hasRecoveredFromBackup } = require('./store');
+const { db: dataStore, backupDb, hasRecoveredFromBackup, startItemSweeper } = require('./store');
 const { createAuthRouter } = require('./routes/auth');
 const itemsRouter = require('./routes/items');
 const ordersRouter = require('./routes/orders');
@@ -149,6 +149,12 @@ app.use((err, req, res, _next) => {
     return fail(req, res, 400, 40001, '请求体不是合法 JSON');
   }
   console.error('[yxx] unhandled error:', err);
+
+  // 落盘失败：明确告知客户端数据未保存，避免误以为成功
+  if (err && err.code === 50001) {
+    return fail(req, res, 500, 50001, '数据写入失败，请稍后重试');
+  }
+
   return fail(req, res, 500, 50001, '服务端内部错误');
 });
 
@@ -313,6 +319,17 @@ if (require.main === module) {
       console.info(`[yxx] 首页：${url}/index.html | 热刷新：已开启（改文件后浏览器自动刷新）`);
 
       if (LIVE_RELOAD_ENABLED) liveReload.start();
+
+      // 物品生命周期：每 5 分钟下架超过 30 分钟未借出的物品并清空图片
+      const sweeper = startItemSweeper({
+        intervalMs: 5 * 60 * 1000,
+        ttlMs: 30 * 60 * 1000,
+        onSweep: (changed) => {
+          if (changed > 0)
+            console.info(`[yxx] 物品清扫：${changed} 件超时未借出，已下架并清空图片`);
+        },
+      });
+      process.on('exit', () => sweeper.stop());
       if (SHOULD_OPEN) openBrowser(`${url}/index.html`);
     })
     .catch((error) => {

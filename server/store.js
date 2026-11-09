@@ -149,6 +149,20 @@ function persistDb() {
 }
 
 /**
+ * 强制落盘：写入失败时抛错，调用方据此返回 500
+ * 保证「接口返回 200」一定意味着数据已经写到磁盘
+ */
+function commitDb() {
+  if (!persistDb()) {
+    const error = new Error('数据写入磁盘失败');
+    error.code = 50001;
+    error.status = 500;
+    throw error;
+  }
+  return true;
+}
+
+/**
  * 按 id 查用户
  * @param {number|string} id
  * @returns {object|null}
@@ -332,7 +346,7 @@ function ensureUserForStudent(studentNo, profile = {}) {
   };
 
   db.users.push(user);
-  persistDb();
+  commitDb();
 
   return { user, created: true };
 }
@@ -413,8 +427,84 @@ function applyOverduePenalties(user) {
       changed += 1;
     });
 
-  if (changed > 0) persistDb();
+  if (changed > 0) commitDb();
   return changed;
+}
+
+/* ------------------------------------------------------- 物品生命周期 */
+
+/**
+ * 清空物品的图片数据（保留文字信息）
+ * @param {object} item
+ * @returns {boolean} 是否发生了清理
+ */
+function clearItemImage(item) {
+  if (!item) return false;
+
+  const hadImage =
+    Boolean(item.image_thumb) || (Array.isArray(item.image_list) && item.image_list.length > 0);
+  item.image_thumb = '';
+  item.image_list = [];
+  if (hadImage) {
+    item.image_cleared_at = new Date(Date.now() + 8 * 3600 * 1000)
+      .toISOString()
+      .replace('Z', '+08:00');
+  }
+  return hadImage;
+}
+
+/**
+ * 清扫超时未借出的物品：状态 0 且创建超过 TTL → 状态 2 并清空图片
+ * @param {{ttlMs?: number, now?: number}} [options]
+ * @returns {number} 被下架的数量
+ */
+function sweepStaleItems(options = {}) {
+  const ttlMs = options.ttlMs === undefined ? 30 * 60 * 1000 : options.ttlMs;
+  const now = options.now === undefined ? Date.now() : options.now;
+  let changed = 0;
+
+  db.items.forEach((item) => {
+    if (item.status !== 0) return;
+
+    const createdAt = Date.parse(item.created_at || '');
+    if (!createdAt || now - createdAt <= ttlMs) return;
+
+    item.status = 2;
+    clearItemImage(item);
+    changed += 1;
+  });
+
+  return changed;
+}
+
+/**
+ * 启动定时清扫（每 5 分钟一次，unref 不阻塞进程退出）
+ * @param {{intervalMs?: number, ttlMs?: number, onSweep?: Function}} [options]
+ * @returns {{timer: any, stop: Function}}
+ */
+function startItemSweeper(options = {}) {
+  const intervalMs = options.intervalMs === undefined ? 5 * 60 * 1000 : options.intervalMs;
+  const ttlMs = options.ttlMs === undefined ? 30 * 60 * 1000 : options.ttlMs;
+  const onSweep = options.onSweep || (() => {});
+
+  const timer = setInterval(() => {
+    const changed = sweepStaleItems({ ttlMs });
+    if (changed > 0) {
+      try {
+        commitDb();
+      } catch (error) {
+        console.error('[yxx] 清扫落盘失败:', error.message);
+      }
+    }
+    onSweep(changed);
+  }, intervalMs);
+
+  if (typeof timer.unref === 'function') timer.unref();
+
+  return {
+    timer,
+    stop: () => clearInterval(timer),
+  };
 }
 
 /* -------------------------------------------------------------- 通知 */
@@ -424,6 +514,8 @@ function applyOverduePenalties(user) {
  * @param {{user_id: number, type?: 'system'|'order', title: string, body?: string, ref_id?: number|null}} input
  * @returns {object}
  */
+const MAX_NOTIFICATIONS_PER_USER = 200;
+
 function addNotification(input) {
   const nextId = db.notifications.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1;
   const row = {
@@ -438,6 +530,23 @@ function addNotification(input) {
   };
 
   db.notifications.push(row);
+
+  // 单用户通知上限：超出后删除最旧的，避免 db.json 无限增长
+  const mine = db.notifications.filter((item) => item.user_id === row.user_id);
+  if (mine.length > MAX_NOTIFICATIONS_PER_USER) {
+    const removeCount = mine.length - MAX_NOTIFICATIONS_PER_USER;
+    const removeIds = new Set(
+      mine
+        .slice()
+        .sort((a, b) =>
+          a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id - b.id
+        )
+        .slice(0, removeCount)
+        .map((item) => item.id)
+    );
+    db.notifications = db.notifications.filter((item) => !removeIds.has(item.id));
+  }
+
   return row;
 }
 
@@ -549,6 +658,10 @@ function createAccount(input) {
 }
 
 module.exports = {
+  commitDb,
+  clearItemImage,
+  sweepStaleItems,
+  startItemSweeper,
   backupDb,
   BACKUP_FILE,
   hasRecoveredFromBackup: () => dbRecoveredFromBackup,

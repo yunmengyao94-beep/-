@@ -8,7 +8,8 @@
 const express = require('express');
 const { ok, fail } = require('../utils/http');
 const { parseLimit, encodeCursor, decodeCursor } = require('../utils/pagination');
-const { db, findItem, findUser, persistDb, nextItemId } = require('../store');
+const { db, findItem, findUser, nextItemId } = require('../store');
+const { commitDb } = require('../store');
 const { maskName } = require('../utils/mask');
 const { createRateLimit } = require('../middlewares/rate-limit');
 const { checkSensitive } = require('../utils/sensitive');
@@ -232,7 +233,7 @@ router.post(
     };
 
     db.items.push(item);
-    persistDb();
+    commitDb();
 
     return ok(req, res, {
       item_id: item.id,
@@ -269,7 +270,7 @@ router.delete('/:id', (req, res) => {
   const index = db.items.findIndex((entry) => entry.id === id);
   if (index >= 0) db.items.splice(index, 1);
 
-  persistDb();
+  commitDb();
 
   return ok(req, res, { item_id: id, deleted: true });
 });

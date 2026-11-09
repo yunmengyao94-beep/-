@@ -9,8 +9,7 @@
 import { request, apiUrl } from '../utils/request.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
 import { formatTime } from '../utils/format.js';
-import { resolveItemImage } from '../utils/item-image.js';
-import { getItemCover } from '../utils/item-images.js';
+import { DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
 import { ensureToken } from '../utils/auth.js';
 
 const listEl = document.getElementById('order-list');
@@ -89,9 +88,9 @@ function createOrderCard(order) {
   const title = (order.item && order.item.title) || '物品';
   const img = document.createElement('img');
   img.src =
-    getItemCover(order.item && order.item.id) ||
-    (order.item && order.item.has_thumb ? apiUrl(`/items/${order.item.id}/thumb`) : '') ||
-    resolveItemImage({ title, image: order.item && order.item.image });
+    order.item && order.item.has_thumb
+      ? apiUrl(`/items/${order.item.id}/thumb`)
+      : DEFAULT_ITEM_IMAGE;
   img.alt = title;
   img.loading = 'lazy';
   media.appendChild(img);

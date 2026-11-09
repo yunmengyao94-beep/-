@@ -19,7 +19,7 @@ const {
   availableOf,
   listCreditLogs,
   appendCreditLog,
-  persistDb,
+  commitDb,
   applyOverduePenalties,
 } = require('../store');
 const { createRateLimit } = require('../middlewares/rate-limit');
@@ -33,6 +33,13 @@ const CHALLENGE_TTL_MS = 10 * 60 * 1000;
 
 /** 已签发未使用的挑战：challenge → { userId, expiresAt } */
 const creditChallenges = new Map();
+
+/** 清理过期挑战（防止 Map 无限增长） */
+function pruneChallenges(now = Date.now()) {
+  for (const [key, value] of creditChallenges) {
+    if (!value || value.expiresAt <= now) creditChallenges.delete(key);
+  }
+}
 
 /** 同一用户两次认证奖励的最小间隔（24 小时） */
 const AI_CERT_COOLDOWN_MS = 24 * 3600 * 1000;
@@ -84,6 +91,9 @@ router.post(
     if (!user) {
       return fail(req, res, 404, 40401, '资源不存在');
     }
+
+    // 每次签发前清理过期项，避免内存中积累
+    pruneChallenges();
 
     const challenge = `${user.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     const expiresAt = Date.now() + CHALLENGE_TTL_MS;
@@ -165,7 +175,7 @@ router.post(
       created_at: createdAt,
     });
 
-    persistDb();
+    commitDb();
 
     return ok(req, res, {
       credit: {
@@ -252,7 +262,7 @@ router.patch('/me', (req, res) => {
     if (hasRoom) account.room = room;
   }
 
-  persistDb();
+  commitDb();
 
   return ok(req, res, {
     user_id: user.id,

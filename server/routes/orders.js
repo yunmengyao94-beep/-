@@ -23,7 +23,8 @@ const {
   buildOrderNo,
   addOrder,
   appendCreditLog,
-  persistDb,
+  commitDb,
+  clearItemImage,
   applyOverduePenalties,
   addNotification,
 } = require('../store');
@@ -229,7 +230,7 @@ router.patch('/:id/state', (req, res) => {
     }
   }
 
-  persistDb();
+  commitDb();
 
   return ok(req, res, {
     order_id: order.id,
@@ -312,6 +313,9 @@ router.post(
     borrower.credit_available = availableOf(borrower);
     item.status = 1;
 
+    // 物品进入流转：立即清空图片数据，降低 db.json 体积
+    clearItemImage(item);
+
     const orderId = nextOrderId();
     const order = addOrder({
       id: orderId,
@@ -356,7 +360,7 @@ router.post(
       ref_id: order.id,
     });
 
-    persistDb();
+    commitDb();
 
     return ok(req, res, {
       order_id: order.id,

@@ -9,8 +9,8 @@ import { request, apiUrl } from '../utils/request.js';
 import { debounce } from '../utils/utils.js';
 import { ensureToken } from '../utils/auth.js';
 import { categoryLabel } from '../utils/constants.js';
-import { resolveItemImage, DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
-import { getItemImages } from '../utils/item-images.js';
+import { DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
+import { removeItemImages } from '../utils/item-images.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
 import { openChat } from './chat.js';
 
@@ -613,12 +613,17 @@ function renderDetail(item) {
   if (!rootEl) return;
   rootEl.textContent = '';
 
-  // 本地发布的图片优先；没有则回退到关键词插画
-  const localImages = getItemImages(item.id);
-  const images =
-    localImages.length > 0
-      ? localImages
-      : [item.has_thumb ? apiUrl(`/items/${item.id}/thumb`) : resolveItemImage(item)];
+  // 图片只认服务端：有缩略图才请求；服务端已清空（借用中/已下架）则统一占位
+  const images = [item.has_thumb ? apiUrl(`/items/${item.id}/thumb`) : DEFAULT_ITEM_IMAGE];
+
+  // 服务端图片已清空：顺手清掉本地缓存，释放 localStorage
+  if (!item.has_thumb) {
+    try {
+      removeItemImages(item.id);
+    } catch {
+      // 忽略
+    }
+  }
   const owner = resolveOwner(item);
   const levelName = LEVEL_NAME[owner.level] || '良好';
 

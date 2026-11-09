@@ -17,7 +17,7 @@ const {
   unreadNotificationCount,
   markNotificationRead,
   markAllNotificationsRead,
-  persistDb,
+  commitDb,
 } = require('../store');
 
 const router = express.Router();
@@ -44,7 +44,7 @@ router.put('/read-all', (req, res) => {
   if (!userId) return fail(req, res, 401, 40101, '未登录或Token失效');
 
   const updated = markAllNotificationsRead(userId);
-  persistDb();
+  commitDb();
 
   return ok(req, res, { updated, unread_count: unreadNotificationCount(userId) });
 });
@@ -62,7 +62,7 @@ router.put('/:id/read', (req, res) => {
     return fail(req, res, 404, 40401, '资源不存在');
   }
 
-  persistDb();
+  commitDb();
 
   return ok(req, res, { id, is_read: true, unread_count: unreadNotificationCount(userId) });
 });

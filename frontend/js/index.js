@@ -10,8 +10,7 @@
 import { request, apiUrl } from '../utils/request.js';
 import { debounce } from '../utils/utils.js';
 import { categoryLabel } from '../utils/constants.js';
-import { resolveItemImage, DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
-import { getItemCover } from '../utils/item-images.js';
+import { DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
 import { getHistory, pushHistory, clearHistory } from '../utils/search-history.js';
 import { startGuide, hasSeenGuide, markGuideSeen } from '../components/onboarding.js';
 import { initCustomSelect } from '../components/custom-select.js';
@@ -99,10 +98,9 @@ function toCardModel(item) {
     ownerCredit: Number.isFinite(item.owner_credit)
       ? item.owner_credit
       : 80 + (Number(item.owner_id || 0) % 21),
-    image:
-      getItemCover(item.id) ||
-      (item.has_thumb ? apiUrl(`/items/${item.id}/thumb`) : '') ||
-      resolveItemImage(item),
+    // 图片只认服务端：有缩略图才请求，否则统一占位图
+    // （借用后 / 超时下架后服务端会清空图片，前端不再读本地缓存，避免"假图片"）
+    image: item.has_thumb ? apiUrl(`/items/${item.id}/thumb`) : DEFAULT_ITEM_IMAGE,
   };
 }
 
