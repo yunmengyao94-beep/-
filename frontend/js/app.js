@@ -3,6 +3,7 @@ import { request, getToken, setToken } from '../utils/request.js';
 import { mountShell } from '../components/shell.js';
 import { initFabDrag } from '../components/fab.js';
 import { applyDeviceClasses } from '../utils/device.js';
+import './client-entry.js';
 import { applyFontSize, getFontSizeKey } from '../utils/preferences.js';
 import { initPageTransitions } from '../utils/transitions.js';
 import { createBreakpointSwitcher } from '../utils/breakpoint.js';

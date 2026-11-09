@@ -186,6 +186,15 @@ export function mountShell(options = {}) {
           </button>
 
           <div class="topbar__menu hidden" id="topbar-menu" role="menu" aria-label="账号菜单">
+            <button
+              class="topbar__menu-item"
+              type="button"
+              role="menuitem"
+              data-action="download"
+              data-download-client
+            >
+              下载客户端
+            </button>
             <button class="topbar__menu-item" type="button" role="menuitem" data-action="switch">
               切换账号
             </button>
@@ -301,6 +310,12 @@ function bindAccountMenu() {
   menu.addEventListener('click', async (event) => {
     const item = event.target.closest('[data-action]');
     if (!item) return;
+
+    // 下载入口由 client-entry.js 的事件委托负责弹窗，这里不做退出逻辑
+    if (item.dataset.action === 'download') {
+      close();
+      return;
+    }
 
     close();
 

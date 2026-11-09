@@ -12,3 +12,17 @@ sql/
 # ---------- 第三方运行时资源（体积大 / 由脚本下载，不参与 lint 与格式化） ----------
 frontend/assets/ai/
 frontend/fonts/
+
+# ---------- 打包产物（不参与 lint / 格式化） ----------
+apk-build/
+desktop/node_modules/
+desktop/dist/
+.electron-cache/
+.electron-builder-cache/
+.nsis-temp/
+.tools/
+*.zip
+*.exe
+
+# ---------- Electron 客户端源码（独立 Node 环境，使用 CommonJS） ----------
+desktop/main.js
