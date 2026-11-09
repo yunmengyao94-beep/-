@@ -11,6 +11,7 @@ import { showToast, openModal, closeModal } from '../components/feedback.js';
 import { formatTime } from '../utils/format.js';
 import { DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
 import { ensureToken } from '../utils/auth.js';
+import { openChat } from './chat.js';
 
 const listEl = document.getElementById('order-list');
 const emptyEl = document.getElementById('order-empty');
@@ -112,7 +113,32 @@ function createOrderCard(order) {
   badge.className = `badge ${meta.badge}`;
   badge.textContent = meta.text;
 
-  head.append(heading, badge);
+  // 聊天入口：气泡图标，按 item_id + partner_id 打开独立会话
+  const chatBtn = document.createElement('button');
+  chatBtn.type = 'button';
+  chatBtn.className = 'order-card__chat';
+  chatBtn.setAttribute('aria-label', '与对方聊一聊');
+  chatBtn.title = '与对方聊一聊';
+  chatBtn.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.4 9 9 0 0 1-3.5-.7L4 21l1.8-4.6a8.2 8.2 0 0 1-.8-3.6A8.4 8.4 0 0 1 13.5 3 8.4 8.4 0 0 1 21 11.5Z"/>' +
+    '<circle cx="9" cy="11.5" r="0.9" fill="currentColor" stroke="none"/>' +
+    '<circle cx="13" cy="11.5" r="0.9" fill="currentColor" stroke="none"/>' +
+    '<circle cx="17" cy="11.5" r="0.9" fill="currentColor" stroke="none"/>' +
+    '</svg>';
+
+  chatBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const cp = order.counterparty || {};
+    openChat({
+      item: order.item,
+      owner: { id: cp.id, nickname: cp.nickname },
+      partner: { id: cp.id, nickname: cp.nickname },
+    });
+  });
+
+  head.append(heading, badge, chatBtn);
 
   const counterpart = document.createElement('p');
   counterpart.className = 'order-card__meta';

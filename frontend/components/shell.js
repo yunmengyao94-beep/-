@@ -187,13 +187,20 @@ export function mountShell(options = {}) {
 
           <div class="topbar__menu hidden" id="topbar-menu" role="menu" aria-label="账号菜单">
             <button
-              class="topbar__menu-item"
+              class="topbar__menu-item topbar__menu-item--icon"
               type="button"
               role="menuitem"
               data-action="download"
               data-download-client
             >
-              下载客户端
+              <svg class="topbar__menu-icon" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
+                   stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v11" />
+                <path d="m7 10 5 5 5-5" />
+                <path d="M5 20h14" />
+              </svg>
+              <span>下载客户端</span>
             </button>
             <button class="topbar__menu-item" type="button" role="menuitem" data-action="switch">
               切换账号

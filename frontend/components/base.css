@@ -3866,3 +3866,72 @@ body.shell-entering .app-topbar {
 [data-download-client][hidden] {
   display: none !important;
 }
+
+/* ============================================================================
+ * 40. 订单页聊天入口 / 菜单与设置图标
+ * ========================================================================== */
+
+.order-card__head {
+  gap: 8px;
+}
+
+.order-card__chat {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  color: var(--color-primary, #1890ff);
+  cursor: pointer;
+  background-color: #eef5ff;
+  border: 1px solid #dbe9ff;
+  border-radius: 50%;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.order-card__chat:hover {
+  background-color: #dcebff;
+  transform: translateY(-1px);
+}
+
+.order-card__chat:active {
+  transform: scale(0.94);
+}
+
+.order-card__chat svg {
+  width: 18px;
+  height: 18px;
+}
+
+.topbar__menu-item--icon {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.topbar__menu-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary, #1890ff);
+}
+
+.setting-row__label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.setting-row__icon {
+  width: 18px;
+  height: 18px;
+  color: var(--color-primary, #1890ff);
+}
+
+.chat-head__item {
+  color: var(--color-primary, #1890ff);
+  overflow-wrap: anywhere;
+}

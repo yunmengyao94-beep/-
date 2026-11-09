@@ -68,6 +68,7 @@ function toDto(order, viewerId) {
     finished_at: order.finished_at || null,
     item: {
       id: order.item_id,
+      owner_id: order.owner_id,
       title: snapshot.title || (item ? item.title : `物品 #${order.item_id}`),
       image: null,
       // 有服务端缩略图时前端拼 /items/:id/thumb，跨设备也能显示
@@ -75,6 +76,7 @@ function toDto(order, viewerId) {
       deposit_score: snapshot.deposit_score ?? (item ? item.deposit_score : 0),
     },
     counterparty: {
+      id: counterpartyId,
       nickname: counterparty ? maskName(counterparty.real_name) : '同学',
       student_no: counterparty ? maskStudentNo(counterparty.student_no) : '',
     },

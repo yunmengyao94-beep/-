@@ -102,7 +102,7 @@ function defaultDue() {
  * @param {{item: object, owner: {id:number, nickname:string}}} options
  */
 export function openChat(options = {}) {
-  const { item, owner } = options;
+  const { item, owner, partner } = options;
   if (!item || !owner) return;
 
   if (panel) closeChat();
@@ -111,12 +111,29 @@ export function openChat(options = {}) {
   const myId = Number(me.user_id) || 0;
   const isOwner = Number(item.owner_id) === myId;
 
-  /** 聊天对象：借用人→出借人；出借人→首位申请人（轮询后发现） */
-  let partnerId = isOwner ? null : Number(owner.id) || Number(item.owner_id);
-  const partnerName = isOwner ? '借用人' : owner.nickname || '出借人';
+  /**
+   * 聊天对象：
+   *   · 订单页进入 → 直接携带 partner（对方 id / 昵称）
+   *   · 详情页借用人 → 出借人
+   *   · 详情页出借人 → 首位申请人（轮询后发现）
+   */
+  let partnerId =
+    Number(partner && partner.id) || (isOwner ? null : Number(owner.id) || Number(item.owner_id));
+  const partnerName =
+    (partner && partner.nickname) || (isOwner ? '借用人' : owner.nickname || '出借人');
 
-  const storageKey = `chat_${item.id}_${isOwner ? 'owner' : partnerId}`;
+  // 严格按 item_id + partner_id 隔离：chat_${item_id}_${partner_id}
+  let storageKey = `chat_${item.id}_${partnerId || 'pending'}`;
   let messages = readLocal(storageKey);
+
+  // 兼容历史版本：出借人曾用 chat_{id}_owner 作为 key
+  if (messages.length === 0) {
+    const legacy = readLocal(`chat_${item.id}_owner`);
+    if (legacy.length > 0) {
+      messages = legacy;
+      writeLocal(storageKey, messages);
+    }
+  }
   let sinceId = 0; // 始终从 0 开始拉，服务端最多保留 1 小时消息，量很小
   let pollTimer = null;
   let closed = false;
@@ -143,7 +160,8 @@ export function openChat(options = {}) {
   const nameEl = document.createElement('strong');
   nameEl.textContent = partnerName;
   const subEl = document.createElement('span');
-  subEl.textContent = `关于「${item.title}」`;
+  subEl.className = 'chat-head__item';
+  subEl.textContent = `物品：${item.title}`;
   headTitle.append(nameEl, subEl);
 
   const closeBtn = document.createElement('button');
@@ -352,6 +370,15 @@ export function openChat(options = {}) {
     bodyEl.scrollTo({ top: bodyEl.scrollHeight, behavior: 'smooth' });
   }
 
+  /** 发现对方后，把会话切到严格 key（item_id + partner_id） */
+  function ensureStorageKey() {
+    if (!partnerId) return;
+    const next = `chat_${item.id}_${partnerId}`;
+    if (next === storageKey) return;
+    storageKey = next;
+    writeLocal(storageKey, messages);
+  }
+
   /** 合并消息（按 id 去重，保留本地历史） */
   function mergeMessages(incoming) {
     const map = new Map();
@@ -374,7 +401,10 @@ export function openChat(options = {}) {
 
     let changed = false;
     list.forEach((message) => {
-      if (isOwner && !partnerId) partnerId = Number(message.from);
+      if (isOwner && !partnerId) {
+        partnerId = Number(message.from);
+        ensureStorageKey();
+      }
       if (message.type === 'borrow_accept' && !isOwner && !credentialShown) {
         credentialShown = true;
         showCredentialFlow({ meta: message.meta || {}, item });
