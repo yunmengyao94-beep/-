@@ -25,7 +25,7 @@ const {
   addOrder,
   appendCreditLog,
   commitDb,
-  clearItemImage,
+  setItemThumb128,
   applyOverduePenalties,
   addNotification,
 } = require('../store');
@@ -175,6 +175,7 @@ router.patch('/:id/state', (req, res) => {
 
   order.state = transition.to;
   const now = isoWithOffset();
+  let imageDegrade = null;
 
   // 状态流转通知（双向）
   if (action === 'confirm_handover') {
@@ -215,6 +216,27 @@ router.patch('/:id/state', (req, res) => {
   }
 
   // 归还完成：出借人确认后，解冻押金分并释放物品
+  if (action === 'confirm_handover') {
+    // 交接完成：把物品图片降级为 128px 极小图（前端 Canvas 生成后随请求提交）
+    const item = findItem(order.item_id);
+    const thumb128 = typeof req.body?.thumb_128 === 'string' ? req.body.thumb_128 : '';
+
+    if (item && thumb128) {
+      const result = setItemThumb128(item, thumb128);
+      if (!result.ok) {
+        return fail(req, res, 400, 40001, '缩略图格式不正确或体积过大', {
+          field: 'thumb_128',
+          reason: result.reason,
+        });
+      }
+      imageDegrade = { degraded: true, bytes: result.bytes };
+    } else if (item) {
+      // 未提供新缩略图：至少清空多图，缩略图保持现状（无法在服务端解码重采样）
+      if (Array.isArray(item.image_list)) item.image_list = [];
+      imageDegrade = { degraded: false, reason: 'no_thumb' };
+    }
+  }
+
   if (transition.to === 2) {
     order.finished_at = now;
 
@@ -248,6 +270,7 @@ router.patch('/:id/state', (req, res) => {
     order_id: order.id,
     state: order.state,
     finished_at: order.finished_at || null,
+    image: imageDegrade,
   });
 });
 
@@ -263,8 +286,8 @@ function createOrderRecord({ item, borrower, dueAt }) {
   borrower.credit_available = availableOf(borrower);
   item.status = 1;
 
-  // 物品进入流转：立即清空图片数据，降低 db.json 体积
-  clearItemImage(item);
+  // 借用阶段：先清空多图，保留一张缩略图供交接时降级为 128px
+  if (Array.isArray(item.image_list)) item.image_list = [];
 
   const orderId = nextOrderId();
   const order = addOrder({

@@ -453,6 +453,40 @@ function clearItemImage(item) {
   return hadImage;
 }
 
+/** 128px 缩略图允许的最大长度（约 12KB base64，实际通常 5–8KB） */
+const MAX_THUMB128_CHARS = 12 * 1024;
+
+/**
+ * 把物品图片降级为 128px 极小图（交接完成时调用）
+ * @param {object} item
+ * @param {string} dataUrl 前端 Canvas 生成的 128px Base64
+ * @returns {{ok: boolean, reason?: string, bytes?: number}}
+ */
+function setItemThumb128(item, dataUrl) {
+  if (!item) return { ok: false, reason: 'not_found' };
+
+  const value = typeof dataUrl === 'string' ? dataUrl.trim() : '';
+  if (!value) return { ok: false, reason: 'empty' };
+  if (!/^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(value)) {
+    return { ok: false, reason: 'bad_format' };
+  }
+  if (value.length < 200) {
+    return { ok: false, reason: 'too_small', bytes: value.length };
+  }
+  if (value.length > MAX_THUMB128_CHARS) {
+    return { ok: false, reason: 'too_large', bytes: value.length };
+  }
+
+  item.image_thumb = value;
+  item.image_list = [];
+  item.image_thumb_128 = true;
+  item.image_updated_at = new Date(Date.now() + 8 * 3600 * 1000)
+    .toISOString()
+    .replace('Z', '+08:00');
+
+  return { ok: true, bytes: value.length };
+}
+
 /**
  * 清扫超时未借出的物品：状态 0 且创建超过 TTL → 状态 2 并清空图片
  * @param {{ttlMs?: number, now?: number}} [options]
@@ -659,6 +693,8 @@ function createAccount(input) {
 
 module.exports = {
   commitDb,
+  setItemThumb128,
+  MAX_THUMB128_CHARS,
   clearItemImage,
   sweepStaleItems,
   startItemSweeper,

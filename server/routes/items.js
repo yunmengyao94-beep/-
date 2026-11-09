@@ -292,7 +292,7 @@ router.get('/:id/thumb', (req, res) => {
     return fail(req, res, 404, 40401, '资源不存在');
   }
 
-  res.set('Cache-Control', 'public, max-age=86400');
+  res.set('Cache-Control', 'public, max-age=60');
   res.type(matched[1]);
   return res.send(Buffer.from(matched[2], 'base64'));
 });

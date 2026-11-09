@@ -8,7 +8,7 @@
  *   4. 关闭凭证后，顶部抽屉滑出，确认交接 → 调用后端状态流转
  */
 
-import { request } from '../utils/request.js';
+import { request, apiUrl } from '../utils/request.js';
 import { showToast } from '../components/feedback.js';
 
 const COUNTDOWN_MS = 3000;
@@ -36,6 +36,43 @@ function buildCredential(meta, item) {
     '本凭证由双方在聊天中达成借用合意后自动生成。',
     '归还确认后冻结分数将全额解冻。',
   ].join('\n');
+}
+
+/** 把物品缩略图压到 128px 以内（交接时调用，产物约 5–8KB） */
+function buildThumb128(item) {
+  return new Promise((resolve) => {
+    if (!item || !item.has_thumb) {
+      resolve('');
+      return;
+    }
+
+    const img = new Image();
+    img.decoding = 'async';
+
+    img.onload = () => {
+      try {
+        const longest = Math.max(img.width || 0, img.height || 0) || 128;
+        const scale = Math.min(1, 128 / longest);
+        const width = Math.max(1, Math.round((img.width || 128) * scale));
+        const height = Math.max(1, Math.round((img.height || 128) * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve('');
+
+        ctx.drawImage(img, 0, 0, width, height);
+        // 0.55 质量 + 128px，产物通常 5–8KB
+        return resolve(canvas.toDataURL('image/webp', 0.55));
+      } catch {
+        return resolve('');
+      }
+    };
+
+    img.onerror = () => resolve('');
+    img.src = apiUrl(`/items/${item.id}/thumb?v=${Date.now()}`);
+  });
 }
 
 /** 触发浏览器下载 */
@@ -257,10 +294,16 @@ export function showTopDrawer(options = {}) {
   confirmBtn.addEventListener('click', async () => {
     confirmBtn.disabled = true;
     confirmBtn.textContent = '处理中…';
+
     try {
+      // 交接即降级：把当前图压到 128px 随请求提交，服务端落盘
+      const thumb128 = await buildThumb128(item).catch(() => '');
+
       await request(`/orders/${orderId}/state`, {
         method: 'PATCH',
-        body: { action: 'confirm_handover' },
+        body: thumb128
+          ? { action: 'confirm_handover', thumb_128: thumb128 }
+          : { action: 'confirm_handover' },
       });
       close();
       showToast('交接完成，订单进入使用中', 'success');
