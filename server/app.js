@@ -30,6 +30,7 @@ const itemsRouter = require('./routes/items');
 const ordersRouter = require('./routes/orders');
 const usersRouter = require('./routes/users');
 const notificationsRouter = require('./routes/notifications');
+const messagesRouter = require('./routes/messages');
 const { createLiveReload } = require('./live-reload');
 
 /** 热刷新仅开发环境开启（生产/演示关闭，避免暴露文件监听通道） */
@@ -77,7 +78,7 @@ app.use(
 );
 
 // 2) 请求体解析（限制 1MB，防止大包打爆进程）
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
 // 3) 访问日志
@@ -136,6 +137,7 @@ app.use('/api/v1/items', itemsRouter);
 app.use('/api/v1/orders', ordersRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/notifications', notificationsRouter);
+app.use('/api/v1/messages', messagesRouter);
 
 /* --------------------------------------------------------- 兜底与错误处理 */
 

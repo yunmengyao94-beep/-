@@ -13,6 +13,7 @@ const express = require('express');
 const { ok, fail, isoWithOffset } = require('../utils/http');
 const { maskStudentNo, maskName } = require('../utils/mask');
 const { createRateLimit } = require('../middlewares/rate-limit');
+const { addMessage } = require('../services/message-store');
 const {
   findItem,
   findUser,
@@ -177,6 +178,17 @@ router.patch('/:id/state', (req, res) => {
 
   // 状态流转通知（双向）
   if (action === 'confirm_handover') {
+    const handoverTitle =
+      (order.snapshot && order.snapshot.title) || (findItem(order.item_id) || {}).title || '物品';
+
+    addMessage({
+      from: order.borrower_id,
+      to: order.owner_id,
+      item_id: order.item_id,
+      type: 'system',
+      content: `${handoverTitle} 已完成交接`,
+      meta: { order_id: order.id },
+    });
     addNotification({
       user_id: order.owner_id,
       type: 'order',
@@ -238,6 +250,153 @@ router.patch('/:id/state', (req, res) => {
     finished_at: order.finished_at || null,
   });
 });
+
+/**
+ * 创建订单并冻结押金分（借用 / 出借人同意 两条路径共用）
+ * @param {{item: object, borrower: object, dueAt: string}} input
+ * @returns {object} order
+ */
+function createOrderRecord({ item, borrower, dueAt }) {
+  const now = isoWithOffset();
+
+  borrower.credit_frozen += item.deposit_score;
+  borrower.credit_available = availableOf(borrower);
+  item.status = 1;
+
+  // 物品进入流转：立即清空图片数据，降低 db.json 体积
+  clearItemImage(item);
+
+  const orderId = nextOrderId();
+  const order = addOrder({
+    id: orderId,
+    order_no: buildOrderNo(orderId),
+    item_id: item.id,
+    borrower_id: borrower.id,
+    owner_id: item.owner_id,
+    frozen_score: item.deposit_score,
+    state: 0,
+    due_at: dueAt,
+    created_at: now,
+    snapshot: {
+      item_id: item.id,
+      title: item.title,
+      image_hash: item.image_hash,
+      deposit_score: item.deposit_score,
+      damage_rules: item.damage_rules,
+      agreed_at_publish: item.damage_rules.agreed_at_publish,
+      snapshot_at: now,
+    },
+  });
+
+  appendCreditLog({
+    user_id: borrower.id,
+    change_type: 'freeze',
+    delta: 0,
+    balance_after: borrower.credit_score,
+    frozen_after: borrower.credit_frozen,
+    ref_type: 'order',
+    ref_id: order.id,
+    reason: `借用「${item.title}」冻结信用分 ${item.deposit_score}`,
+    created_at: now,
+  });
+
+  return order;
+}
+
+/**
+ * POST /api/v1/orders/approve
+ * 出借人在聊天中同意借用：校验通过后直接建单、冻结借用人押金分
+ * 请求：{ item_id, borrower_id, due_at? }
+ */
+router.post(
+  '/approve',
+  createRateLimit({
+    windowMs: 60 * 1000,
+    max: 3,
+    keyPrefix: 'order-approve',
+    keyGenerator: (req) => String((req.user && req.user.user_id) || ''),
+  }),
+  (req, res) => {
+    const body = req.body || {};
+    const itemId = Number(body.item_id);
+    const borrowerId = Number(body.borrower_id);
+
+    if (!Number.isInteger(itemId) || itemId <= 0) {
+      return fail(req, res, 400, 40001, '参数校验失败：item_id 必填', { field: 'item_id' });
+    }
+    if (!Number.isInteger(borrowerId) || borrowerId <= 0) {
+      return fail(req, res, 400, 40001, '参数校验失败：borrower_id 必填', { field: 'borrower_id' });
+    }
+
+    const owner = findUser(req.user && req.user.user_id);
+    if (!owner) return fail(req, res, 401, 40101, '未登录或 Token 失效，请重新登录');
+
+    const item = findItem(itemId);
+    if (!item) return fail(req, res, 404, 40401, '资源不存在');
+    if (item.owner_id !== owner.id) {
+      return fail(req, res, 403, 40301, '只有出借人可以同意借用');
+    }
+    if (item.status !== 0) {
+      return fail(req, res, 409, 40901, '物品当前不可借', { current_status: item.status });
+    }
+
+    const borrower = findUser(borrowerId);
+    if (!borrower) return fail(req, res, 404, 40401, '借用人不存在');
+    if (borrower.id === owner.id) {
+      return fail(req, res, 409, 40902, '不能借用自己发布的物品');
+    }
+
+    const available = availableOf(borrower);
+    if (available < item.deposit_score) {
+      return fail(req, res, 403, 40301, '对方信用分不足', {
+        current_available: available,
+        required_score: item.deposit_score,
+      });
+    }
+
+    let dueAt;
+    if (typeof body.due_at === 'string' && body.due_at && !Number.isNaN(Date.parse(body.due_at))) {
+      dueAt = body.due_at;
+    } else {
+      dueAt = isoWithOffset(new Date(Date.now() + DEFAULT_LOAN_HOURS * 3600 * 1000));
+    }
+
+    const order = createOrderRecord({ item, borrower, dueAt });
+
+    addNotification({
+      user_id: borrower.id,
+      type: 'order',
+      title: `出借人已同意您借用「${item.title}」`,
+      body: '请在聊天窗口查看凭证并完成交接。',
+      ref_id: order.id,
+    });
+
+    // 通过内存消息通道推给借用人，触发凭证流程
+    addMessage({
+      from: owner.id,
+      to: borrower.id,
+      item_id: item.id,
+      type: 'borrow_accept',
+      content: '出借人已同意借用',
+      meta: {
+        order_id: order.id,
+        item_id: item.id,
+        title: item.title,
+        deposit_score: order.frozen_score,
+        due_at: dueAt,
+      },
+    });
+
+    commitDb();
+
+    return ok(req, res, {
+      order_id: order.id,
+      frozen_score: order.frozen_score,
+      state: order.state,
+      due_at: dueAt,
+    });
+  }
+);
 
 /**
  * POST /api/v1/orders/create
@@ -307,49 +466,7 @@ router.post(
       });
     }
 
-    // ---- 冻结与落单（内存中的「事务」）----
-    const now = isoWithOffset();
-    borrower.credit_frozen += item.deposit_score;
-    borrower.credit_available = availableOf(borrower);
-    item.status = 1;
-
-    // 物品进入流转：立即清空图片数据，降低 db.json 体积
-    clearItemImage(item);
-
-    const orderId = nextOrderId();
-    const order = addOrder({
-      id: orderId,
-      order_no: buildOrderNo(orderId),
-      item_id: item.id,
-      borrower_id: borrower.id,
-      owner_id: item.owner_id,
-      frozen_score: item.deposit_score,
-      state: 0,
-      due_at: dueAt,
-      created_at: now,
-      // E2 订单快照（5.4.4：仲裁以快照为准，防止出借者事后改规则）
-      snapshot: {
-        item_id: item.id,
-        title: item.title,
-        image_hash: item.image_hash,
-        deposit_score: item.deposit_score,
-        damage_rules: item.damage_rules,
-        agreed_at_publish: item.damage_rules.agreed_at_publish,
-        snapshot_at: now,
-      },
-    });
-
-    appendCreditLog({
-      user_id: borrower.id,
-      change_type: 'freeze',
-      delta: 0, // 冻结不改总分，否则 6.3.4 对账恒等式失效
-      balance_after: borrower.credit_score,
-      frozen_after: borrower.credit_frozen,
-      ref_type: 'order',
-      ref_id: order.id,
-      reason: `借用「${item.title}」冻结信用分 ${item.deposit_score}`,
-      created_at: now,
-    });
+    const order = createOrderRecord({ item, borrower, dueAt });
 
     // 通知出借人：有人申请借用
     addNotification({

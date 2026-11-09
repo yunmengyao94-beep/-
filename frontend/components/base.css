@@ -3556,3 +3556,271 @@ body.shell-entering .app-topbar {
 .chat-send:active {
   transform: scale(0.95);
 }
+
+/* ============================================================================
+ * 36. 聊天增强：工具条 / 借用申请卡片 / 系统消息
+ * ========================================================================== */
+
+.chat-tools {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: var(--bg-card, #fff);
+  border-top: 1px solid var(--border-color-light, #f0f1f3);
+}
+
+.chat-borrow-btn {
+  width: 100%;
+}
+
+.chat-tools__tip {
+  font-size: 12px;
+  color: var(--text-placeholder, #bfbfbf);
+}
+
+.chat-borrow-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background-color: #fff8e6;
+  border: 1px solid #ffe1a8;
+  border-radius: 12px;
+}
+
+.chat-borrow-card__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main, #333);
+}
+
+.chat-borrow-card__meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-sub, #888);
+}
+
+.chat-borrow-card__tip {
+  margin: 0;
+  font-size: 12px;
+  color: var(--danger, #ff4d4f);
+}
+
+.chat-system {
+  align-self: center;
+  max-width: 86%;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-sub, #888);
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.04);
+  border-radius: 999px;
+}
+
+.chat-bubble--ok {
+  color: #237804;
+  background-color: #f6ffed;
+}
+
+/* ============================================================================
+ * 37. 借用凭证（Q 弹弹出 + 倒计时）
+ * ========================================================================== */
+
+.credential-mask {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1110);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background-color: rgba(6, 12, 24, 0.62);
+  backdrop-filter: blur(4px);
+  animation: credential-mask-in 0.2s ease both;
+}
+
+@keyframes credential-mask-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.credential-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(420px, 100%);
+  padding: 22px 20px 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  animation: credential-pop 0.62s cubic-bezier(0.18, 1.62, 0.42, 1) both;
+}
+
+/* 弹性波浪：放大 → 轻微回弹 → 稳定 */
+@keyframes credential-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55) translateY(24px);
+  }
+
+  55% {
+    opacity: 1;
+    transform: scale(1.06) translateY(0);
+  }
+
+  75% {
+    transform: scale(0.97);
+  }
+
+  90% {
+    transform: scale(1.015);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.credential-badge {
+  align-self: flex-start;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: #237804;
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 999px;
+}
+
+.credential-title {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text-main, #1f2a44);
+  letter-spacing: 1px;
+}
+
+.credential-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-sub, #667085);
+}
+
+.credential-rows {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 8px 12px;
+  margin: 6px 0 2px;
+  font-size: 13px;
+}
+
+.credential-rows dt {
+  color: var(--text-sub, #98a2b3);
+}
+
+.credential-rows dd {
+  margin: 0;
+  color: var(--text-main, #344054);
+  overflow-wrap: anywhere;
+}
+
+.credential-progress {
+  height: 6px;
+  overflow: hidden;
+  background-color: #e9eef7;
+  border-radius: 999px;
+}
+
+.credential-progress__bar {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #1890ff, #52c41a);
+  border-radius: 999px;
+  transition: width 0.1s linear;
+}
+
+.credential-progress.is-done .credential-progress__bar {
+  background: #52c41a;
+}
+
+.credential-countdown {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-sub, #98a2b3);
+  text-align: center;
+}
+
+.credential-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-main, #344054);
+}
+
+.credential-card .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ============================================================================
+ * 38. 顶部交接抽屉
+ * ========================================================================== */
+
+.top-drawer-mask {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1110);
+  background-color: rgba(6, 12, 24, 0.45);
+  animation: credential-mask-in 0.2s ease both;
+}
+
+.top-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  background-color: var(--bg-card, #fff);
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  animation: drawer-drop 0.42s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+
+@keyframes drawer-drop {
+  from {
+    transform: translateY(-110%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+.top-drawer__handle {
+  align-self: center;
+  width: 44px;
+  height: 5px;
+  margin-bottom: 4px;
+  background-color: #dfe3ea;
+  border-radius: 999px;
+}
+
+.top-drawer__title {
+  margin: 0;
+  font-size: 17px;
+  color: var(--text-main, #1f2a44);
+}
+
+.top-drawer__body {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-sub, #667085);
+}

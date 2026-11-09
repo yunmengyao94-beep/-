@@ -73,6 +73,7 @@ const SHELL_SCRIPTS = [
   './js/index.js',
   './js/item.js',
   './js/chat.js',
+  './js/borrow-credential.js',
   './js/publish.js',
   './js/profile.js',
   './utils/request.js',
