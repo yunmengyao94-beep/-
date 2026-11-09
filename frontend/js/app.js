@@ -4,6 +4,8 @@ import { mountShell } from '../components/shell.js';
 import { initFabDrag } from '../components/fab.js';
 import { applyDeviceClasses } from '../utils/device.js';
 import './client-entry.js';
+import { checkVersion } from './version-check.js';
+import { loadCreditRules } from '../utils/credit-rules.js';
 import { applyFontSize, getFontSizeKey } from '../utils/preferences.js';
 import { initPageTransitions } from '../utils/transitions.js';
 import { createBreakpointSwitcher } from '../utils/breakpoint.js';
@@ -326,6 +328,12 @@ import { createBreakpointSwitcher } from '../utils/breakpoint.js';
   setupNetworkBanner();
   setupImageFallback();
   applyDeviceClasses();
+
+  // 本地规则与版本探测都不阻塞首屏
+  void loadCreditRules();
+  setTimeout(() => {
+    void checkVersion();
+  }, 1500);
   applyStoredFontSize();
   initPageTransitions();
 

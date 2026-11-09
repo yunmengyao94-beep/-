@@ -31,6 +31,7 @@ const ordersRouter = require('./routes/orders');
 const usersRouter = require('./routes/users');
 const notificationsRouter = require('./routes/notifications');
 const messagesRouter = require('./routes/messages');
+const systemRouter = require('./routes/system');
 const { createLiveReload } = require('./live-reload');
 
 /** 热刷新仅开发环境开启（生产/演示关闭，避免暴露文件监听通道） */
@@ -49,6 +50,7 @@ const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 /** 白名单：无需 Token 的公开路由（字符串=全方法公开；对象=仅指定方法公开） */
 const PUBLIC_ROUTES = [
   '/api/v1/health',
+  '/api/v1/system/version',
   '/api/v1/auth/login',
   '/api/v1/auth/register',
   // 校园 App 允许未登录浏览：列表与详情只放行 GET，发布/编辑仍需 Token
@@ -138,6 +140,7 @@ app.use('/api/v1/orders', ordersRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/notifications', notificationsRouter);
 app.use('/api/v1/messages', messagesRouter);
+app.use('/api/v1/system', systemRouter);
 
 /* --------------------------------------------------------- 兜底与错误处理 */
 

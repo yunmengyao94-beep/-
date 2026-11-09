@@ -10,6 +10,7 @@
 import { initCustomSelect } from '../components/custom-select.js';
 import { showToast } from '../components/feedback.js';
 import { ensureToken } from '../utils/auth.js';
+import { loadCreditRules, getCreditRules } from '../utils/credit-rules.js';
 import { request } from '../utils/request.js';
 import { saveItemImages } from '../utils/item-images.js';
 import {
@@ -53,6 +54,8 @@ const publishBtn = document.getElementById('publish-btn');
 const titleInput = document.getElementById('field-title');
 const descInput = document.getElementById('field-description');
 const descCount = document.getElementById('desc-count');
+void loadCreditRules();
+
 const depositInput = document.getElementById('field-deposit');
 const buildingSelect = document.getElementById('field-building');
 const categoryRoot = document.querySelector('[data-custom-select]');
@@ -495,6 +498,8 @@ export function validateForm() {
     errors.deposit = '请填写要求的信用分';
   } else if (!Number.isInteger(deposit) || deposit <= 0) {
     errors.deposit = '信用分必须是大于 0 的整数';
+  } else if (deposit > getCreditRules().deposit.max) {
+    errors.deposit = `信用分不能超过 ${getCreditRules().deposit.max}`;
   }
 
   const building = buildingSelect ? String(buildingSelect.value || '').trim() : '';

@@ -15,12 +15,37 @@
  */
 
 /**
- * 接口基地址：默认同源相对路径 /api/v1（前端与服务端同域部署，如 http://host:port/）
- * 打包成 App / 桌面端时，可在页面 head 内先注入 window.__YXX_API_ORIGIN__
- * （例如 'https://api.yxx.edu.cn'），即可跨域指向远端接口。
+ * 接口基地址解析（按优先级）：
+ *   1. window.__YXX_API_ORIGIN__（页面 head 注入）
+ *   2. URL ?api=https://host —— 客户端启动时携带，写入 localStorage 持久化
+ *   3. localStorage.yxx_api_origin
+ *   4. file:// 场景（EXE / APK 本地包）默认 http://127.0.0.1:3000
+ *   5. 其余情况同源相对路径（Web 端）
  */
-const API_ORIGIN = (typeof window !== 'undefined' && window.__YXX_API_ORIGIN__) || '';
+function resolveApiOrigin() {
+  if (typeof window === 'undefined') return '';
+  try {
+    if (window.__YXX_API_ORIGIN__) return String(window.__YXX_API_ORIGIN__).replace(/\/$/, '');
 
+    const params = new URLSearchParams(window.location.search || '');
+    const param = params.get('api');
+    if (param) {
+      const clean = String(param).replace(/\/$/, '');
+      localStorage.setItem('yxx_api_origin', clean);
+      return clean;
+    }
+
+    const stored = localStorage.getItem('yxx_api_origin');
+    if (stored) return stored;
+
+    if (window.location.protocol === 'file:') return 'http://127.0.0.1:3000';
+  } catch {
+    // 隐私模式或解析失败：回退同源
+  }
+  return '';
+}
+
+export const API_ORIGIN = resolveApiOrigin();
 export const BASE_URL = `${API_ORIGIN}/api/v1`;
 
 import { showToast } from '../components/feedback.js';
@@ -36,6 +61,48 @@ let unauthorizedHandler = null;
 
 /* ------------------------------------------------------------ 离线缓存 */
 
+/* ------------------------------------------------------------ 离线提示 */
+
+const OFFLINE_BANNER_ID = 'yxx-offline-banner';
+let offlineBannerEl = null;
+
+/** 顶部提示：当前处于离线模式 */
+export function showOfflineBanner(text = '当前为离线模式，展示本地缓存') {
+  if (typeof document === 'undefined' || !document.body) return null;
+  if (offlineBannerEl) return offlineBannerEl;
+
+  const bar = document.createElement('div');
+  bar.id = OFFLINE_BANNER_ID;
+  bar.className = 'offline-banner';
+  bar.setAttribute('role', 'status');
+
+  const icon = document.createElement('span');
+  icon.className = 'offline-banner__icon';
+  icon.textContent = '📡';
+
+  const label = document.createElement('span');
+  label.className = 'offline-banner__text';
+  label.textContent = text;
+
+  bar.append(icon, label);
+  document.body.appendChild(bar);
+  offlineBannerEl = bar;
+  return bar;
+}
+
+/** 恢复在线后移除提示 */
+export function hideOfflineBanner() {
+  if (offlineBannerEl) {
+    offlineBannerEl.remove();
+    offlineBannerEl = null;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', hideOfflineBanner);
+  window.addEventListener('offline', () => showOfflineBanner());
+}
+
 /** 离线缓存键前缀（与 SW 的 Cache Storage 相互独立） */
 const OFFLINE_CACHE_PREFIX = 'yxx_cache_v1:';
 
@@ -49,10 +116,22 @@ function isCacheable(url, options) {
   return method === 'GET' && (body === undefined || body === null) && typeof url === 'string';
 }
 
+/** 缓存键按登录用户隔离，避免切换账号串数据 */
+function cacheKeyOf(url) {
+  let uid = 'anon';
+  try {
+    const raw = JSON.parse(localStorage.getItem('yxx_user') || '{}');
+    uid = raw && raw.user_id ? String(raw.user_id) : 'anon';
+  } catch {
+    uid = 'anon';
+  }
+  return OFFLINE_CACHE_PREFIX + uid + ':' + url;
+}
+
 /** 写入离线缓存（附带时间戳，便于按新旧淘汰） */
 function writeOfflineCache(url, data) {
   try {
-    localStorage.setItem(OFFLINE_CACHE_PREFIX + url, JSON.stringify({ at: Date.now(), data }));
+    localStorage.setItem(cacheKeyOf(url), JSON.stringify({ at: Date.now(), data }));
     trimOfflineCache();
   } catch {
     // 存储写满或不可用：忽略，不影响主流程
@@ -62,7 +141,7 @@ function writeOfflineCache(url, data) {
 /** 读取离线缓存，命中返回 data，否则返回 null */
 function readOfflineCache(url) {
   try {
-    const raw = localStorage.getItem(OFFLINE_CACHE_PREFIX + url);
+    const raw = localStorage.getItem(cacheKeyOf(url));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed && 'data' in parsed ? parsed.data : null;
@@ -247,8 +326,12 @@ export async function request(url, options = {}) {
     // 真断网（SW 也拦不住）：优先回退本地缓存，让页面有数据可渲染
     if (isCacheable(url, options)) {
       const cached = readOfflineCache(url);
-      if (cached !== null) return cached;
+      if (cached !== null) {
+        showOfflineBanner();
+        return cached;
+      }
     }
+    showOfflineBanner('网络不可用，且暂无本地缓存');
     throw new RequestError('网络异常，请检查网络后重试', 0);
   }
 
@@ -267,8 +350,12 @@ export async function request(url, options = {}) {
   if (payload.code === 50301) {
     if (isCacheable(url, options)) {
       const cached = readOfflineCache(url);
-      if (cached !== null) return cached;
+      if (cached !== null) {
+        showOfflineBanner();
+        return cached;
+      }
     }
+    showOfflineBanner();
     throw new RequestError(
       payload.msg || '当前为离线模式，展示本地数据',
       50301,
@@ -277,6 +364,20 @@ export async function request(url, options = {}) {
   }
 
   if (payload.code !== 200) {
+    // 未知接口（路由不存在）：旧客户端遇到接口升级时的兜底提示
+    if (
+      payload.code === 40401 &&
+      payload.data &&
+      typeof payload.data.path === 'string' &&
+      payload.data.path.startsWith('/api/')
+    ) {
+      try {
+        window.dispatchEvent(new CustomEvent('yxx:api-incompatible'));
+      } catch {
+        // 事件派发失败不影响主流程
+      }
+    }
+
     // 登录/注册接口的 401 属于"凭据错误"，不能当成会话过期处理
     const isAuthEndpoint = typeof url === 'string' && url.startsWith('/auth/');
     const isAuthError = !isAuthEndpoint && (payload.code === 40101 || response.status === 401);
