@@ -45,7 +45,9 @@ const app = express();
 
 /* ---------------------------------------------------------------- 基础配置 */
 
-const PORT = Number(process.env.PORT) || 3000;
+/** 监听端口：云托管（腾讯云 CloudBase 等）通过 PORT 注入，本地默认 3000 */
+const RAW_PORT = Number(process.env.PORT || 3000);
+const PORT = Number.isInteger(RAW_PORT) && RAW_PORT > 0 ? RAW_PORT : 3000;
 /** 生产必须注入 JWT_SECRET，此处仅为本地开发的兜底值 */
 const JWT_SECRET = process.env.JWT_SECRET || 'yxx-dev-secret-change-me';
 /** 7.3.2：token 有效期 604800 秒 = 7 天 */
@@ -76,10 +78,12 @@ app.set('trust proxy', true);
 app.use(
   cors({
     origin: '*',
+    credentials: false,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
     exposedHeaders: ['X-Trace-Id'],
     maxAge: 86400,
+    optionsSuccessStatus: 204,
   })
 );
 
@@ -220,7 +224,7 @@ function openBrowser(url) {
  */
 function listen(port, remaining = PORT_RETRY) {
   return new Promise((resolve, reject) => {
-    const server = app.listen(port);
+    const server = app.listen(port, process.env.HOST || '0.0.0.0');
 
     server.once('listening', () => resolve({ server, port }));
     server.once('error', (error) => {
