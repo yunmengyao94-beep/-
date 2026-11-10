@@ -17,7 +17,7 @@
  */
 
 /** 缓存版本：发版时递增（v2 起改为「版本号 + 构建日期」，便于定位线上版本） */
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const BUILD_DATE = '2026-11-08.4';
 const CACHE_NAME = `yxx-${CACHE_VERSION}`;
 
