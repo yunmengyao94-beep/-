@@ -74,7 +74,8 @@
           "!**/*.log",
           "!**/db.json",
           "!**/db.backup.json",
-          "!fonts/NotoSerifSC-Regular.otf"
+          "!fonts/NotoSerifSC-Regular.otf",
+          "!downloads/**"
         ]
       }
     ],

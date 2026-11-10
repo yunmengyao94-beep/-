@@ -29,7 +29,8 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 /** 接口地址：可用环境变量覆盖，默认本机服务 */
-const API_ORIGIN = (process.env.YXX_APP_URL || 'http://127.0.0.1:3000').replace(/\/$/, '');
+const DEFAULT_API_ORIGIN = 'https://dqsf-hy-345260-13-1529260880.sh.run.tcloudbase.com';
+const API_ORIGIN = (process.env.YXX_APP_URL || DEFAULT_API_ORIGIN).replace(/\/$/, '');
 
 /** 前端资源目录：打包后在 resources/frontend，开发时在 ../frontend */
 const FRONTEND_DIR = app.isPackaged
