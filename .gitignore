@@ -87,3 +87,8 @@ desktop/pnpm-lock.yaml
 # ---------- Vercel 静态构建产物 ----------
 public/
 .vercel/
+
+# ---------- 客户端安装包（Git LFS 管理） ----------
+!frontend/downloads/
+!frontend/downloads/*.exe
+

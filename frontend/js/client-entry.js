@@ -114,13 +114,23 @@ export function showDownloadGuide() {
     '下载客户端',
     `
       <div class="client-guide">
-        <p class="client-guide__lead">庆师易校圈已支持 PWA 桌面端安装，请在浏览器地址栏右侧点击“安装”图标。</p>
+        <p class="client-guide__lead">庆师易校圈已支持 PWA 桌面端安装，也可以直接下载 Windows 安装包。</p>
+        <a class="client-guide__download" href="./downloads/YXX-Setup.exe" download="YXX-Setup.exe">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v11" />
+            <path d="m7 10 5 5 5-5" />
+            <path d="M5 20h14" />
+          </svg>
+          下载 Windows 客户端
+        </a>
+        <p class="client-guide__meta">安装包约 152 MB · Windows 10 / 11（x64）</p>
         <ol class="client-guide__steps">
-          <li>Chrome / Edge 地址栏右侧出现「安装」图标，点击即可</li>
+          <li><strong>推荐 PWA：</strong>浏览器地址栏右侧点击「安装」图标</li>
           <li>若未出现：菜单「⋮」→「安装庆师易校圈」</li>
           <li>安装后从桌面图标启动，独立窗口、无地址栏</li>
         </ol>
-        <p class="client-guide__tip">Windows / macOS 均可安装，不额外占用安装空间。</p>
+        <p class="client-guide__tip">安装包为完整客户端，包含本地前端资源，断网也能打开页面。</p>
       </div>
     `
   );

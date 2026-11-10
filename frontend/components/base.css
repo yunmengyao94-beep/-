@@ -4042,3 +4042,48 @@ body.shell-entering .app-topbar {
 html[data-client] [data-download-client] {
   display: none !important;
 }
+
+/* ============================================================================
+ * 43. 下载客户端引导卡片
+ * ========================================================================== */
+
+.client-guide__download {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  background: linear-gradient(135deg, #1677ff, #4096ff);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(22, 119, 255, 0.28);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.client-guide__download:hover {
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(22, 119, 255, 0.36);
+  transform: translateY(-1px);
+}
+
+.client-guide__download:active {
+  transform: scale(0.98);
+}
+
+.client-guide__download svg {
+  width: 18px;
+  height: 18px;
+}
+
+.client-guide__meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-sub, #98a2b3);
+  text-align: center;
+}
