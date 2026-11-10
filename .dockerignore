@@ -1,4 +1,4 @@
-# 构建镜像时不需要的内容
+﻿# 构建镜像时不需要的内容
 .git
 .github
 .husky
@@ -12,6 +12,7 @@ node_modules
 desktop
 apk-build
 public
+frontend/downloads
 docs
 sql
 交付文档
@@ -21,3 +22,4 @@ sql
 .env
 .env.*
 !.env.example
+
