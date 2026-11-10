@@ -1,0 +1,23 @@
+# 构建镜像时不需要的内容
+.git
+.github
+.husky
+node_modules
+.pnpm-store
+.vercel
+.electron-cache
+.electron-builder-cache
+.nsis-temp
+.tools
+desktop
+apk-build
+public
+docs
+sql
+交付文档
+*.exe
+*.zip
+*.log
+.env
+.env.*
+!.env.example
