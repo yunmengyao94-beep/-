@@ -1,4 +1,4 @@
-# ---------- 依赖 ----------
+﻿# ---------- 依赖 ----------
 node_modules/
 .pnpm-store/
 jspm_packages/
@@ -79,3 +79,7 @@ desktop/pnpm-lock.yaml
 .nsis-temp/
 .tools/
 *.exe
+
+# ---------- 本地浏览器自动化测试目录 ----------
+.edge*/
+
