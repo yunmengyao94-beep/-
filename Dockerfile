@@ -14,8 +14,7 @@ RUN npm install --omit=dev --ignore-scripts
 # 再复制源码（前端也会一并复制，由 Express 静态托管）
 COPY . .
 
-# 云托管默认通过 PORT 注入端口；本地/未注入时回退 80
-ENV PORT=80
-EXPOSE 80
+# 云托管默认探测 3000 端口；不覆盖 PORT，交由平台注入或使用应用默认值
+EXPOSE 3000
 
 CMD ["node", "server/app.js"]
