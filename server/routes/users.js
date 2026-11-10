@@ -48,14 +48,14 @@ const AI_CERT_COOLDOWN_MS = 24 * 3600 * 1000;
  * GET /api/v1/users/me
  * 返回个人信息（脱敏）+ 信用摘要 + 全部信用流水（时间倒序）
  */
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   const user = findUser(req.user && req.user.user_id);
   if (!user) {
     return fail(req, res, 404, 40401, '资源不存在');
   }
 
   // 惰性逾期判定：超时未还的订单在此刻结算扣分
-  applyOverduePenalties(user);
+  if (applyOverduePenalties(user) > 0) await commitDb();
 
   return ok(req, res, {
     user_id: user.id,
@@ -86,7 +86,7 @@ router.get('/me', (req, res) => {
 router.post(
   '/credit/challenge',
   createRateLimit({ windowMs: 60000, max: 10, keyPrefix: 'credit-challenge' }),
-  (req, res) => {
+  async (req, res) => {
     const user = findUser(req.user && req.user.user_id);
     if (!user) {
       return fail(req, res, 404, 40401, '资源不存在');
@@ -114,7 +114,7 @@ router.post(
 router.post(
   '/credit/bonus',
   createRateLimit({ windowMs: 60000, max: 10, keyPrefix: 'credit-bonus' }),
-  (req, res) => {
+  async (req, res) => {
     const body = req.body || {};
     const source = body.source;
     if (source !== 'ai_cert') {
@@ -175,7 +175,7 @@ router.post(
       created_at: createdAt,
     });
 
-    commitDb();
+    await commitDb();
 
     return ok(req, res, {
       credit: {
@@ -196,7 +196,7 @@ router.post(
  * 注：放在 users 路由下而不是 /items/mine —— /items/:id 是公开 GET，
  *     /items/mine 会被当成 id=mine 而跳过鉴权。
  */
-router.get('/me/items', (req, res) => {
+router.get('/me/items', async (req, res) => {
   const user = findUser(req.user && req.user.user_id);
   if (!user) {
     return fail(req, res, 404, 40401, '资源不存在');
@@ -224,7 +224,7 @@ router.get('/me/items', (req, res) => {
  * 请求：{ college_code?, building_loc?, room_no? }
  * 说明：转专业 / 换宿舍后自助修改，同步更新用户档案与账号表
  */
-router.patch('/me', (req, res) => {
+router.patch('/me', async (req, res) => {
   const user = findUser(req.user && req.user.user_id);
   if (!user) {
     return fail(req, res, 404, 40401, '资源不存在');
@@ -262,7 +262,7 @@ router.patch('/me', (req, res) => {
     if (hasRoom) account.room = room;
   }
 
-  commitDb();
+  await commitDb();
 
   return ok(req, res, {
     user_id: user.id,

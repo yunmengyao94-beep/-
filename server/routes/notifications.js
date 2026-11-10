@@ -27,7 +27,7 @@ function currentUserId(req) {
   return (req.user && req.user.user_id) || null;
 }
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const userId = currentUserId(req);
   if (!userId) return fail(req, res, 401, 40101, '未登录或Token失效');
 
@@ -39,17 +39,17 @@ router.get('/', (req, res) => {
   });
 });
 
-router.put('/read-all', (req, res) => {
+router.put('/read-all', async (req, res) => {
   const userId = currentUserId(req);
   if (!userId) return fail(req, res, 401, 40101, '未登录或Token失效');
 
   const updated = markAllNotificationsRead(userId);
-  commitDb();
+  await commitDb();
 
   return ok(req, res, { updated, unread_count: unreadNotificationCount(userId) });
 });
 
-router.put('/:id/read', (req, res) => {
+router.put('/:id/read', async (req, res) => {
   const userId = currentUserId(req);
   if (!userId) return fail(req, res, 401, 40101, '未登录或Token失效');
 
@@ -62,7 +62,7 @@ router.put('/:id/read', (req, res) => {
     return fail(req, res, 404, 40401, '资源不存在');
   }
 
-  commitDb();
+  await commitDb();
 
   return ok(req, res, { id, is_read: true, unread_count: unreadNotificationCount(userId) });
 });

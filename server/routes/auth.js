@@ -82,7 +82,7 @@ function createAuthRouter(options) {
    * POST /api/v1/auth/login
    * 请求：{ student_no, password }
    */
-  router.post('/login', (req, res) => {
+  router.post('/login', async (req, res) => {
     const body = req.body || {};
     const studentNo = typeof body.student_no === 'string' ? body.student_no.trim() : '';
     const password = typeof body.password === 'string' ? body.password : '';
@@ -134,7 +134,7 @@ function createAuthRouter(options) {
   router.post(
     '/register',
     createRateLimit({ windowMs: 60 * 1000, max: 1, keyPrefix: 'register' }),
-    (req, res) => {
+    async (req, res) => {
       const body = req.body || {};
 
       const studentNo = typeof body.student_no === 'string' ? body.student_no.trim() : '';
@@ -213,7 +213,7 @@ function createAuthRouter(options) {
       whitelistUser.building_loc = building;
       whitelistUser.updated_at = isoWithOffset();
 
-      commitDb();
+      await commitDb();
 
       return ok(req, res, {
         user_id: whitelistUser.id,
@@ -227,7 +227,7 @@ function createAuthRouter(options) {
    * POST /api/v1/auth/refresh
    * 用旧 Token 换新 Token（旧 Token 立即拉黑），实现「活跃用户不掉线」
    */
-  router.post('/refresh', (req, res) => {
+  router.post('/refresh', async (req, res) => {
     const payload = req.user || {};
     const oldToken = req.token;
 
@@ -246,7 +246,7 @@ function createAuthRouter(options) {
    * POST /api/v1/auth/logout
    * 把当前 Token 加入黑名单（需带 Authorization: Bearer <token>）
    */
-  router.post('/logout', (req, res) => {
+  router.post('/logout', async (req, res) => {
     const token = req.token;
     const payload = req.user || {};
 

@@ -1,5 +1,8 @@
 'use strict';
 
+// 读取 .env（真实连接串只放在本地 .env，绝不进仓库）
+require('dotenv').config();
+
 /**
  * 庆师易校圈 · 本地服务端（Express）
  * ---------------------------------------------------------------
@@ -16,7 +19,6 @@
  */
 
 const crypto = require('crypto');
-const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
@@ -24,7 +26,7 @@ const morgan = require('morgan');
 
 const { fail } = require('./utils/http');
 const auth = require('./middlewares/auth');
-const { db: dataStore, backupDb, hasRecoveredFromBackup, startItemSweeper } = require('./store');
+const { db: dataStore, initStore, startItemSweeper } = require('./store');
 const { createAuthRouter } = require('./routes/auth');
 const itemsRouter = require('./routes/items');
 const ordersRouter = require('./routes/orders');
@@ -188,91 +190,6 @@ function openBrowser(url) {
   }
 }
 
-/* --------------------------------------------------------- 单实例锁 / 备份 */
-
-/** 锁文件：记录本实例 pid + 端口，防止多开覆盖 db.json */
-const LOCK_FILE = path.join(__dirname, '.yxx.lock');
-
-/** 进程是否还活着 */
-function isProcessAlive(pid) {
-  if (!pid) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error && error.code === 'EPERM';
-  }
-}
-
-/**
- * 获取单实例锁
- * 已有存活实例 → 直接退出；残留的死锁 → 覆盖
- * @param {number} port
- */
-function acquireInstanceLock(port) {
-  try {
-    const raw = fs.readFileSync(LOCK_FILE, 'utf8');
-    const info = JSON.parse(raw);
-
-    if (info && info.pid && info.pid !== process.pid && isProcessAlive(info.pid)) {
-      console.error(
-        `[yxx] 启动被拒绝：已有实例在运行（pid=${info.pid}，端口=${info.port}）。\n` +
-          '[yxx] 如需重启，请先关闭旧实例，或删除 server/.yxx.lock 后重试。'
-      );
-      process.exit(1);
-    }
-  } catch {
-    // 无锁文件 / 内容损坏 → 直接接管
-  }
-
-  try {
-    fs.writeFileSync(
-      LOCK_FILE,
-      JSON.stringify({ pid: process.pid, port, started_at: new Date().toISOString() }, null, 2),
-      'utf8'
-    );
-  } catch (error) {
-    console.warn(`[yxx] 写入锁文件失败（不影响运行）：${error.message}`);
-  }
-}
-
-/** 释放锁（只删自己写的那个） */
-function releaseInstanceLock() {
-  try {
-    const info = JSON.parse(fs.readFileSync(LOCK_FILE, 'utf8'));
-    if (info && info.pid === process.pid) fs.unlinkSync(LOCK_FILE);
-  } catch {
-    // 忽略
-  }
-}
-
-/** 启动时备份一次 + 每天凌晨 3 点再备份一次 */
-function setupDailyBackup() {
-  const ok = backupDb();
-  console.info(
-    ok ? '[yxx] 数据已备份到 server/db.backup.json' : '[yxx] 暂无可备份的数据文件（首次启动）'
-  );
-
-  /** 下一次凌晨 3 点 */
-  function scheduleNext() {
-    const now = new Date();
-    const next = new Date(now);
-    next.setHours(3, 0, 0, 0);
-    if (next <= now) next.setDate(next.getDate() + 1);
-
-    const timer = setTimeout(() => {
-      const done = backupDb();
-      if (done) console.info('[yxx] 每日备份完成：server/db.backup.json');
-      scheduleNext();
-    }, next.getTime() - now.getTime());
-
-    // 不阻止进程退出
-    if (typeof timer.unref === 'function') timer.unref();
-  }
-
-  scheduleNext();
-}
-
 /**
  * 带端口顺延的监听：EADDRINUSE 时自动尝试下一个端口
  * @param {number} port
@@ -295,52 +212,48 @@ function listen(port, remaining = PORT_RETRY) {
 }
 
 if (require.main === module) {
-  acquireInstanceLock(PORT);
+  (async () => {
+    // 先连数据库：失败直接退出，避免半可用状态
+    await initStore();
 
-  // 进程退出 / Ctrl+C 时释放锁
-  process.on('exit', releaseInstanceLock);
-  process.on('SIGINT', () => {
-    releaseInstanceLock();
-    process.exit(0);
-  });
-  process.on('SIGTERM', () => {
-    releaseInstanceLock();
-    process.exit(0);
-  });
+    const { port } = await listen(PORT);
+    const url = `http://localhost:${port}`;
 
-  setupDailyBackup();
+    console.info(`[yxx] 服务已启动：${url}（延迟 ${DELAY_MS}ms）`);
+    console.info(
+      `[yxx] 数据规模：users=${dataStore.users.length} items=${dataStore.items.length} orders=${dataStore.orders.length} credit_logs=${dataStore.credit_logs.length}`
+    );
+    console.info(`[yxx] 首页：${url}/index.html | 热刷新：已开启（改文件后浏览器自动刷新）`);
 
-  if (hasRecoveredFromBackup()) {
-    console.warn('[yxx][告警] 本次启动使用了备份数据，请检查 db.json 是否曾被外部破坏');
-  }
+    if (LIVE_RELOAD_ENABLED) liveReload.start();
 
-  listen(PORT)
-    .then(({ port }) => {
-      const url = `http://localhost:${port}`;
-      console.info(`[yxx] 服务已启动：${url}（延迟 ${DELAY_MS}ms）`);
-      console.info(
-        `[yxx] 数据规模：users=${dataStore.users.length} items=${dataStore.items.length} orders=${dataStore.orders.length} credit_logs=${dataStore.credit_logs.length}`
-      );
-      console.info(`[yxx] 首页：${url}/index.html | 热刷新：已开启（改文件后浏览器自动刷新）`);
-
-      if (LIVE_RELOAD_ENABLED) liveReload.start();
-
-      // 物品生命周期：每 5 分钟下架超过 30 分钟未借出的物品并清空图片
-      const sweeper = startItemSweeper({
-        intervalMs: 5 * 60 * 1000,
-        ttlMs: 30 * 60 * 1000,
-        onSweep: (changed) => {
-          if (changed > 0)
-            console.info(`[yxx] 物品清扫：${changed} 件超时未借出，已下架并清空图片`);
-        },
-      });
-      process.on('exit', () => sweeper.stop());
-      if (SHOULD_OPEN) openBrowser(`${url}/index.html`);
-    })
-    .catch((error) => {
-      console.error(`[yxx] 启动失败：${error.message}`);
-      process.exit(1);
+    // 物品生命周期：每 5 分钟下架超过 30 分钟未借出的物品并清空图片
+    const sweeper = startItemSweeper({
+      intervalMs: 5 * 60 * 1000,
+      ttlMs: 30 * 60 * 1000,
+      onSweep: (changed) => {
+        if (changed > 0) console.info(`[yxx] 物品清扫：${changed} 件超时未借出，已下架并清空图片`);
+      },
     });
+    process.on('exit', () => sweeper.stop());
+
+    const shutdown = async () => {
+      sweeper.stop();
+      try {
+        await require('mongoose').disconnect();
+      } catch {
+        // 忽略
+      }
+      process.exit(0);
+    };
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+
+    if (SHOULD_OPEN) openBrowser(`${url}/index.html`);
+  })().catch((error) => {
+    console.error(`[yxx] 启动失败：${error.message}`);
+    process.exit(1);
+  });
 }
 
 module.exports = app;

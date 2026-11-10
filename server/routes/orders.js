@@ -87,7 +87,7 @@ function toDto(order, viewerId) {
  * GET /api/v1/orders/mine?direction=borrow|lend&state=0|1|2
  * 我的订单：direction 不传返回全部
  */
-router.get('/mine', (req, res) => {
+router.get('/mine', async (req, res) => {
   const userId = req.user && req.user.user_id;
   const me = findUser(userId);
   if (!me) {
@@ -113,7 +113,7 @@ router.get('/mine', (req, res) => {
   }
 
   // 惰性逾期判定：读取订单前先把超时未还的订单标为已逾期并扣分
-  applyOverduePenalties(me);
+  if (applyOverduePenalties(me) > 0) await commitDb();
 
   const orders = listOrders(me.id, { direction, state });
 
@@ -131,7 +131,7 @@ router.get('/mine', (req, res) => {
  *   · request_return ：使用中(1)/已逾期(4) → 待出借人确认(5)，仅借用人
  *   · confirm_return ：待确认(5) → 已完成(2)，仅出借人；此时才解冻押金分并释放物品
  */
-router.patch('/:id/state', (req, res) => {
+router.patch('/:id/state', async (req, res) => {
   const orderId = Number(req.params.id);
   if (!Number.isInteger(orderId) || orderId <= 0) {
     return fail(req, res, 400, 40001, '参数校验失败：id 必须为正整数', { field: 'id' });
@@ -266,7 +266,7 @@ router.patch('/:id/state', (req, res) => {
     }
   }
 
-  commitDb();
+  await commitDb();
 
   return ok(req, res, {
     order_id: order.id,
@@ -341,7 +341,7 @@ router.post(
     keyPrefix: 'order-approve',
     keyGenerator: (req) => String((req.user && req.user.user_id) || ''),
   }),
-  (req, res) => {
+  async (req, res) => {
     const body = req.body || {};
     const itemId = Number(body.item_id);
     const borrowerId = Number(body.borrower_id);
@@ -412,7 +412,7 @@ router.post(
       },
     });
 
-    commitDb();
+    await commitDb();
 
     return ok(req, res, {
       order_id: order.id,
@@ -442,7 +442,7 @@ router.post(
     keyPrefix: 'order-create',
     keyGenerator: (req) => String((req.user && req.user.user_id) || ''),
   }),
-  (req, res) => {
+  async (req, res) => {
     const body = req.body || {};
     const itemId = Number(body.item_id);
 
@@ -502,7 +502,7 @@ router.post(
       ref_id: order.id,
     });
 
-    commitDb();
+    await commitDb();
 
     return ok(req, res, {
       order_id: order.id,

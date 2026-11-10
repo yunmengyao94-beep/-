@@ -47,7 +47,7 @@ function withOwner(item) {
  * 查询：limit（默认 10，上限 50）、cursor（游标，基于 id）
  * 排序：id DESC（新发布在前，便于游标稳定遍历）
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const limitParsed = parseLimit(req.query.limit);
   if (limitParsed.error) {
     return fail(req, res, 400, 40001, limitParsed.error, { field: 'limit' });
@@ -163,7 +163,7 @@ router.post(
     keyPrefix: 'publish',
     keyGenerator: (req) => String((req.user && req.user.user_id) || ''),
   }),
-  (req, res) => {
+  async (req, res) => {
     const body = req.body || {};
     const title = typeof body.title === 'string' ? body.title.trim() : '';
     const category = typeof body.category === 'string' ? body.category.trim() : '';
@@ -233,7 +233,7 @@ router.post(
     };
 
     db.items.push(item);
-    commitDb();
+    await commitDb();
 
     return ok(req, res, {
       item_id: item.id,
@@ -247,7 +247,7 @@ router.post(
  * DELETE /api/v1/items/:id
  * 仅出借人本人可删除；流转中（使用中 / 仲裁中）拒绝删除
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
     return fail(req, res, 400, 40001, '参数校验失败：id 必须为正整数', { field: 'id' });
@@ -270,7 +270,7 @@ router.delete('/:id', (req, res) => {
   const index = db.items.findIndex((entry) => entry.id === id);
   if (index >= 0) db.items.splice(index, 1);
 
-  commitDb();
+  await commitDb();
 
   return ok(req, res, { item_id: id, deleted: true });
 });
@@ -279,7 +279,7 @@ router.delete('/:id', (req, res) => {
  * GET /api/v1/items/:id/thumb
  * 返回物品缩略图（二进制），解决本地图片无法跨设备的问题
  */
-router.get('/:id/thumb', (req, res) => {
+router.get('/:id/thumb', async (req, res) => {
   const id = Number(req.params.id);
   const item = Number.isInteger(id) ? findItem(id) : null;
 
@@ -301,7 +301,7 @@ router.get('/:id/thumb', (req, res) => {
  * GET /api/v1/items/:id
  * 不存在时返回 40401（计划书 7.2）
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {

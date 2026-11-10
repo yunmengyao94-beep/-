@@ -1,4 +1,4 @@
-# 庆师易校圈（Project-YXX）
+﻿# 庆师易校圈（Project-YXX）
 
 > 校园信用互助与资源共享平台 —— 以「虚拟信用分 + 履约留痕 + 强制仲裁」替代现金押金的校内借用网络。
 
@@ -110,3 +110,42 @@ npm run format        # Prettier 格式化
 - 学号必须在这份名单里，且**姓名完全一致**，否则返回 `403 身份核验失败，您不在本次试点名单内`
 - 已激活的账号重复注册会返回 `409 该账号已激活，请直接登录`
 - 未激活的账号直接登录会返回 `403 账号尚未激活，请先前往注册页完成身份核验与密码设置`
+
+## 数据库（MongoDB）
+
+后端已从本地 JSON 文件迁移到 MongoDB Atlas（Mongoose）。
+
+### 1. 配置连接串
+
+复制 `.env.example` 为 `.env`，填写真实连接串（`.env` 已被 `.gitignore` 忽略，不会进仓库）：
+
+```
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/
+MONGODB_DB=yxx
+PORT=3000
+JWT_SECRET=change-me
+```
+
+> 连接串只通过 `process.env.MONGODB_URI` 读取，源码中没有任何硬编码的账号密码。
+
+### 2. 启动
+
+```bash
+node server/app.js
+```
+
+启动时会自动连接数据库、首次运行写入种子数据（6 个账号），并监听 `http://localhost:3000`。
+
+### 3. 集合结构
+
+| 集合 | 说明 |
+|---|---|
+| `users` | 用户档案与信用分 |
+| `accounts` | 登录账号（密码仅存 scrypt 哈希） |
+| `items` | 物品 |
+| `orders` | 订单 |
+| `credit_logs` | 信用流水 |
+| `notifications` | 通知 |
+| `counters` | 物品 / 订单自增计数器 |
+
+不再使用 `server/db.json`，也不再有单实例锁与本地备份文件。

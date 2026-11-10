@@ -46,5 +46,9 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.10",
+    "mongoose": "^9.12.0"
   }
 }
