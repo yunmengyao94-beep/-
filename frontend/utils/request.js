@@ -22,6 +22,9 @@
  *   4. file:// 场景（EXE / APK 本地包）默认 http://127.0.0.1:3000
  *   5. 其余情况同源相对路径（Web 端）
  */
+/** EXE 客户端（app://）的兜底 API 地址，避免重定向丢失参数导致请求发往本地 */
+const APP_CLIENT_API_ORIGIN = 'https://dqsf-hy-345260-13-1529260880.sh.run.tcloudbase.com';
+
 function resolveApiOrigin() {
   if (typeof window === 'undefined') return '';
   try {
@@ -37,6 +40,8 @@ function resolveApiOrigin() {
 
     const stored = localStorage.getItem('yxx_api_origin');
     if (stored) return stored;
+
+    if (window.location.protocol === 'app:') return APP_CLIENT_API_ORIGIN;
 
     if (window.location.protocol === 'file:') return 'http://127.0.0.1:3000';
   } catch {
