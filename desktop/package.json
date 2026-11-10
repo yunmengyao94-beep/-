@@ -32,7 +32,8 @@
       "!**/db.backup.json",
       "!**/.git/**",
       "!**/screenshots/**",
-      "!**/test-results/**"
+      "!**/test-results/**",
+      "preload.js"
     ],
     "win": {
       "target": [

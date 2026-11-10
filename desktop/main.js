@@ -10,7 +10,7 @@
  *   · 启动 URL 自动追加 ?client=exe，并注入 API 地址（?api=）
  */
 
-const { app, BrowserWindow, protocol, net, shell } = require('electron');
+const { app, BrowserWindow, protocol, net, shell, ipcMain } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
@@ -78,6 +78,12 @@ function showFallback(win, reason) {
   win.loadURL(`data:text/html;charset=utf-8,${tip}`);
 }
 
+app.whenReady().then(() => {
+  ipcMain.on('yxx:api-origin', (event) => {
+    event.returnValue = API_ORIGIN;
+  });
+});
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -89,6 +95,7 @@ function createWindow() {
     autoHideMenuBar: true,
     show: false,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
