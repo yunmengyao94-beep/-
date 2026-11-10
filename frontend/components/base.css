@@ -4028,14 +4028,21 @@ body.shell-entering .app-topbar {
  * 42. 客户端模块：仅移动端竖屏展示（PC 端隐藏）
  * ========================================================================== */
 
+/* 默认隐藏：PC 网页端与 EXE / APK 客户端都不显示设置里的下载入口 */
 .setting-group[data-group='client'] {
-  display: none;
+  display: none !important;
 }
 
-@media (max-width: 767.98px) and (orientation: portrait) {
-  .setting-group[data-group='client'] {
-    display: block;
+/* 仅手机浏览器（宽度 < 768）显示；客户端内由 html[data-client] 继续隐藏 */
+@media (max-width: 767.98px) {
+  html:not([data-client]) .setting-group[data-group='client'] {
+    display: block !important;
   }
+}
+
+/* 双保险：客户端环境彻底隐藏 */
+html[data-client] .setting-group[data-group='client'] {
+  display: none !important;
 }
 
 /* 客户端环境（EXE / APK）：动态渲染的入口也一并隐藏 */
