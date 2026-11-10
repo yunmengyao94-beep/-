@@ -138,14 +138,40 @@ node server/app.js
 
 ### 3. 集合结构
 
-| 集合 | 说明 |
-|---|---|
-| `users` | 用户档案与信用分 |
-| `accounts` | 登录账号（密码仅存 scrypt 哈希） |
-| `items` | 物品 |
-| `orders` | 订单 |
-| `credit_logs` | 信用流水 |
-| `notifications` | 通知 |
-| `counters` | 物品 / 订单自增计数器 |
+| 集合            | 说明                             |
+| --------------- | -------------------------------- |
+| `users`         | 用户档案与信用分                 |
+| `accounts`      | 登录账号（密码仅存 scrypt 哈希） |
+| `items`         | 物品                             |
+| `orders`        | 订单                             |
+| `credit_logs`   | 信用流水                         |
+| `notifications` | 通知                             |
+| `counters`      | 物品 / 订单自增计数器            |
 
 不再使用 `server/db.json`，也不再有单实例锁与本地备份文件。
+
+## 部署到 Vercel
+
+仓库根目录已包含 `vercel.json`：
+
+- **Build Command**：`node scripts/vercel-build.js`（把 `frontend/` 复制到 `public/`）
+- **Output Directory**：`public`
+- **Serverless Functions**：`api/index.js`（`/api`）与 `api/[...path].js`（`/api/items` 等全部子路径），二者复用同一个 `server/app.js`
+
+### 环境变量（Vercel 控制台 → Settings → Environment Variables）
+
+| Key           | 说明                 |
+| ------------- | -------------------- |
+| `MONGODB_URI` | MongoDB Atlas 连接串 |
+| `MONGODB_DB`  | 数据库名，默认 `yxx` |
+| `JWT_SECRET`  | JWT 签名密钥         |
+
+### Atlas 网络访问
+
+Vercel Serverless 的出口 IP 不固定，必须在 Atlas → Network Access 中添加 `0.0.0.0/0`，否则函数会在冷启动时报 `Could not connect to any servers`。
+
+### 说明
+
+- `/api/*` 由 Serverless Function 处理，其余路径由 Vercel 静态托管 `public/`
+- 后端已开启全量 CORS（`origin: *`），前后端分开部署也能直接调用
+- 每个冷启动会复用同一个 Mongo 连接；请求前自动完成连接与种子初始化

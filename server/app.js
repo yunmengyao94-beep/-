@@ -37,8 +37,9 @@ const systemRouter = require('./routes/system');
 const { createLiveReload } = require('./live-reload');
 
 /** 热刷新仅开发环境开启（生产/演示关闭，避免暴露文件监听通道） */
+const IS_VERCEL = Boolean(process.env.VERCEL);
 const LIVE_RELOAD_ENABLED =
-  process.env.NODE_ENV !== 'production' && process.env.YXX_LIVE_RELOAD !== '0';
+  !IS_VERCEL && process.env.NODE_ENV !== 'production' && process.env.YXX_LIVE_RELOAD !== '0';
 
 const app = express();
 
@@ -63,7 +64,8 @@ const PUBLIC_ROUTES = [
 ];
 
 /** 模拟网络延迟（毫秒）。NET_DELAY_MS=0 可关闭，便于压测 */
-const DELAY_MS = process.env.NET_DELAY_MS === undefined ? 300 : Number(process.env.NET_DELAY_MS);
+const DELAY_MS =
+  process.env.NET_DELAY_MS !== undefined ? Number(process.env.NET_DELAY_MS) : IS_VERCEL ? 0 : 300;
 
 /* -------------------------------------------------------------- 全局中间件 */
 
@@ -123,6 +125,27 @@ app.use((req, res, next) => {
  */
 app.get('/api/v1/health', (req, res) => {
   res.json({ code: 200, msg: 'success', data: 'server is running' });
+});
+
+/* --------------------------------------------------- 数据库懒初始化（Vercel） */
+
+let storeInitPromise = null;
+
+/** Serverless 冷启动时按需连接 MongoDB（同一个实例内复用连接） */
+function ensureStoreReady() {
+  if (!storeInitPromise) storeInitPromise = initStore();
+  return storeInitPromise;
+}
+
+// 业务请求前确保数据仓已就绪；OPTIONS 预检由 CORS 直接响应，不触发连接
+app.use(async (req, res, next) => {
+  try {
+    await ensureStoreReady();
+    return next();
+  } catch (error) {
+    console.error('[yxx] MongoDB 初始化失败:', error.message);
+    return fail(req, res, 503, 50302, '数据库暂时不可用，请稍后重试');
+  }
 });
 
 /* ------------------------------------------------------------- 鉴权中间件 */

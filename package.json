@@ -10,7 +10,7 @@
     "server"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "dev": "node server/app.js",
@@ -22,11 +22,12 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "server:quiet": "node server/app.js",
-    "start": "node server/app.js --open",
+    "start": "node server/app.js",
     "server:watch": "node --watch server/app.js",
     "fetch:ai": "node scripts/fetch-ai-assets.mjs",
     "fetch:fonts": "node scripts/fetch-fonts.mjs",
-    "fetch:assets": "node scripts/fetch-ai-assets.mjs && node scripts/fetch-fonts.mjs"
+    "fetch:assets": "node scripts/fetch-ai-assets.mjs && node scripts/fetch-fonts.mjs",
+    "vercel-build": "node scripts/vercel-build.js"
   },
   "lint-staged": {
     "*.js": [

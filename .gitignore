@@ -83,3 +83,7 @@ desktop/pnpm-lock.yaml
 # ---------- 本地浏览器自动化测试目录 ----------
 .edge*/
 
+
+# ---------- Vercel 静态构建产物 ----------
+public/
+.vercel/
