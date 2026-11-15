@@ -4211,3 +4211,10 @@ html[data-client] [data-download-client] {
 .notice-item__actions .btn {
   min-width: 76px;
 }
+
+.notice-item__done {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-placeholder, #98a2b3);
+}

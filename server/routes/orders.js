@@ -16,6 +16,7 @@ const { createRateLimit } = require('../middlewares/rate-limit');
 const { addMessage } = require('../services/message-store');
 const {
   findItem,
+  db,
   findUser,
   findOrder,
   listOrders,
@@ -454,14 +455,32 @@ router.post(
     if (item.owner_id !== owner.id) {
       return fail(req, res, 403, 40301, '只有出借人可以同意借用');
     }
-    if (item.status !== 0) {
-      return fail(req, res, 409, 40901, '物品当前不可借', { current_status: item.status });
-    }
 
     const borrower = findUser(borrowerId);
     if (!borrower) return fail(req, res, 404, 40401, '借用人不存在');
     if (borrower.id === owner.id) {
       return fail(req, res, 409, 40902, '不能借用自己发布的物品');
+    }
+
+    // 幂等：同一物品 + 同一借用人已有进行中订单，直接返回，避免通知重复点击报错
+    const existing = db.orders.find(
+      (order) =>
+        order.item_id === item.id &&
+        order.borrower_id === borrower.id &&
+        [0, 1, 4, 5].includes(order.state)
+    );
+    if (existing) {
+      return ok(req, res, {
+        order_id: existing.id,
+        frozen_score: existing.frozen_score,
+        state: existing.state,
+        due_at: existing.due_at,
+        reused: true,
+      });
+    }
+
+    if (item.status !== 0) {
+      return fail(req, res, 409, 40901, '物品已被其他同学借走', { current_status: item.status });
     }
 
     const available = availableOf(borrower);

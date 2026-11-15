@@ -79,7 +79,12 @@ function createItem(notice) {
   main.append(title, body, time);
 
   // 借用申请：直接给出「同意 / 拒绝」操作入口
-  if (notice.type === 'borrow_request' && notice.meta && notice.meta.borrower_id) {
+  if (
+    notice.type === 'borrow_request' &&
+    notice.meta &&
+    notice.meta.borrower_id &&
+    !notice.is_read
+  ) {
     const actions = document.createElement('div');
     actions.className = 'notice-item__actions';
 
@@ -141,6 +146,11 @@ function createItem(notice) {
 
     actions.append(approveBtn, rejectBtn);
     main.appendChild(actions);
+  } else if (notice.type === 'borrow_request' && notice.is_read) {
+    const done = document.createElement('span');
+    done.className = 'notice-item__done';
+    done.textContent = '已处理';
+    main.appendChild(done);
   }
 
   li.append(dot, main);
