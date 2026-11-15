@@ -9,7 +9,7 @@
  * 只拦截同源、非新窗口、非锚点、非下载的普通链接。
  */
 
-const EXIT_MS = 220;
+const EXIT_MS = 150;
 
 function prefersReducedMotion() {
   try {

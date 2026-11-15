@@ -66,8 +66,7 @@ const PUBLIC_ROUTES = [
 ];
 
 /** 模拟网络延迟（毫秒）。NET_DELAY_MS=0 可关闭，便于压测 */
-const DELAY_MS =
-  process.env.NET_DELAY_MS !== undefined ? Number(process.env.NET_DELAY_MS) : IS_VERCEL ? 0 : 300;
+const DELAY_MS = process.env.NET_DELAY_MS !== undefined ? Number(process.env.NET_DELAY_MS) : 0;
 
 /* -------------------------------------------------------------- 全局中间件 */
 

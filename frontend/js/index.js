@@ -20,9 +20,9 @@ import { showToast } from '../components/feedback.js';
 /* ------------------------------------------------------------------ 常量 */
 
 const ITEMS_ENDPOINT = '/items';
-const PAGE_SIZE = 10;
-const SKELETON_COUNT = 6;
-const SEARCH_DEBOUNCE_MS = 300;
+const PAGE_SIZE = 20;
+const SKELETON_COUNT = 8;
+const SEARCH_DEBOUNCE_MS = 200;
 const PULL_THRESHOLD = 64;
 const PULL_MAX_DISTANCE = 90;
 const MOBILE_MAX_WIDTH = 768;
@@ -464,7 +464,7 @@ function setupInfiniteScroll() {
         if (entry.isIntersecting) loadMore();
       });
     },
-    { rootMargin: '200px 0px', threshold: 0 }
+    { rootMargin: '700px 0px', threshold: 0 }
   );
 
   observer.observe(sentinelEl);

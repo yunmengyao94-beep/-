@@ -72,7 +72,7 @@ main {
 
 /* 离场：由 transitions.js 在点击内部链接后添加 */
 html.is-leaving main {
-  animation: yxx-page-out-left 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+  animation: yxx-page-out-left 0.15s cubic-bezier(0.4, 0, 1, 1) both;
   pointer-events: none;
 }
 

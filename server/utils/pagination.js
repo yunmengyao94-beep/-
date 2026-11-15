@@ -8,7 +8,7 @@
  */
 
 const MAX_LIMIT = 50; // 7.1：limit 上限 50
-const DEFAULT_LIMIT = 10;
+const DEFAULT_LIMIT = 20;
 
 /**
  * 解析 limit 查询参数
