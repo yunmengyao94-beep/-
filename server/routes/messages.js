@@ -16,77 +16,88 @@ const { addMessage, listMessages } = require('../services/message-store');
 const { findUser, findItem, addNotification, commitDb } = require('../store');
 const { maskName } = require('../utils/mask');
 
+const { createRateLimit } = require('../middlewares/rate-limit');
+
 const router = express.Router();
 
 /** 允许的消息类型 */
 const TYPES = new Set(['text', 'image', 'audio', 'borrow_request', 'borrow_accept', 'system']);
 
 /** 单条内容上限（字符）：图片/语音为 base64，放宽到 1.2MB */
-const MAX_CONTENT = 1_200_000;
+const MAX_CONTENT = 300_000;
 
 function currentUser(req) {
   return findUser(req.user && req.user.user_id);
 }
 
 /** POST /api/v1/messages */
-router.post('/', async (req, res) => {
-  const me = currentUser(req);
-  if (!me) return fail(req, res, 404, 40401, '资源不存在');
+router.post(
+  '/',
+  createRateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    keyPrefix: 'messages-send',
+    keyGenerator: (req) => String((req.user && req.user.user_id) || ''),
+  }),
+  async (req, res) => {
+    const me = currentUser(req);
+    if (!me) return fail(req, res, 404, 40401, '资源不存在');
 
-  const body = req.body || {};
-  const to = Number(body.to_user_id);
-  const type = typeof body.type === 'string' ? body.type.trim() : 'text';
-  const content = typeof body.content === 'string' ? body.content : '';
-  const itemId = body.item_id ? Number(body.item_id) : null;
+    const body = req.body || {};
+    const to = Number(body.to_user_id);
+    const type = typeof body.type === 'string' ? body.type.trim() : 'text';
+    const content = typeof body.content === 'string' ? body.content : '';
+    const itemId = body.item_id ? Number(body.item_id) : null;
 
-  if (!Number.isInteger(to) || to <= 0) {
-    return fail(req, res, 400, 40001, '参数校验失败：to_user_id 必须为正整数', {
-      field: 'to_user_id',
+    if (!Number.isInteger(to) || to <= 0) {
+      return fail(req, res, 400, 40001, '参数校验失败：to_user_id 必须为正整数', {
+        field: 'to_user_id',
+      });
+    }
+    if (to === me.id) {
+      return fail(req, res, 400, 40001, '不能给自己发消息');
+    }
+    if (!findUser(to)) {
+      return fail(req, res, 404, 40401, '接收方不存在');
+    }
+    if (!TYPES.has(type)) {
+      return fail(req, res, 400, 40001, '参数校验失败：不支持的消息类型', { field: 'type' });
+    }
+    if (type !== 'borrow_request' && type !== 'borrow_accept' && !content.trim()) {
+      return fail(req, res, 400, 40001, '消息内容不能为空');
+    }
+    if (content.length > MAX_CONTENT) {
+      return fail(req, res, 400, 40001, '消息内容过大');
+    }
+    if (itemId && !findItem(itemId)) {
+      return fail(req, res, 404, 40401, '关联物品不存在');
+    }
+
+    const message = addMessage({
+      from: me.id,
+      to,
+      item_id: itemId,
+      type,
+      content,
+      meta: body.meta && typeof body.meta === 'object' ? body.meta : {},
     });
-  }
-  if (to === me.id) {
-    return fail(req, res, 400, 40001, '不能给自己发消息');
-  }
-  if (!findUser(to)) {
-    return fail(req, res, 404, 40401, '接收方不存在');
-  }
-  if (!TYPES.has(type)) {
-    return fail(req, res, 400, 40001, '参数校验失败：不支持的消息类型', { field: 'type' });
-  }
-  if (type !== 'borrow_request' && type !== 'borrow_accept' && !content.trim()) {
-    return fail(req, res, 400, 40001, '消息内容不能为空');
-  }
-  if (content.length > MAX_CONTENT) {
-    return fail(req, res, 400, 40001, '消息内容过大');
-  }
-  if (itemId && !findItem(itemId)) {
-    return fail(req, res, 404, 40401, '关联物品不存在');
-  }
 
-  const message = addMessage({
-    from: me.id,
-    to,
-    item_id: itemId,
-    type,
-    content,
-    meta: body.meta && typeof body.meta === 'object' ? body.meta : {},
-  });
+    // 借用申请：额外落一条通知，避免对方没打开聊天时完全感知不到
+    if (type === 'borrow_request') {
+      const item = itemId ? findItem(itemId) : null;
+      addNotification({
+        user_id: to,
+        type: 'order',
+        title: `${maskName(me.real_name)} 想借用${item ? `「${item.title}」` : '你的物品'}`,
+        body: '请到聊天中查看申请并确认是否出借。',
+        ref_id: itemId || null,
+      });
+      await commitDb();
+    }
 
-  // 借用申请：额外落一条通知，避免对方没打开聊天时完全感知不到
-  if (type === 'borrow_request') {
-    const item = itemId ? findItem(itemId) : null;
-    addNotification({
-      user_id: to,
-      type: 'order',
-      title: `${maskName(me.real_name)} 想借用${item ? `「${item.title}」` : '你的物品'}`,
-      body: '请到聊天中查看申请并确认是否出借。',
-      ref_id: itemId || null,
-    });
-    await commitDb();
+    return ok(req, res, message);
   }
-
-  return ok(req, res, message);
-});
+);
 
 /** GET /api/v1/messages?since=0&item_id=1&partner_id=2 */
 router.get('/', (req, res) => {

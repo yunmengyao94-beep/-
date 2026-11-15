@@ -206,15 +206,20 @@ router.get('/me/items', async (req, res) => {
     .filter((item) => item.owner_id === Number(user.id))
     .slice()
     .sort((a, b) => b.id - a.id)
-    .map((item) => ({
-      ...item,
-      owner: {
-        id: item.owner_id,
-        nickname: maskName(user.real_name),
-        credit_level: user.credit_level,
-        building_loc: user.building_loc,
-      },
-    }));
+    .map((item) => {
+      const { image_thumb: imageThumb, image_list: imageList, ...rest } = item;
+      return {
+        ...rest,
+        has_thumb: Boolean(imageThumb),
+        image_count: Array.isArray(imageList) ? imageList.length : 0,
+        owner: {
+          id: item.owner_id,
+          nickname: maskName(user.real_name),
+          credit_level: user.credit_level,
+          building_loc: user.building_loc,
+        },
+      };
+    });
 
   return ok(req, res, { list, total: list.length });
 });

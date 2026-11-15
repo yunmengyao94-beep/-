@@ -32,6 +32,12 @@ const db = {
 };
 
 let ready = false;
+
+/** 待从数据库删除的业务主键（避免全量同步误删其他实例的数据） */
+const pendingDeletes = {
+  items: new Set(),
+  notifications: new Set(),
+};
 let connection = null;
 
 /* ------------------------------------------------------------ 工具函数 */
@@ -151,7 +157,6 @@ async function syncCollection(Model, docs, key) {
   }));
 
   await Model.bulkWrite(operations, { ordered: false });
-  await Model.deleteMany({ [key]: { $nin: rows.map((row) => row[key]) } });
 }
 
 /** 把内存缓存写回 MongoDB */
@@ -166,6 +171,15 @@ async function commitDb() {
     syncCollection(CreditLog, db.credit_logs, 'id'),
     syncCollection(Notification, db.notifications, 'id'),
   ]);
+
+  if (pendingDeletes.items.size > 0) {
+    await Item.deleteMany({ id: { $in: [...pendingDeletes.items] } });
+    pendingDeletes.items.clear();
+  }
+  if (pendingDeletes.notifications.size > 0) {
+    await Notification.deleteMany({ id: { $in: [...pendingDeletes.notifications] } });
+    pendingDeletes.notifications.clear();
+  }
 
   await Promise.all([
     Counter.updateOne({ key: 'item' }, { $set: { value: db.seq.item } }, { upsert: true }),
@@ -259,6 +273,15 @@ function listCreditLogs(userId) {
     .sort((a, b) =>
       a.created_at === b.created_at ? b.id - a.id : a.created_at < b.created_at ? 1 : -1
     );
+}
+
+/** 删除物品：同时登记数据库删除，避免全量同步误删他人数据 */
+function deleteItem(id) {
+  const index = db.items.findIndex((item) => item.id === Number(id));
+  if (index < 0) return false;
+  db.items.splice(index, 1);
+  pendingDeletes.items.add(Number(id));
+  return true;
 }
 
 function findOrder(id) {
@@ -494,6 +517,7 @@ function addNotification(input) {
         .map((item) => item.id)
     );
     db.notifications = db.notifications.filter((item) => !removeIds.has(item.id));
+    removeIds.forEach((id) => pendingDeletes.notifications.add(id));
   }
 
   return row;
@@ -615,6 +639,7 @@ module.exports = {
   findUserByStudentNo,
   ensureUserForStudent,
   findItem,
+  deleteItem,
   findOrder,
   availableOf,
   nextOrderId,

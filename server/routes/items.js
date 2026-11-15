@@ -8,7 +8,7 @@
 const express = require('express');
 const { ok, fail } = require('../utils/http');
 const { parseLimit, encodeCursor, decodeCursor } = require('../utils/pagination');
-const { db, findItem, findUser, nextItemId } = require('../store');
+const { db, findItem, findUser, nextItemId, deleteItem } = require('../store');
 const { commitDb } = require('../store');
 const { maskName } = require('../utils/mask');
 const { createRateLimit } = require('../middlewares/rate-limit');
@@ -59,7 +59,24 @@ router.get('/', async (req, res) => {
   }
 
   const limit = limitParsed.value;
-  const ordered = db.items.slice().sort((a, b) => b.id - a.id);
+
+  // 公共列表默认只展示「可借」物品；如需查看全部可传 status=all
+  const statusRaw = req.query.status;
+  let statusFilter = 0;
+  if (statusRaw === 'all') statusFilter = null;
+  else if (statusRaw !== undefined && statusRaw !== '') {
+    const parsed = Number(statusRaw);
+    if (![0, 1, 2, 3].includes(parsed)) {
+      return fail(req, res, 400, 40001, '参数校验失败：status 仅支持 0/1/2/3 或 all', {
+        field: 'status',
+      });
+    }
+    statusFilter = parsed;
+  }
+
+  const source =
+    statusFilter === null ? db.items : db.items.filter((item) => item.status === statusFilter);
+  const ordered = source.slice().sort((a, b) => b.id - a.id);
   const rest = cursor.id === null ? ordered : ordered.filter((item) => item.id < cursor.id);
   const page = rest.slice(0, limit);
   const hasMore = rest.length > limit;
@@ -118,7 +135,8 @@ function validatePublish(req, res, next) {
         (rule) => `${rule && rule.level ? rule.level : ''} ${rule && rule.desc ? rule.desc : ''}`
       )
     : [];
-  const sensitive = checkSensitive([title, ...ruleTexts].join(' '));
+  const description = typeof body.description === 'string' ? body.description.trim() : '';
+  const sensitive = checkSensitive([title, description, ...ruleTexts].join(' '));
   if (sensitive.hit) {
     return fail(req, res, 400, 40001, '内容包含敏感词，请修改后再发布', {
       field: 'title',
@@ -267,8 +285,7 @@ router.delete('/:id', async (req, res) => {
     return fail(req, res, 409, 40902, '当前物品正在流转中，无法删除');
   }
 
-  const index = db.items.findIndex((entry) => entry.id === id);
-  if (index >= 0) db.items.splice(index, 1);
+  deleteItem(id);
 
   await commitDb();
 
