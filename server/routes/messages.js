@@ -87,10 +87,15 @@ router.post(
       const item = itemId ? findItem(itemId) : null;
       addNotification({
         user_id: to,
-        type: 'order',
+        type: 'borrow_request',
         title: `${maskName(me.real_name)} 想借用${item ? `「${item.title}」` : '你的物品'}`,
         body: '请到聊天中查看申请并确认是否出借。',
         ref_id: itemId || null,
+        meta: {
+          borrower_id: me.id,
+          item_id: itemId || null,
+          due_at: (body.meta && body.meta.due_at) || null,
+        },
       });
       await commitDb();
     }

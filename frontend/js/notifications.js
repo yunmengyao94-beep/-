@@ -77,6 +77,72 @@ function createItem(notice) {
   time.textContent = formatTime(notice.created_at) || '';
 
   main.append(title, body, time);
+
+  // 借用申请：直接给出「同意 / 拒绝」操作入口
+  if (notice.type === 'borrow_request' && notice.meta && notice.meta.borrower_id) {
+    const actions = document.createElement('div');
+    actions.className = 'notice-item__actions';
+
+    const approveBtn = document.createElement('button');
+    approveBtn.type = 'button';
+    approveBtn.className = 'btn btn--primary btn--sm';
+    approveBtn.textContent = '同意借用';
+
+    const rejectBtn = document.createElement('button');
+    rejectBtn.type = 'button';
+    rejectBtn.className = 'btn btn--secondary btn--sm';
+    rejectBtn.textContent = '拒绝';
+
+    approveBtn.addEventListener('click', async (event) => {
+      event.stopPropagation();
+      approveBtn.disabled = true;
+      rejectBtn.disabled = true;
+      approveBtn.textContent = '处理中…';
+      try {
+        await request('/orders/approve', {
+          method: 'POST',
+          body: {
+            item_id: notice.meta.item_id,
+            borrower_id: notice.meta.borrower_id,
+            due_at: notice.meta.due_at || undefined,
+          },
+        });
+        showToast('已同意借用，订单已生成', 'success');
+        actions.textContent = '已同意';
+        markRead(notice, li);
+      } catch (error) {
+        approveBtn.disabled = false;
+        rejectBtn.disabled = false;
+        approveBtn.textContent = '同意借用';
+        showToast(error.message || '操作失败', 'error');
+      }
+    });
+
+    rejectBtn.addEventListener('click', async (event) => {
+      event.stopPropagation();
+      approveBtn.disabled = true;
+      rejectBtn.disabled = true;
+      rejectBtn.textContent = '处理中…';
+      try {
+        await request('/orders/reject', {
+          method: 'POST',
+          body: { item_id: notice.meta.item_id, borrower_id: notice.meta.borrower_id },
+        });
+        showToast('已拒绝该借用申请', 'success');
+        actions.textContent = '已拒绝';
+        markRead(notice, li);
+      } catch (error) {
+        approveBtn.disabled = false;
+        rejectBtn.disabled = false;
+        rejectBtn.textContent = '拒绝';
+        showToast(error.message || '操作失败', 'error');
+      }
+    });
+
+    actions.append(approveBtn, rejectBtn);
+    main.appendChild(actions);
+  }
+
   li.append(dot, main);
 
   li.addEventListener('click', () => markRead(notice, li));

@@ -579,11 +579,12 @@ function addNotification(input) {
   const row = {
     id: nextId,
     user_id: Number(input.user_id),
-    type: input.type === 'system' ? 'system' : 'order',
+    type: ['system', 'order', 'borrow_request'].includes(input.type) ? input.type : 'order',
     title: String(input.title || '').slice(0, 120),
     body: String(input.body || '').slice(0, 300),
     is_read: false,
     ref_id: input.ref_id === undefined ? null : input.ref_id,
+    meta: input.meta || null,
     created_at: isoNow(),
   };
 

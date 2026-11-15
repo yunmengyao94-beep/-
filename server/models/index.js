@@ -125,6 +125,7 @@ const notificationSchema = new Schema(
     body: String,
     is_read: { type: Boolean, default: false },
     ref_id: Number,
+    meta: Schema.Types.Mixed,
     created_at: String,
   },
   { ...baseOptions, collection: 'notifications' }

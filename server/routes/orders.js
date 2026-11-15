@@ -329,6 +329,99 @@ function createOrderRecord({ item, borrower, dueAt }) {
 }
 
 /**
+ * POST /api/v1/orders/reject
+ * 出借人拒绝消息借用申请：不生成订单，仅通知对方
+ * 请求：{ item_id, borrower_id }
+ */
+router.post(
+  '/reject',
+  createRateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    keyPrefix: 'order-reject',
+    keyGenerator: (req) => String((req.user && req.user.user_id) || ''),
+  }),
+  async (req, res) => {
+    const itemId = Number(req.body && req.body.item_id);
+    const borrowerId = Number(req.body && req.body.borrower_id);
+
+    if (!Number.isInteger(itemId) || itemId <= 0 || !Number.isInteger(borrowerId)) {
+      return fail(req, res, 400, 40001, '参数校验失败：item_id / borrower_id 必填');
+    }
+
+    const owner = findUser(req.user && req.user.user_id);
+    if (!owner) return fail(req, res, 401, 40101, '未登录或 Token 失效，请重新登录');
+
+    const item = findItem(itemId);
+    if (!item) return fail(req, res, 404, 40401, '资源不存在');
+    if (item.owner_id !== owner.id) {
+      return fail(req, res, 403, 40301, '只有出借人可以处理借用申请');
+    }
+
+    const borrower = findUser(borrowerId);
+    if (!borrower) return fail(req, res, 404, 40401, '借用人不存在');
+
+    addNotification({
+      user_id: borrower.id,
+      type: 'order',
+      title: `出借人婉拒了「${item.title}」的借用申请`,
+      body: '可以再看看别的物品，或与对方沟通后再试。',
+      ref_id: item.id,
+    });
+
+    await commitDb();
+
+    return ok(req, res, { rejected: true, item_id: item.id, borrower_id: borrower.id });
+  }
+);
+
+/**
+ * POST /api/v1/orders/reject
+ * 出借人拒绝消息借用申请：不生成订单，仅通知对方
+ */
+router.post(
+  '/reject',
+  createRateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    keyPrefix: 'order-reject',
+    keyGenerator: (req) => String((req.user && req.user.user_id) || ''),
+  }),
+  async (req, res) => {
+    const itemId = Number(req.body && req.body.item_id);
+    const borrowerId = Number(req.body && req.body.borrower_id);
+
+    if (!Number.isInteger(itemId) || itemId <= 0 || !Number.isInteger(borrowerId)) {
+      return fail(req, res, 400, 40001, '参数校验失败：item_id / borrower_id 必填');
+    }
+
+    const owner = findUser(req.user && req.user.user_id);
+    if (!owner) return fail(req, res, 401, 40101, '未登录或 Token 失效，请重新登录');
+
+    const item = findItem(itemId);
+    if (!item) return fail(req, res, 404, 40401, '资源不存在');
+    if (item.owner_id !== owner.id) {
+      return fail(req, res, 403, 40301, '只有出借人可以处理借用申请');
+    }
+
+    const borrower = findUser(borrowerId);
+    if (!borrower) return fail(req, res, 404, 40401, '借用人不存在');
+
+    addNotification({
+      user_id: borrower.id,
+      type: 'order',
+      title: `出借人婉拒了「${item.title}」的借用申请`,
+      body: '可以再看看别的物品，或与对方沟通后再试。',
+      ref_id: item.id,
+    });
+
+    await commitDb();
+
+    return ok(req, res, { rejected: true, item_id: item.id, borrower_id: borrower.id });
+  }
+);
+
+/**
  * POST /api/v1/orders/approve
  * 出借人在聊天中同意借用：校验通过后直接建单、冻结借用人押金分
  * 请求：{ item_id, borrower_id, due_at? }

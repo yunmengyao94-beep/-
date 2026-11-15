@@ -4200,3 +4200,14 @@ html[data-client] [data-download-client] {
     transform: scale(1);
   }
 }
+
+/* 借用申请通知的操作区 */
+.notice-item__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.notice-item__actions .btn {
+  min-width: 76px;
+}
