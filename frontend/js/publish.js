@@ -629,7 +629,7 @@ async function handleSubmit() {
     showToast('发布成功，正在返回首页', 'success');
 
     setTimeout(() => {
-      window.location.href = './index.html';
+      window.location.replace('./index.html');
     }, 700);
   } catch (error) {
     const message = (error && error.message) || '网络异常';

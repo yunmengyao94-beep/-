@@ -10,7 +10,7 @@ import { debounce } from '../utils/utils.js';
 import { ensureToken } from '../utils/auth.js';
 import { categoryLabel } from '../utils/constants.js';
 import { DEFAULT_ITEM_IMAGE } from '../utils/item-image.js';
-import { removeItemImages } from '../utils/item-images.js';
+import { getItemImages, removeItemImages } from '../utils/item-images.js';
 import { showToast, openModal, closeModal } from '../components/feedback.js';
 import { openChat } from './chat.js';
 
@@ -614,7 +614,12 @@ function renderDetail(item) {
   rootEl.textContent = '';
 
   // 图片只认服务端：有缩略图才请求；服务端已清空（借用中/已下架）则统一占位
-  const images = [item.has_thumb ? apiUrl(`/items/${item.id}/thumb`) : DEFAULT_ITEM_IMAGE];
+  const localImages = getItemImages(item.id);
+  const images = item.has_thumb
+    ? [apiUrl(`/items/${item.id}/thumb`)]
+    : item.status === 0 && localImages.length > 0
+      ? localImages
+      : [DEFAULT_ITEM_IMAGE];
 
   // 服务端图片已清空：顺手清掉本地缓存，释放 localStorage
   if (!item.has_thumb) {

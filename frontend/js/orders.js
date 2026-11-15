@@ -70,7 +70,9 @@ function renderEmpty() {
   const desc = document.createElement('p');
   desc.className = 'empty-state__desc';
   desc.textContent =
-    state.direction === 'borrow' ? '去首页挑一件物品，发起借用申请' : '发布闲置物品，让同学来借';
+    state.direction === 'borrow'
+      ? '去首页挑一件物品，发起借用申请'
+      : '有人申请借用并生成订单后，才会出现在这里';
 
   wrap.append(icon, text, desc);
   emptyEl.appendChild(wrap);

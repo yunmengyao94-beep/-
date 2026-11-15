@@ -28,3 +28,9 @@ desktop/dist/
 
 # ---------- Electron 客户端源码（独立 Node 环境，使用 CommonJS） ----------
 desktop/main.js
+
+# ---------- 期末交付材料（非源码，不参与 lint / 格式化） ----------
+【期末大作业】庆师易校圈/
+*.zip
+*.lnk
+public/

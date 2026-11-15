@@ -13,7 +13,8 @@
 const express = require('express');
 const { ok, fail } = require('../utils/http');
 const { addMessage, listMessages } = require('../services/message-store');
-const { findUser, findItem } = require('../store');
+const { findUser, findItem, addNotification, commitDb } = require('../store');
+const { maskName } = require('../utils/mask');
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ function currentUser(req) {
 }
 
 /** POST /api/v1/messages */
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const me = currentUser(req);
   if (!me) return fail(req, res, 404, 40401, '资源不存在');
 
@@ -70,6 +71,19 @@ router.post('/', (req, res) => {
     content,
     meta: body.meta && typeof body.meta === 'object' ? body.meta : {},
   });
+
+  // 借用申请：额外落一条通知，避免对方没打开聊天时完全感知不到
+  if (type === 'borrow_request') {
+    const item = itemId ? findItem(itemId) : null;
+    addNotification({
+      user_id: to,
+      type: 'order',
+      title: `${maskName(me.real_name)} 想借用${item ? `「${item.title}」` : '你的物品'}`,
+      body: '请到聊天中查看申请并确认是否出借。',
+      ref_id: itemId || null,
+    });
+    await commitDb();
+  }
 
   return ok(req, res, message);
 });
