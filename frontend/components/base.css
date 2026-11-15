@@ -4094,3 +4094,109 @@ html[data-client] [data-download-client] {
   color: var(--text-sub, #98a2b3);
   text-align: center;
 }
+
+/* ============================================================================
+ * 44. 聊天：收发方对齐 + 端侧形态（移动端下拉面板 / PC 弹窗）+ 阻尼弹簧
+ * ========================================================================== */
+
+.chat-msg {
+  width: 100%;
+}
+
+.chat-msg--me {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+.chat-msg--me .chat-msg__main {
+  align-items: flex-end;
+}
+
+.chat-sheet-handle {
+  display: none;
+}
+
+/* 移动端：底部下拉面板 */
+.chat-mask--mobile {
+  align-items: flex-end;
+}
+
+.chat-mask--mobile .chat-panel {
+  width: 100%;
+  height: 88vh;
+  max-height: 92vh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-radius: 22px 22px 0 0;
+  animation: chat-sheet-spring 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform;
+}
+
+.chat-mask--mobile .chat-sheet-handle {
+  display: block;
+  flex: none;
+  width: 44px;
+  height: 5px;
+  margin: 8px auto 0;
+  touch-action: none;
+  cursor: grab;
+  background-color: #dfe3ea;
+  border-radius: 999px;
+}
+
+/* PC：居中弹窗 */
+.chat-mask--pc .chat-panel {
+  animation: chat-pop-spring 0.5s cubic-bezier(0.2, 1.35, 0.4, 1) both;
+  will-change: transform, opacity;
+}
+
+/* 阻尼余弦：上冲 → 回落 → 微弹 → 静止 */
+@keyframes chat-sheet-spring {
+  0% {
+    transform: translateY(100%);
+  }
+
+  42% {
+    transform: translateY(-2.6%);
+  }
+
+  62% {
+    transform: translateY(1.1%);
+  }
+
+  78% {
+    transform: translateY(-0.45%);
+  }
+
+  90% {
+    transform: translateY(0.18%);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes chat-pop-spring {
+  0% {
+    opacity: 0;
+    transform: scale(0.86) translateY(16px);
+  }
+
+  45% {
+    opacity: 1;
+    transform: scale(1.035) translateY(0);
+  }
+
+  68% {
+    transform: scale(0.985);
+  }
+
+  84% {
+    transform: scale(1.008);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

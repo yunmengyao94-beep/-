@@ -108,7 +108,19 @@ export function openChat(options = {}) {
   if (panel) closeChat();
 
   const me = readUser();
-  const myId = Number(me.user_id) || 0;
+
+  /** 从 JWT 解析 user_id（兼容旧的 yxx_user 缓存缺少 user_id） */
+  function userIdFromToken() {
+    try {
+      const token = localStorage.getItem('yxx_token') || '';
+      const payload = JSON.parse(atob(token.split('.')[1] || ''));
+      return Number(payload.user_id || payload.sub) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  const myId = Number(me.user_id) || userIdFromToken();
   const isOwner = Number(item.owner_id) === myId;
 
   /**
@@ -141,7 +153,8 @@ export function openChat(options = {}) {
 
   /* ---------------- 骨架 ---------------- */
   const mask = document.createElement('div');
-  mask.className = 'chat-mask';
+  const isMobileViewport = window.matchMedia('(max-width: 767.98px)').matches;
+  mask.className = `chat-mask ${isMobileViewport ? 'chat-mask--mobile' : 'chat-mask--pc'}`;
 
   const box = document.createElement('section');
   box.className = 'chat-panel';
@@ -225,6 +238,51 @@ export function openChat(options = {}) {
     tools.appendChild(tip);
   }
 
+  // 移动端底部面板：拖拽条 + 下拉关闭（阻尼回弹）
+  let handle = null;
+  if (isMobileViewport) {
+    handle = document.createElement('span');
+    handle.className = 'chat-sheet-handle';
+    handle.setAttribute('aria-hidden', 'true');
+    box.prepend(handle);
+
+    let startY = 0;
+    let offset = 0;
+    let dragging = false;
+
+    handle.addEventListener('pointerdown', (event) => {
+      dragging = true;
+      startY = event.clientY;
+      offset = 0;
+      box.style.transition = 'none';
+      handle.setPointerCapture(event.pointerId);
+    });
+
+    handle.addEventListener('pointermove', (event) => {
+      if (!dragging) return;
+      offset = Math.max(0, event.clientY - startY);
+      box.style.transform = `translateY(${offset}px)`;
+    });
+
+    const finishDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      box.style.transition = 'transform 0.46s cubic-bezier(0.22, 1.4, 0.36, 1)';
+      if (offset > 120) {
+        box.style.transform = 'translateY(100%)';
+        setTimeout(() => {
+          if (typeof close === 'function') close();
+        }, 220);
+      } else {
+        box.style.transform = 'translateY(0)';
+      }
+      offset = 0;
+    };
+
+    handle.addEventListener('pointerup', finishDrag);
+    handle.addEventListener('pointercancel', finishDrag);
+  }
+
   box.append(head, bodyEl, tools, footer);
   mask.appendChild(box);
   document.body.appendChild(mask);
@@ -297,8 +355,7 @@ export function openChat(options = {}) {
     time.textContent = formatClock(message.at || Date.now());
     main.appendChild(time);
 
-    if (mine) row.append(main, av);
-    else row.append(av, main);
+    row.append(av, main);
     return row;
   }
 
