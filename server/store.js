@@ -83,30 +83,76 @@ async function connect(uri = process.env.MONGODB_URI) {
   return connection;
 }
 
-/** 首次启动时写入种子数据 */
+/** 集合清单：统一驱动同步、哈希与删除 */
+const COLLECTIONS = [
+  { name: 'users', Model: User, key: 'id', get: () => db.users },
+  { name: 'accounts', Model: Account, key: 'student_no', get: () => db.accounts },
+  { name: 'items', Model: Item, key: 'id', get: () => db.items },
+  { name: 'orders', Model: Order, key: 'id', get: () => db.orders },
+  { name: 'credit_logs', Model: CreditLog, key: 'id', get: () => db.credit_logs },
+  { name: 'notifications', Model: Notification, key: 'id', get: () => db.notifications },
+];
+
+/** 每个集合上次落库的内容哈希：未变化的集合直接跳过，避免全量重写 */
+let lastHashes = {};
+let lastSeq = { item: -1, order: -1 };
+
+/** 落库串行队列：避免并发请求交错写入 */
+let commitChain = Promise.resolve();
+
+function cloneDocs(docs) {
+  if (typeof structuredClone === 'function') return structuredClone(docs);
+  return JSON.parse(JSON.stringify(docs));
+}
+
+function hashDocs(docs) {
+  return crypto.createHash('sha1').update(JSON.stringify(docs)).digest('hex');
+}
+
+function resetWriteState() {
+  lastHashes = {};
+  COLLECTIONS.forEach((collection) => {
+    lastHashes[collection.name] = hashDocs(collection.get());
+  });
+  lastSeq = { ...db.seq };
+}
+
+/** 逐集合补种子：只补空集合，已有数据不动（避免半初始化库无法登录） */
 async function seedIfEmpty() {
-  const count = await User.estimatedDocumentCount();
-  if (count > 0) return false;
+  let seeded = 0;
 
-  const pick = (key) => (Array.isArray(seedData[key]) ? seedData[key].map(strip) : []);
+  for (const collection of COLLECTIONS) {
+    const rows = Array.isArray(seedData[collection.name])
+      ? seedData[collection.name].map(strip)
+      : [];
+    if (rows.length === 0) continue;
 
-  await Promise.all([
-    User.insertMany(pick('users')),
-    Account.insertMany(pick('accounts')),
-    Item.insertMany(pick('items')),
-    Order.insertMany(pick('orders')),
-    CreditLog.insertMany(pick('credit_logs')),
-    Notification.insertMany(pick('notifications')),
-  ]);
+    const count = await collection.Model.estimatedDocumentCount();
+    if (count > 0) continue;
+
+    try {
+      await collection.Model.insertMany(rows, { ordered: false });
+      seeded += rows.length;
+    } catch (error) {
+      // 多实例同时初始化时可能出现唯一键冲突，忽略即可
+      if (error && error.code !== 11000) throw error;
+    }
+  }
 
   const seq = seedData.seq || {};
-  const itemSeed = Number(seq.item) || 0;
-  const orderSeed = Number(seq.order) || ORDER_ID_SEED;
-  await Counter.updateOne({ key: 'item' }, { $set: { value: itemSeed } }, { upsert: true });
-  await Counter.updateOne({ key: 'order' }, { $set: { value: orderSeed } }, { upsert: true });
+  await Counter.updateOne(
+    { key: 'item' },
+    { $setOnInsert: { value: Number(seq.item) || 0 } },
+    { upsert: true }
+  );
+  await Counter.updateOne(
+    { key: 'order' },
+    { $setOnInsert: { value: Number(seq.order) || ORDER_ID_SEED } },
+    { upsert: true }
+  );
 
-  console.info(`[yxx] 已写入种子数据：users=${pick('users').length}`);
-  return true;
+  if (seeded > 0) console.info(`[yxx] 已写入种子数据：${seeded} 条`);
+  return seeded > 0;
 }
 
 /** 把集合载入内存 */
@@ -138,16 +184,18 @@ async function loadCache() {
     maxOrder + 1,
     ORDER_ID_SEED
   );
+
+  // 以数据库内容为准，清理待删除标记
+  pendingDeletes.items.clear();
+  pendingDeletes.notifications.clear();
+  resetWriteState();
 }
 
-/** 全量同步一个集合（演示数据量很小，全量替换最稳） */
+/** 写入一个集合（传入的是快照，避免 await 期间被其他请求修改） */
 async function syncCollection(Model, docs, key) {
-  const rows = docs.map(strip);
-  if (rows.length === 0) {
-    await Model.deleteMany({});
-    return;
-  }
+  if (docs.length === 0) return;
 
+  const rows = docs.map(strip);
   const operations = rows.map((row) => ({
     replaceOne: {
       filter: { [key]: row[key] },
@@ -159,34 +207,71 @@ async function syncCollection(Model, docs, key) {
   await Model.bulkWrite(operations, { ordered: false });
 }
 
-/** 把内存缓存写回 MongoDB */
-async function commitDb() {
+/** 真正执行一次落库（只在队列内被调用） */
+async function doCommit() {
   if (!ready) throw new Error('数据仓尚未初始化，无法落库');
 
-  await Promise.all([
-    syncCollection(User, db.users, 'id'),
-    syncCollection(Account, db.accounts, 'student_no'),
-    syncCollection(Item, db.items, 'id'),
-    syncCollection(Order, db.orders, 'id'),
-    syncCollection(CreditLog, db.credit_logs, 'id'),
-    syncCollection(Notification, db.notifications, 'id'),
-  ]);
+  const snapshots = [];
+  for (const collection of COLLECTIONS) {
+    // 深拷贝：后续 await 期间即使路由继续改内存，也不会影响本次写入
+    const docs = cloneDocs(collection.get()).map(strip);
+    const hash = hashDocs(docs);
+    if (hash !== lastHashes[collection.name]) {
+      snapshots.push({ collection, docs, hash });
+    }
+  }
+
+  await Promise.all(
+    snapshots.map(({ collection, docs, hash }) =>
+      syncCollection(collection.Model, docs, collection.key).then(() => {
+        lastHashes[collection.name] = hash;
+      })
+    )
+  );
 
   if (pendingDeletes.items.size > 0) {
     await Item.deleteMany({ id: { $in: [...pendingDeletes.items] } });
     pendingDeletes.items.clear();
+    lastHashes.items = hashDocs(db.items);
   }
   if (pendingDeletes.notifications.size > 0) {
     await Notification.deleteMany({ id: { $in: [...pendingDeletes.notifications] } });
     pendingDeletes.notifications.clear();
+    lastHashes.notifications = hashDocs(db.notifications);
   }
 
-  await Promise.all([
-    Counter.updateOne({ key: 'item' }, { $set: { value: db.seq.item } }, { upsert: true }),
-    Counter.updateOne({ key: 'order' }, { $set: { value: db.seq.order } }, { upsert: true }),
-  ]);
+  if (db.seq.item !== lastSeq.item || db.seq.order !== lastSeq.order) {
+    await Promise.all([
+      Counter.updateOne({ key: 'item' }, { $set: { value: db.seq.item } }, { upsert: true }),
+      Counter.updateOne({ key: 'order' }, { $set: { value: db.seq.order } }, { upsert: true }),
+    ]);
+    lastSeq = { ...db.seq };
+  }
 
   return true;
+}
+
+/**
+ * 把内存缓存写回 MongoDB
+ * · 串行执行，避免并发写交错
+ * · 只写发生变化的集合
+ * · 失败时从数据库重新加载，丢弃未落库的内存改动（回滚）
+ */
+async function commitDb() {
+  const run = commitChain.then(doCommit, doCommit);
+  commitChain = run.catch(() => {});
+
+  try {
+    return await run;
+  } catch (error) {
+    console.error('[yxx] 落库失败，回滚内存缓存:', error.message);
+    try {
+      await loadCache();
+    } catch (reloadError) {
+      console.error('[yxx] 回滚失败:', reloadError.message);
+    }
+    throw error;
+  }
 }
 
 /** 初始化：连接 → 种子 → 载入缓存 */
